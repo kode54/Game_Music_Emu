@@ -34,6 +34,8 @@ private:
 	Blip_Buffer* output_;
 	type_t type_;
 	void* opl;
+	void* opl_memory;
+	unsigned char regs[ 0x100 ];
 	blip_time_t next_time;
 	int last_amp;
 	int addr;

@@ -5,7 +5,7 @@
 #include "ym2413.h"
 #include "fmopl.h"
 
-Opl_Apu::Opl_Apu() { opl = 0; }
+Opl_Apu::Opl_Apu() { opl = 0; opl_memory = 0; }
 
 blargg_err_t Opl_Apu::init( long clock, long rate, blip_time_t period, type_t type )
 {
@@ -33,6 +33,8 @@ blargg_err_t Opl_Apu::init( long clock, long rate, blip_time_t period, type_t ty
 
 	case type_msxaudio:
 		opl = y8950_init( clock, rate );
+		opl_memory = malloc( 32768 );
+		y8950_set_delta_t_memory( opl, opl_memory, 32768 );
 		break;
 
 	case type_opl2:
@@ -62,6 +64,7 @@ Opl_Apu::~Opl_Apu()
 
 		case type_msxaudio:
 			y8950_shutdown( opl );
+			free( opl_memory );
 			break;
 
 		case type_opl2:
