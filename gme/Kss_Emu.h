@@ -35,7 +35,7 @@ public:
 		byte data_size [4];
 		byte unused [4];
 		byte first_track [2];
-		byte last_tack [2];
+		byte last_track [2];
 		byte psg_vol;
 		byte scc_vol;
 		byte msx_music_vol;
@@ -70,7 +70,6 @@ private:
 	void update_gain();
 	
 	unsigned scc_enabled; // 0 or 0xC000
-	unsigned ram_mode;
 	byte const* bank_data;
 	int bank_count;
 	void set_bank( int logical, int physical );

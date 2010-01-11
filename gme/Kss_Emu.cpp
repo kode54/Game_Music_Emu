@@ -61,7 +61,7 @@ void Kss_Emu::unload()
 
 // Track info
 
-static void copy_kss_fields( Kss_Emu::header_t const& h, track_info_t* out )
+static void copy_kss_fields( Kss_Emu::composite_header_t const& h, track_info_t* out )
 {
 	const char* system = "MSX";
 	if ( h.device_flags & 0x02 )
@@ -88,7 +88,7 @@ static blargg_err_t check_kss_header( void const* header )
 
 struct Kss_File : Gme_Info_
 {
-	Kss_Emu::header_t header_;
+	Kss_Emu::composite_header_t header_;
 	
 	Kss_File() { set_type( gme_kss_type ); }
 	
@@ -97,7 +97,29 @@ struct Kss_File : Gme_Info_
 		blargg_err_t err = in.read( &header_, Kss_Emu::header_size );
 		if ( err )
 			return (err == in.eof_error ? gme_wrong_file_type : err);
-		return check_kss_header( &header_ );
+		RETURN_ERR( check_kss_header( &header_ ) );
+		if ( header_.tag [3] == 'C' )
+		{
+			header_.extra_header = 0;
+		}
+		else
+		{
+			Kss_Emu::ext_header_t& ext = header_;
+			err = in.read( &ext, min( (int) Kss_Emu::ext_header_size, (int) header_.extra_header ) );
+			if ( err )
+				return (err == in.eof_error ? gme_wrong_file_type : err);
+		}
+
+		int track_count;
+		if ( header_.extra_header >= 0x0C )
+		{
+			track_count = get_le16( header_.last_track ) + 1;
+		}
+		else
+		{
+			track_count = 256;
+		}
+		set_track_count( track_count );
 	}
 	
 	blargg_err_t track_info_( track_info_t* out, int ) const
@@ -110,7 +132,7 @@ struct Kss_File : Gme_Info_
 static Music_Emu* new_kss_emu () { return BLARGG_NEW Kss_Emu ; }
 static Music_Emu* new_kss_file() { return BLARGG_NEW Kss_File; }
 
-static gme_type_t_ const gme_kss_type_ = { "MSX", 256, &new_kss_emu, &new_kss_file, "KSS", 0x03 };
+static gme_type_t_ const gme_kss_type_ = { "MSX", 0, &new_kss_emu, &new_kss_file, "KSS", 0x03 };
 gme_type_t const gme_kss_type = &gme_kss_type_;
 
 
@@ -157,6 +179,17 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 		if ( header_.extra_header > 0x10 )
 			set_warning( "Unknown data in header" );
 	}
+
+	int track_count;
+	if ( header_.extra_header >= 0x0C )
+	{
+		track_count = get_le16( header_.last_track ) + 1;
+	}
+	else
+	{
+		track_count = 256;
+	}
+	set_track_count( track_count );
 	
 	scc_enabled = 0xC000;
 	if ( header_.device_flags & 0x04 )
@@ -165,8 +198,6 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 	if ( header_.device_flags & 0x02 && !sn )
 		CHECK_ALLOC( sn = BLARGG_NEW( Sms_Apu ) );
 
-	ram_mode = 0;
-	
 	if ( header_.device_flags & 0x02 )
 	{
 		// TODO: this is wrong
@@ -177,8 +208,6 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 			long const rate = 3579545 / period;
 			RETURN_ERR( msxaudio->init( rate * period, rate, period, msxmusic->type_smsfmunit ) );
 		}
-
-		ram_mode = header_.device_flags & ( 0x08 | 0x80 );
 	}
 	else
 	{
@@ -197,21 +226,16 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 			long const rate = 3579545 / period;
 			RETURN_ERR( msxaudio->init( rate * period, rate, period, msxmusic->type_msxaudio ) );
 		}
-
-		if ( header_.device_flags & 0x80 )
-		{
-			ram_mode = 1;
-			scc_enabled = 0;
-		}
-		else
-		{
-			ram_mode = header_.device_flags & 0x04;
-			if ( ram_mode ) scc_enabled = 0;
-		}
 	}
 	
 	set_voice_count( osc_count );
 	
+	set_silence_lookahead( 6 );
+	if ( msxmusic || msxaudio )
+	{
+		set_silence_lookahead( 3 ); // Opl_Apu is really slow
+	}
+
 	return setup_buffer( ::clock_rate );
 }
 
@@ -308,6 +332,7 @@ blargg_err_t Kss_Emu::start_track_( int track )
 	ram [--r.sp] = idle_addr >> 8;
 	ram [--r.sp] = idle_addr & 0xFF;
 	r.b.a = track;
+	r.b.h = 0;
 	r.pc = get_le16( header_.init_addr );
 	next_play = play_period;
 	scc_accessed = false;
@@ -368,11 +393,8 @@ void Kss_Emu::cpu_write( unsigned addr, int data )
 void kss_cpu_write( Kss_Cpu* cpu, unsigned addr, int data )
 {
 	*cpu->write( addr ) = data;
-	Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
-	if ( (addr & emu.scc_enabled) == 0x8000 )
-		emu.cpu_write( addr, data );
-	else if ( emu.ram_mode )
-		emu.ram [addr] = data;
+	if ( (addr & STATIC_CAST(Kss_Emu&,*cpu).scc_enabled) == 0x8000 )
+		STATIC_CAST(Kss_Emu&,*cpu).cpu_write( addr, data );
 }
 
 //static int ay_addr; // TODO: remove
@@ -385,13 +407,11 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	{
 	case 0xA0:
 		GME_APU_HOOK( &emu, 0, data );
-		//ay_addr = data & 0x0F;
 		emu.ay.write_addr( data );
 		return;
 	
 	case 0xA1:
 		GME_APU_HOOK( &emu, 1, data );
-		//if ( ay_addr == 7 ) debug_printf( "%d <- $%02X\n", ay_addr, data );
 		emu.ay.write_data( time, data );
 		return;
 	
@@ -472,16 +492,10 @@ int kss_cpu_in( Kss_Cpu* cpu, cpu_time_t time, unsigned addr )
 		return emu.ay.read();
 
 	case 0xC0:
-		if ( emu.msxaudio )
-		{
-			return emu.msxaudio->read( time, 0 );
-		}
-		break;
-
 	case 0xC1:
 		if ( emu.msxaudio )
 		{
-			return emu.msxaudio->read( time, 1 );
+			return emu.msxaudio->read( time, addr & 1 );
 		}
 		break;
 	}

@@ -21,7 +21,24 @@ all other #include lines. */
 // Like printf() except output goes to debug log file. Might be defined to do
 // nothing (not even evaluate its arguments).
 // void debug_printf( const char* format, ... );
+#if 0
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <stdarg.h>
+#include <stdio.h>
+static inline void blargg_dprintf_( const char*fmt, ... )
+{
+	char error[512];
+	va_list vl;
+	va_start(vl, fmt);
+	vsnprintf_s( error, 512, 510, fmt, vl );
+	va_end(vl);
+	strcat_s( error, 512, "\n" );
+	OutputDebugStringA( error );
+}
+#else
 static inline void blargg_dprintf_( const char*, ... ) { }
+#endif
 #undef debug_printf
 #define debug_printf (1) ? (void) 0 : blargg_dprintf_
 
