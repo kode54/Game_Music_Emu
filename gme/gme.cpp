@@ -86,10 +86,11 @@ gme_type_t gme_identify_extension( const char* extension_ )
 	char extension [6];
 	to_uppercase( extension_, sizeof extension, extension );
 	
-	for ( gme_type_t const* types = gme_type_list_; *types; types++ )
+	gme_type_t const* types = gme_type_list_;
+	for ( ; *types; types++ )
 		if ( !strcmp( extension, (*types)->extension_ ) )
-			return *types;
-	return 0;
+			break;
+	return *types;
 }
 
 gme_err_t gme_identify_file( const char* path, gme_type_t* type_out )

@@ -15,9 +15,15 @@ public:
 	// Reset sound chip
 	void reset();
 	
+	// Write to address register
+	void write_addr( int data ) { addr_ = data & 0x0F; }
+	
 	// Write to register at specified time
 	enum { reg_count = 16 };
-	void write( blip_time_t time, int addr, int data );
+	void write_data( blip_time_t time, int data );
+	
+	// Read from current register
+	int read();
 	
 	// Run sound to specified time, end current time frame, then start a new
 	// time frame at time 0. Time frames have no effect on emulation and each
@@ -50,7 +56,7 @@ private:
 		Blip_Buffer* output;
 	} oscs [osc_count];
 	blip_time_t last_time;
-	byte latch;
+	byte addr_;
 	byte regs [reg_count];
 	
 	struct {
@@ -76,10 +82,10 @@ inline void Ay_Apu::volume( double v ) { synth_.volume( 0.7 / osc_count / amp_ra
 
 inline void Ay_Apu::treble_eq( blip_eq_t const& eq ) { synth_.treble_eq( eq ); }
 
-inline void Ay_Apu::write( blip_time_t time, int addr, int data )
+inline void Ay_Apu::write_data( blip_time_t time, int data )
 {
 	run_until( time );
-	write_data_( addr, data );
+	write_data_( addr_, data );
 }
 
 inline void Ay_Apu::osc_output( int i, Blip_Buffer* buf )

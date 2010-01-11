@@ -25,7 +25,7 @@ public:
 	};
 	enum { type_index_mask = 0xFF };
 	enum { wave_type = 0x100, noise_type = 0x200, mixed_type = wave_type | noise_type };
-	virtual channel_t channel( int index, int type ) = 0;
+	virtual channel_t channel( int index, int type = 0 ) = 0;
 	
 	// See Blip_Buffer.h
 	virtual blargg_err_t set_sample_rate( long rate, int msec = blip_default_length ) = 0;

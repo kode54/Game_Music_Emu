@@ -151,7 +151,7 @@ private:
 	// silence detection
 	int silence_lookahead; // speed to run emulator when looking ahead for silence
 	bool ignore_silence_;
-	long silence_time;     // number of samples where most recent silence began
+	long silence_time;     // absolute number of samples where most recent silence began
 	long silence_count;    // number of samples of silence to play before using buf
 	long buf_remain;       // number of samples left in silence buffer
 	enum { buf_size = 2048 };

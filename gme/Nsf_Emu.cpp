@@ -1,4 +1,4 @@
-// Game_Music_Emu $vers. http://www.slack.net/~ant/
+// Game_Music_Emu 0.5.2. http://www.slack.net/~ant/
 
 #include "Nsf_Emu.h"
 
@@ -13,6 +13,7 @@
 #endif
 
 #if NSF_EMU_MMC5_VRC7
+	#include "Nes_Fds_Apu.h"
 	#include "Nes_Vrc7_Apu.h"
 	#include "Nes_Mmc5_Apu.h"
 	
@@ -42,12 +43,14 @@ int const namco_flag = 1 << 4;
 int const fme7_flag  = 1 << 5;
 
 #if NSF_EMU_MMC5_VRC7
-int const supported_flags = vrc6_flag | namco_flag | fme7_flag | mmc5_flag | vrc7_flag;
+int const supported_flags = vrc6_flag | namco_flag | fme7_flag | mmc5_flag | vrc7_flag | fds_flag;
 #else
 int const supported_flags = vrc6_flag | namco_flag | fme7_flag;
 #endif
 
 long const clock_divisor = 12;
+
+unsigned const fds_bank_select_addr = 0x5FF6;
 
 Nsf_Emu::equalizer_t const Nsf_Emu::nes_eq     = {  -1.0, 80 };
 Nsf_Emu::equalizer_t const Nsf_Emu::famicom_eq = { -15.0, 80 };
@@ -64,6 +67,7 @@ Nsf_Emu::Nsf_Emu()
 	fme7  = 0;
 	mmc5  = 0;
 	vrc7  = 0;
+	fds   = 0;
 	
 	set_type( gme_nsf_type );
 	set_silence_lookahead( 6 );
@@ -83,17 +87,20 @@ void Nsf_Emu::unload()
 		namco = 0;
 		
 		delete vrc6;
-		vrc6  = 0;
+		vrc6 = 0;
 		
 		delete fme7;
-		fme7  = 0;
+		fme7 = 0;
 		
 		#if NSF_EMU_MMC5_VRC7
 			delete mmc5;
-			mmc5  = 0;
+			mmc5 = 0;
 			
 			delete vrc7;
-			vrc7  = 0;
+			vrc7 = 0;
+			
+			delete fds;
+			fds = 0;
 		#endif
 	}
 	#endif
@@ -181,6 +188,8 @@ void Nsf_Emu::set_tempo_( double t )
 		play_period = long (playback_rate * clock_rate_ / (1000000.0 / clock_divisor * t));
 
 	apu.set_tempo( t );
+	if ( fds )
+		fds->set_tempo( t );
 }
 
 void Nsf_Emu::append_voices( const char* const* names, int const* types, int count )
@@ -193,6 +202,7 @@ void Nsf_Emu::append_voices( const char* const* names, int const* types, int cou
 	}
 	voice_count_ += count;
 	set_voice_count( voice_count_ );
+	set_voice_types( voice_types_ );
 }
 
 blargg_err_t Nsf_Emu::init_sound()
@@ -300,8 +310,23 @@ blargg_err_t Nsf_Emu::init_sound()
 				adjusted_gain *= 0.75;
 			}
 			
+			if ( header_.chip_flags & fds_flag )
+			{
+				CHECK_ALLOC( fds = BLARGG_NEW Nes_Fds_Apu );
+				int const count = Nes_Fds_Apu::osc_count;
+				static const char* const names [count] = {
+					"FM"
+				};
+				static int const types [count] = {
+					mixed_type+2
+				};
+				append_voices( names, types, count );
+				adjusted_gain *= 0.90;
+			}
+			
 			if ( mmc5  ) mmc5->volume( adjusted_gain );
 			if ( vrc7  ) vrc7->volume( adjusted_gain );
+			if ( fds   ) fds ->volume( adjusted_gain );
 		#endif
 		
 		if ( namco ) namco->volume( adjusted_gain );
@@ -340,7 +365,8 @@ blargg_err_t Nsf_Emu::load_( Data_Reader& in )
 	if ( !load_addr ) load_addr = rom_begin;
 	if ( !init_addr ) init_addr = rom_begin;
 	if ( !play_addr ) play_addr = rom_begin;
-	if ( load_addr < rom_begin || init_addr < rom_begin )
+	unsigned const addr_min = (fds ? sram_addr : rom_begin);
+	if ( load_addr < addr_min || init_addr < addr_min )
 	{
 		const char* w = warning();
 		if ( !w )
@@ -352,19 +378,23 @@ blargg_err_t Nsf_Emu::load_( Data_Reader& in )
 	int total_banks = rom.size() / bank_size;
 	
 	// bank switching
-	int first_bank = (load_addr - rom_begin) / bank_size;
-	for ( int i = 0; i < bank_count; i++ )
+	static byte const zero_banks [8] = { 0 };
+	if ( memcmp( header_.banks, zero_banks, sizeof header_.banks ) )
 	{
-		unsigned bank = i - first_bank;
-		if ( bank >= (unsigned) total_banks )
-			bank = 0;
-		initial_banks [i] = bank;
-		
-		if ( header_.banks [i] )
+		initial_banks [0] = header_.banks [6];
+		initial_banks [1] = header_.banks [7];
+		memcpy( initial_banks + 2, header_.banks, sizeof header_.banks );
+	}
+	else
+	{
+		// no initial banks, so assign them based on load_addr
+		int first_bank = (load_addr - sram_addr) / bank_size;
+		for ( int i = 0; i < initial_bank_count; i++ )
 		{
-			// bank-switched
-			memcpy( initial_banks, header_.banks, sizeof initial_banks );
-			break;
+			unsigned bank = i - first_bank;
+			if ( bank >= (unsigned) total_banks )
+				bank = 0;
+			initial_banks [i] = bank;
 		}
 	}
 	
@@ -391,6 +421,7 @@ void Nsf_Emu::update_eq( blip_eq_t const& eq )
 		#if NSF_EMU_MMC5_VRC7
 			if ( mmc5 ) mmc5->treble_eq( eq );
 			if ( vrc7 ) vrc7->treble_eq( eq );
+			if ( fds  ) fds ->treble_eq( eq );
 		#endif
 	}
 	#endif
@@ -415,6 +446,7 @@ void Nsf_Emu::set_voice( int i, Blip_Buffer* buf, Blip_Buffer*, Blip_Buffer* )
 		#if NSF_EMU_MMC5_VRC7
 			HANDLE_CHIP( mmc5 );
 			HANDLE_CHIP( vrc7 );
+			HANDLE_CHIP( fds  );
 		#endif
 	}
 	#endif
@@ -432,6 +464,9 @@ int Nsf_Emu::cpu_read_misc( nes_addr_t addr )
 			return namco->read_data();
 		
 		#if NSF_EMU_MMC5_VRC7
+			if ( fds && unsigned (addr - Nes_Fds_Apu::start_addr) < Nes_Fds_Apu::reg_count )
+				return fds->read( time(), addr );
+			
 			if ( mmc5 )
 			{
 				int i = addr ^ 0x5C00;
@@ -459,6 +494,41 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 {
 	#if !NSF_EMU_APU_ONLY
 	{
+		#if NSF_EMU_MMC5_VRC7
+			if ( fds )
+			{
+				if ( unsigned (addr - 0x4040) <= 0x408F - 0x4040 )
+				{
+					fds->write( time(), addr, data );
+					return;
+				}
+				
+				// TODO: FDS bank switching is kind of hacky, might need to
+				// treat ROM as RAM so changes won't get lost when switching.
+				
+				// copy banks to SRAM
+				unsigned bank = addr - fds_bank_select_addr;
+				if ( bank < 2 )
+				{
+					blargg_long offset = rom.mask_addr( data * (blargg_long) bank_size );
+					if ( offset >= rom.size() )
+						set_warning( "Invalid bank" );
+					memcpy( &sram [(blargg_long) bank * bank_size], rom.at_addr( offset ),
+							bank_size );
+					return;
+				}
+				
+				// 0x8000-0xDFFF is writable
+				unsigned i = addr ^ 0x8000;
+				if ( i <= 0xDFFF ^ 0x8000 )
+				{
+					// TODO: avoid writing to rom pages
+					*(byte*) cpu::get_code( addr ) = data;
+					// fall through so writes can also go to sound chips
+				}
+			}
+		#endif
+		
 		if ( namco )
 		{
 			switch ( addr )
@@ -504,12 +574,11 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 				if ( (addr ^ Nes_Mmc5_Apu::start_addr) <=
 						Nes_Mmc5_Apu::end_addr - Nes_Mmc5_Apu::start_addr )
 				{
-					dprintf( "MMC5 APU write\n" );
 					mmc5->write_register( time(), addr, data );
 					return;
 				}
 				
-				unsigned int m = addr - 0x5205;
+				unsigned m = addr - 0x5205;
 				if ( m < 2 )
 				{
 					mmc5_mul [m] = data;
@@ -555,6 +624,11 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 		// memory mapper?
 		if ( addr == 0xFFF8 ) return;
 		
+		if ( mmc5 && addr == 0x5115 ) return;
+		
+		// FDS memory
+		if ( fds && addr ^ 0x8000 <= 0xDFFF ^ 0x8000 ) return;
+		
 		dprintf( "write_unmapped( 0x%04X, 0x%02X )\n", (unsigned) addr, (unsigned) data );
 	}
 	#endif
@@ -566,6 +640,12 @@ blargg_err_t Nsf_Emu::start_track_( int track )
 	
 	memset( low_mem, 0, sizeof low_mem );
 	memset( sram,    0, sizeof sram );
+	
+	cpu::reset( unmapped_code ); // also maps low_mem
+	cpu::map_code( sram_addr, sizeof sram, sram );
+	for ( int i = 0; i < bank_count; ++i )
+		cpu_write( bank_select_addr + i, initial_banks [2 + i] );
+	
 	#if NSF_EMU_MMC5_VRC7
 		if ( mmc5 )
 		{
@@ -573,12 +653,13 @@ blargg_err_t Nsf_Emu::start_track_( int track )
 			mmc5_mul [1] = 0;
 			memset( mmc5->exram, 0, sizeof mmc5->exram );
 		}
+		
+		if ( fds )
+		{
+			cpu_write( fds_bank_select_addr    , initial_banks [0] );
+			cpu_write( fds_bank_select_addr + 1, initial_banks [1] );
+		}
 	#endif
-	
-	cpu::reset( unmapped_code ); // also maps low_mem
-	cpu::map_code( sram_addr, sizeof sram, sram );
-	for ( int i = 0; i < bank_count; ++i )
-		cpu_write( bank_select_addr + i, initial_banks [i] );
 	
 	apu.reset( pal_only, (header_.speed_flags & 0x20) ? 0x3F : 0 );
 	apu.write_register( 0, 0x4015, 0x0F );
@@ -591,6 +672,7 @@ blargg_err_t Nsf_Emu::start_track_( int track )
 		#if NSF_EMU_MMC5_VRC7
 			if ( mmc5  ) mmc5 ->reset();
 			if ( vrc7  ) vrc7 ->reset();
+			if ( fds   ) fds  ->reset();
 		#endif
 	}
 	#endif
@@ -680,6 +762,7 @@ blargg_err_t Nsf_Emu::run_clocks( blip_time_t& duration, int )
 		#if NSF_EMU_MMC5_VRC7
 			if ( mmc5  ) mmc5 ->end_frame( duration );
 			if ( vrc7  ) vrc7 ->end_frame( duration );
+			if ( fds   ) fds  ->end_frame( duration );
 		#endif
 	}
 	#endif

@@ -199,6 +199,12 @@ blargg_err_t Std_File_Reader::open( const char* path )
 	return 0;
 }
 
+void Std_File_Reader::make_unbuffered()
+{
+	if ( setvbuf( (FILE*) file_, 0, _IONBF, 0 ) )
+		check( false ); // shouldn't fail, but OK if it does
+}
+
 long Std_File_Reader::size() const
 {
 	long pos = tell();

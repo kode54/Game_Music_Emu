@@ -46,6 +46,7 @@ void Scc_Apu::run_until( blip_time_t end_time )
 		BOOST::int8_t const* wave = (BOOST::int8_t*) regs + index * wave_size;
 		if ( index == osc_count - 1 )
 			wave -= wave_size; // last two oscs share wave
+		
 		{
 			int amp = wave [osc.phase] * volume;
 			int delta = amp - osc.last_amp;
@@ -68,7 +69,6 @@ void Scc_Apu::run_until( blip_time_t end_time )
 			}
 			else
 			{
-				
 				int phase = osc.phase;
 				int last_wave = wave [phase];
 				phase = (phase + 1) & (wave_size - 1); // pre-advance for optimal inner loop

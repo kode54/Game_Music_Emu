@@ -38,10 +38,12 @@ public:
 	T* end() const { return begin_ + size_; }
 	blargg_err_t resize( size_t n )
 	{
+		// TODO: blargg_common.cpp to hold this as an outline function, ugh
 		void* p = realloc( begin_, n * sizeof (T) );
-		if ( !p && n )
+		if ( p )
+			begin_ = (T*) p;
+		else if ( n > size_ ) // realloc failure only a problem if expanding
 			return "Out of memory";
-		begin_ = (T*) p;
 		size_ = n;
 		return 0;
 	}

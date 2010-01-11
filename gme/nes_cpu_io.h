@@ -71,5 +71,5 @@ void Nsf_Emu::cpu_write( nes_addr_t addr, int data )
 	cpu_write_misc( addr, data );
 }
 
-#define CPU_READ( cpu, addr, time )			STATIC_CAST(Nsf_Emu&,*cpu).cpu_read( addr )
-#define CPU_WRITE( cpu, addr, data, time )	STATIC_CAST(Nsf_Emu&,*cpu).cpu_write( addr, data )
+#define CPU_READ( cpu, addr, time )         STATIC_CAST(Nsf_Emu&,*cpu).cpu_read( addr )
+#define CPU_WRITE( cpu, addr, data, time )  STATIC_CAST(Nsf_Emu&,*cpu).cpu_write( addr, data )

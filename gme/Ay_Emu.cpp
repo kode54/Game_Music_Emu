@@ -281,12 +281,12 @@ void Ay_Emu::cpu_out_misc( cpu_time_t time, unsigned addr, int data )
 		{
 		case 0xFEFD:
 			spectrum_mode = true;
-			apu_addr = data & 0x0F;
+			apu.write_addr( data );
 			return;
 		
 		case 0xBEFD:
 			spectrum_mode = true;
-			apu.write( time, apu_addr, data );
+			apu.write_data( time, data );
 			return;
 		}
 	}
@@ -299,11 +299,11 @@ void Ay_Emu::cpu_out_misc( cpu_time_t time, unsigned addr, int data )
 			switch ( data & 0xC0 )
 			{
 			case 0xC0:
-				apu_addr = cpc_latch & 0x0F;
+				apu.write_addr( cpc_latch );
 				goto enable_cpc;
 			
 			case 0x80:
-				apu.write( time, apu_addr, cpc_latch );
+				apu.write_data( time, cpc_latch );
 				goto enable_cpc;
 			}
 			break;

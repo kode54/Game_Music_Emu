@@ -96,6 +96,7 @@ Ay_Apu::Ay_Apu()
 
 void Ay_Apu::reset()
 {
+	addr_       = 0;
 	last_time   = 0;
 	noise.delay = 0;
 	noise.lfsr  = 1;
@@ -115,6 +116,15 @@ void Ay_Apu::reset()
 		regs [i] = 0;
 	regs [7] = 0xFF;
 	write_data_( 13, 0 );
+}
+
+int Ay_Apu::read()
+{
+	static byte const masks [reg_count] = { 
+		0xFF, 0x0F, 0xFF, 0x0F, 0xFF, 0x0F, 0x1F, 0x3F,
+		0x1F, 0x1F, 0x1F, 0xFF, 0xFF, 0x0F, 0x00, 0x00
+	};
+	return regs [addr_] & masks [addr_];
 }
 
 void Ay_Apu::write_data_( int addr, int data )

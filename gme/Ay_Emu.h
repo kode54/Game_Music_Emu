@@ -52,7 +52,6 @@ private:
 	Blip_Buffer* beeper_output;
 	int beeper_delta;
 	int last_beeper;
-	int apu_addr;
 	int cpc_latch;
 	bool spectrum_mode;
 	bool cpc_mode;

@@ -114,6 +114,8 @@ public:
 	}
 };
 
+// Hooks for sound writes and frames, for use in an experimental automatic
+// track loop timing tool 
 #ifndef GME_APU_HOOK
 	#define GME_APU_HOOK( emu, addr, data ) ((void) 0)
 #endif

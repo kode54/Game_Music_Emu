@@ -211,6 +211,7 @@ blargg_err_t Music_Emu::skip( long count )
 	if ( count && !emu_track_ended_ )
 	{
 		emu_time += count;
+		silence_time = emu_time;
 		end_track_if_error( skip_( count ) );
 	}
 	
@@ -347,16 +348,23 @@ blargg_err_t Music_Emu::play( long out_count, sample_t* out )
 		long pos = 0;
 		if ( silence_count )
 		{
-			// during a run of silence, run emulator at >=2x speed so it gets ahead
-			long ahead_time = silence_lookahead * (out_time + out_count - silence_time) + silence_time;
-			while ( emu_time < ahead_time && !(buf_remain | emu_track_ended_) )
-				fill_buf();
+			if ( !ignore_silence_ )
+			{
+				// during a run of silence, run emulator at >=2x speed so it gets ahead
+				long ahead_time = silence_lookahead * (out_time + out_count - silence_time) +
+						silence_time;
+				while ( emu_time < ahead_time && !(buf_remain | (int) emu_track_ended_) )
+					fill_buf();
+			}
 			
 			// fill with silence
 			pos = min( silence_count, out_count );
 			memset( out, 0, pos * sizeof *out );
 			silence_count -= pos;
 			
+			// TODO: ignore_silence_ conditional here too? emu_time shouldn't increase
+			// if ignore_silence_ is enabled in middle of silence run, so this shouldn't
+			// fire.
 			if ( emu_time - silence_time > silence_max * stereo * sample_rate() )
 			{
 				track_ended_  = emu_track_ended_ = true;
@@ -381,7 +389,12 @@ blargg_err_t Music_Emu::play( long out_count, sample_t* out )
 			emu_play( remain, out + pos );
 			track_ended_ |= emu_track_ended_;
 			
-			if ( !ignore_silence_ || out_time > fade_start )
+			if ( ignore_silence_ && out_time < fade_start )
+			{
+				// if left unupdated, ahead_time could become too large
+				silence_time = emu_time;
+			}
+			else
 			{
 				// check end for a new run of silence
 				long silence = count_silence( out + pos, remain );

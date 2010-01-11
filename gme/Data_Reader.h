@@ -55,6 +55,7 @@ class Std_File_Reader : public File_Reader {
 public:
 	blargg_err_t open( const char* path );
 	void close();
+	void make_unbuffered();
 	
 public:
 	Std_File_Reader();

@@ -24,6 +24,8 @@ int const osc_count = Ay_Apu::osc_count + Scc_Apu::osc_count;
 Kss_Emu::Kss_Emu()
 {
 	sn = 0;
+	msxmusic = 0;
+	msxaudio = 0;
 	set_type( gme_kss_type );
 	set_silence_lookahead( 6 );
 	static const char* const names [osc_count] = {
@@ -47,6 +49,13 @@ void Kss_Emu::unload()
 {
 	delete sn;
 	sn = 0;
+	
+	delete msxmusic;
+	msxmusic = 0;
+	
+	delete msxaudio;
+	msxaudio = 0;
+	
 	Classic_Emu::unload();
 }
 
@@ -110,10 +119,11 @@ void Kss_Emu::update_gain()
 	double g = gain() * 1.4;
 	if ( scc_accessed )
 		g *= 1.5;
-	ay.volume( g );
+	ay .volume( g );
 	scc.volume( g );
-	if ( sn )
-		sn->volume( g );
+	if ( sn       ) sn      ->volume( g );
+	if ( msxmusic ) msxmusic->volume( g );
+	if ( msxaudio ) msxaudio->volume( g );
 }
 
 blargg_err_t Kss_Emu::load_( Data_Reader& in )
@@ -146,7 +156,7 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 			set_warning( "Unknown data in header" );
 	}
 	
-	if ( header_.device_flags & 0x09 )
+	if ( header_.device_flags & 0x08 )
 		set_warning( "FM sound not supported" );
 	
 	scc_enabled = 0xC000;
@@ -156,6 +166,25 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 	if ( header_.device_flags & 0x02 && !sn )
 		CHECK_ALLOC( sn = BLARGG_NEW( Sms_Apu ) );
 	
+	if ( header_.device_flags & 0x04 )
+	{
+		// TODO: this is wrong
+		if ( header_.device_flags & 0x01 && !msxaudio )
+		{
+			CHECK_ALLOC( msxaudio = BLARGG_NEW( Opl_Apu ) );
+			blip_time_t const period = 72;
+			long const rate = 3579545 / period;
+			RETURN_ERR( msxaudio->init( rate * period, rate, period, msxmusic->type_smsfmunit ) );
+		}
+	}
+	else if ( header_.device_flags & 0x01 && !msxmusic )
+	{
+		CHECK_ALLOC( msxmusic = BLARGG_NEW( Opl_Apu ) );
+		blip_time_t const period = 72;
+		long const rate = 3579545 / period;
+		RETURN_ERR( msxmusic->init( rate * period, rate, period, msxmusic->type_msxmusic ) );
+	}
+	
 	set_voice_count( osc_count );
 	
 	return setup_buffer( ::clock_rate );
@@ -163,10 +192,11 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 
 void Kss_Emu::update_eq( blip_eq_t const& eq )
 {
-	ay.treble_eq( eq );
+	ay .treble_eq( eq );
 	scc.treble_eq( eq );
-	if ( sn )
-		sn->treble_eq( eq );
+	if ( sn       ) sn      ->treble_eq( eq );
+	if ( msxmusic ) msxmusic->treble_eq( eq );
+	if ( msxaudio ) msxaudio->treble_eq( eq );
 }
 
 void Kss_Emu::set_voice( int i, Blip_Buffer* center, Blip_Buffer* left, Blip_Buffer* right )
@@ -176,8 +206,15 @@ void Kss_Emu::set_voice( int i, Blip_Buffer* center, Blip_Buffer* left, Blip_Buf
 		scc.osc_output( i2, center );
 	else
 		ay.osc_output( i, center );
+	
 	if ( sn && i < sn->osc_count )
 		sn->osc_output( i, center, left, right );
+	
+	if ( msxmusic && i < msxmusic->osc_count )
+		msxmusic->osc_output( i, center );
+	
+	if ( msxaudio && i < msxaudio->osc_count )
+		msxaudio->osc_output( i, center );
 }
 
 // Emulation
@@ -236,10 +273,12 @@ blargg_err_t Kss_Emu::start_track_( int track )
 	cpu::reset( unmapped_write, unmapped_read );
 	cpu::map_mem( 0, mem_size, ram, ram );
 	
-	ay.reset();
+	ay .reset();
 	scc.reset();
-	if ( sn )
-		sn->reset();
+	if ( sn       ) sn      ->reset();
+	if ( msxmusic ) msxmusic->reset();
+	if ( msxaudio ) msxaudio->reset();
+	
 	r.sp = 0xF380;
 	ram [--r.sp] = idle_addr >> 8;
 	ram [--r.sp] = idle_addr & 0xFF;
@@ -249,7 +288,6 @@ blargg_err_t Kss_Emu::start_track_( int track )
 	scc_accessed = false;
 	gain_updated = false;
 	update_gain();
-	ay_latch = 0;
 	
 	return 0;
 }
@@ -316,12 +354,13 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	switch ( addr & 0xFF )
 	{
 	case 0xA0:
-		emu.ay_latch = data & 0x0F;
+		GME_APU_HOOK( &emu, 0, data );
+		emu.ay.write_addr( data );
 		return;
 	
 	case 0xA1:
-		GME_APU_HOOK( &emu, emu.ay_latch, data );
-		emu.ay.write( time, emu.ay_latch, data );
+		GME_APU_HOOK( &emu, 1, data );
+		emu.ay.write_data( time, data );
 		return;
 	
 	case 0x06:
@@ -342,6 +381,38 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 		}
 		break;
 	
+	case 0x7C:
+		if ( emu.msxmusic )
+		{
+			emu.msxmusic->write_reg( data );
+			return;
+		}
+		break;
+	
+	case 0x7D:
+		if ( emu.msxmusic )
+		{
+			emu.msxmusic->write_data( time, data );
+			return;
+		}
+		break;
+	/*
+	case 0xF0:
+		if ( emu.msxaudio )
+		{
+			emu.msxaudio->write_reg( data );
+			return;
+		}
+		break;
+	
+	case 0xF1:
+		if ( emu.msxaudio )
+		{
+			emu.msxaudio->write_data( time, data );
+			return;
+		}
+		break;
+	*/
 	case 0xFE:
 		emu.set_bank( 0, data );
 		return;
@@ -359,12 +430,14 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	dprintf( "OUT $%04X,$%02X\n", addr, data );
 }
 
-int kss_cpu_in( Kss_Cpu*, cpu_time_t, unsigned addr )
+int kss_cpu_in( Kss_Cpu* cpu, cpu_time_t, unsigned addr )
 {
-	//Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
-	//switch ( addr & 0xFF )
-	//{
-	//}
+	Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
+	switch ( addr & 0xFF )
+	{
+	case 0xA2:
+		return emu.ay.read();
+	}
 	
 	dprintf( "IN $%04X\n", addr );
 	return 0;
@@ -405,10 +478,11 @@ blargg_err_t Kss_Emu::run_clocks( blip_time_t& duration, int )
 	next_play -= duration;
 	check( next_play >= 0 );
 	adjust_time( -duration );
-	ay.end_frame( duration );
+	ay .end_frame( duration );
 	scc.end_frame( duration );
-	if ( sn )
-		sn->end_frame( duration );
+	if ( sn       ) sn      ->end_frame( duration );
+	if ( msxmusic ) msxmusic->end_frame( duration );
+	if ( msxaudio ) msxaudio->end_frame( duration );
 	
 	return 0;
 }

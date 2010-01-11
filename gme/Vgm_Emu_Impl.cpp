@@ -106,7 +106,7 @@ void Vgm_Emu_Impl::write_pcm( vgm_time_t vgm_time, int amp )
 	int old = dac_amp;
 	int delta = amp - old;
 	dac_amp = amp;
-	if ( old >= 0 )
+	if ( old >= 0 ) // first write is ignored, to avoid click
 		dac_synth.offset_inline( blip_time, delta, &blip_buf );
 	else
 		dac_amp |= dac_disabled;

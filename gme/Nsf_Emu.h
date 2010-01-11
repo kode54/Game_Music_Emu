@@ -1,6 +1,6 @@
 // Nintendo NES/Famicom NSF music file emulator
 
-// Game_Music_Emu $vers
+// Game_Music_Emu 0.5.2
 #ifndef NSF_EMU_H
 #define NSF_EMU_H
 
@@ -12,6 +12,7 @@ class Nes_Namco_Apu;
 class Nes_Vrc6_Apu;
 class Nes_Vrc7_Apu;
 class Nes_Fme7_Apu;
+class Nes_Fds_Apu;
 struct Nes_Mmc5_Data;
 
 class Nsf_Emu : private Nes_Cpu, public Classic_Emu {
@@ -69,7 +70,8 @@ protected:
 	void unload();
 protected:
 	enum { bank_count = 8 };
-	byte initial_banks [bank_count];
+	enum { initial_bank_count = 2 + bank_count };
+	byte initial_banks [initial_bank_count];
 	nes_addr_t init_addr;
 	nes_addr_t play_addr;
 	double clock_rate_;
@@ -102,12 +104,13 @@ private:
 	int voice_count_;
 	void append_voices( const char* const* names, int const* types, int count );
 	
-	class Nes_Namco_Apu* namco;
-	class Nes_Vrc6_Apu*  vrc6;
-	class Nes_Fme7_Apu*  fme7;
+	Nes_Namco_Apu* namco;
+	Nes_Vrc6_Apu*  vrc6;
+	Nes_Fme7_Apu*  fme7;
+	Nes_Mmc5_Data* mmc5;
 	byte mmc5_mul [2];
-	class Nes_Mmc5_Data* mmc5;
-	class Nes_Vrc7_Apu*  vrc7;
+	Nes_Vrc7_Apu*  vrc7;
+	Nes_Fds_Apu*   fds;
 	Nes_Apu apu;
 	static int pcm_read( void*, nes_addr_t );
 	blargg_err_t init_sound();

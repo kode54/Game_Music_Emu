@@ -5,8 +5,6 @@
 #include "blargg_endian.h"
 #include <limits.h>
 
-#define BLARGG_CPU_X86 1
-
 /* Copyright (C) 2003-2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
 General Public License as published by the Free Software Foundation; either

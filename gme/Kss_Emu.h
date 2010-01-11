@@ -9,6 +9,7 @@
 #include "Kss_Cpu.h"
 #include "Sms_Apu.h"
 #include "Ay_Apu.h"
+#include "Opl_Apu.h"
 
 class Kss_Emu : private Kss_Cpu, public Classic_Emu {
 	typedef Kss_Cpu cpu;
@@ -63,6 +64,7 @@ private:
 	Rom_Data<page_size> rom;
 	composite_header_t header_;
 	
+	// detection of tunes that use SCC so they can be made louder
 	bool scc_accessed;
 	bool gain_updated;
 	void update_gain();
@@ -89,6 +91,8 @@ private:
 	Ay_Apu ay;
 	Scc_Apu scc;
 	Sms_Apu* sn;
+	Opl_Apu* msxmusic;
+	Opl_Apu* msxaudio;
 	byte unmapped_read  [0x100];
 	byte unmapped_write [page_size];
 };
