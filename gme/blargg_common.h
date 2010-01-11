@@ -114,13 +114,13 @@ public:
 // blargg_long/blargg_ulong = at least 32 bits, int if it's big enough
 #include <limits.h>
 
-#if INT_MAX >= 0x7FFFFFFF
+#if INT_MAX >= 0x7FFFFFFF && LONG_MAX > 0x7FFFFFFF
 	typedef int blargg_long;
 #else
 	typedef long blargg_long;
 #endif
 
-#if UINT_MAX >= 0xFFFFFFFF
+#if UINT_MAX >= 0xFFFFFFFF && ULONG_MAX > 0xFFFFFFFF
 	typedef unsigned blargg_ulong;
 #else
 	typedef unsigned long blargg_ulong;

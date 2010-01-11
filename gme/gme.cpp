@@ -231,9 +231,10 @@ const char* gme_track_info( Music_Emu const* me, track_info_t* out, int track )
 
 void gme_set_stereo_depth( Music_Emu* me, double depth )
 {
+// TODO: re-implement
 #if !GME_DISABLE_STEREO_DEPTH
-	if ( me->effects_buffer )
-		STATIC_CAST(Effects_Buffer*,me->effects_buffer)->set_depth( depth );
+//  if ( me->effects_buffer )
+//      STATIC_CAST(Effects_Buffer*,me->effects_buffer)->set_depth( depth );
 #endif
 }
 

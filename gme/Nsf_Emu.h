@@ -8,13 +8,6 @@
 #include "Nes_Apu.h"
 #include "Nes_Cpu.h"
 
-class Nes_Namco_Apu;
-class Nes_Vrc6_Apu;
-class Nes_Vrc7_Apu;
-class Nes_Fme7_Apu;
-class Nes_Fds_Apu;
-struct Nes_Mmc5_Data;
-
 class Nsf_Emu : private Nes_Cpu, public Classic_Emu {
 	typedef Nes_Cpu cpu;
 public:
@@ -69,9 +62,9 @@ protected:
 	void update_eq( blip_eq_t const& );
 	void unload();
 protected:
-	enum { bank_count = 8 };
-	enum { initial_bank_count = 2 + bank_count };
-	byte initial_banks [initial_bank_count];
+	enum { fds_extra_banks = 2 };
+	enum { bank_count = 8 + fds_extra_banks };
+	byte initial_banks [bank_count];
 	nes_addr_t init_addr;
 	nes_addr_t play_addr;
 	double clock_rate_;
@@ -85,7 +78,7 @@ protected:
 	int play_ready;
 	
 	enum { rom_begin = 0x8000 };
-	enum { bank_select_addr = 0x5FF8 };
+	enum { bank_select_addr = 0x5FF6 };
 	enum { bank_size = 0x1000 };
 	Rom_Data<bank_size> rom;
 	
@@ -104,13 +97,13 @@ private:
 	int voice_count_;
 	void append_voices( const char* const* names, int const* types, int count );
 	
-	Nes_Namco_Apu* namco;
-	Nes_Vrc6_Apu*  vrc6;
-	Nes_Fme7_Apu*  fme7;
-	Nes_Mmc5_Data* mmc5;
+	class Nes_Namco_Apu*  namco;
+	class Nes_Vrc6_Apu*   vrc6;
+	class Nes_Fme7_Apu*   fme7;
+	struct Nes_Mmc5_Data* mmc5;
 	byte mmc5_mul [2];
-	Nes_Vrc7_Apu*  vrc7;
-	Nes_Fds_Apu*   fds;
+	class Nes_Vrc7_Apu*   vrc7;
+	struct Nes_Fds_Data*  fds;
 	Nes_Apu apu;
 	static int pcm_read( void*, nes_addr_t );
 	blargg_err_t init_sound();

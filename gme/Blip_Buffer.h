@@ -6,7 +6,7 @@
 
 	// internal
 	#include <limits.h>
-	#if INT_MAX >= 0x7FFFFFFF
+	#if INT_MAX >= 0x7FFFFFFF && LONG_MAX > 0x7FFFFFFF
 		typedef int blip_long;
 		typedef unsigned blip_ulong;
 	#else
@@ -481,6 +481,12 @@ inline int Blip_Reader::begin( Blip_Buffer& blip_buf )
 	buf = blip_buf.buffer_;
 	accum = blip_buf.reader_accum_;
 	return blip_buf.bass_shift_;
+}
+
+inline void Blip_Buffer::remove_silence( long count )
+{
+	assert( count <= samples_avail() ); // tried to remove more samples than available
+	offset_ -= (blip_resampled_time_t) count << BLIP_BUFFER_ACCURACY;
 }
 
 int const blip_max_length = 0;

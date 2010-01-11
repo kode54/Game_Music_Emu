@@ -145,6 +145,7 @@ void Nes_Vrc7_Apu::run_until( nes_time_t end_time )
 	Blip_Buffer* const mono_output = mono.output;
 	if ( mono_output )
 	{
+		mono_output->set_modified();
 		// optimal case
 		do
 		{
@@ -164,6 +165,13 @@ void Nes_Vrc7_Apu::run_until( nes_time_t end_time )
 	}
 	else
 	{
+		for ( int i = osc_count; --i >= 0; )
+		{
+			Blip_Buffer* output = oscs [i].output;
+			if ( output )
+				output->set_modified();
+		}
+		
 		mono.last_amp = 0;
 		do
 		{

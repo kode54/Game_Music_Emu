@@ -20,6 +20,10 @@
 	struct Nes_Mmc5_Data : Nes_Mmc5_Apu {
 		unsigned char exram [1024];
 	};
+	
+	struct Nes_Fds_Data : Nes_Fds_Apu {
+		unsigned char fdsram [0x6000];
+	};
 #endif
 
 /* Copyright (C) 2003-2006 Shay Green. This module is free software; you
@@ -49,8 +53,6 @@ int const supported_flags = vrc6_flag | namco_flag | fme7_flag;
 #endif
 
 long const clock_divisor = 12;
-
-unsigned const fds_bank_select_addr = 0x5FF6;
 
 Nsf_Emu::equalizer_t const Nsf_Emu::nes_eq     = {  -1.0, 80 };
 Nsf_Emu::equalizer_t const Nsf_Emu::famicom_eq = { -15.0, 80 };
@@ -312,7 +314,7 @@ blargg_err_t Nsf_Emu::init_sound()
 			
 			if ( header_.chip_flags & fds_flag )
 			{
-				CHECK_ALLOC( fds = BLARGG_NEW Nes_Fds_Apu );
+				CHECK_ALLOC( fds = BLARGG_NEW Nes_Fds_Data );
 				int const count = Nes_Fds_Apu::osc_count;
 				static const char* const names [count] = {
 					"FM"
@@ -321,7 +323,7 @@ blargg_err_t Nsf_Emu::init_sound()
 					mixed_type+2
 				};
 				append_voices( names, types, count );
-				adjusted_gain *= 0.90;
+				adjusted_gain *= 0.75;
 			}
 			
 			if ( mmc5  ) mmc5->volume( adjusted_gain );
@@ -389,7 +391,7 @@ blargg_err_t Nsf_Emu::load_( Data_Reader& in )
 	{
 		// no initial banks, so assign them based on load_addr
 		int first_bank = (load_addr - sram_addr) / bank_size;
-		for ( int i = 0; i < initial_bank_count; i++ )
+		for ( int i = 0; i < bank_count; i++ )
 		{
 			unsigned bank = i - first_bank;
 			if ( bank >= (unsigned) total_banks )
@@ -492,6 +494,37 @@ int Nsf_Emu::cpu_read_misc( nes_addr_t addr )
 
 void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 {
+	unsigned bank = addr - bank_select_addr;
+	if ( bank < bank_count )
+	{
+		blargg_long offset = rom.mask_addr( data * (blargg_long) bank_size );
+		if ( offset >= rom.size() )
+			set_warning( "Invalid bank" );
+		void const* data = rom.at_addr( offset );
+		
+		#if NSF_EMU_MMC5_VRC7
+			if ( bank < bank_count - fds_extra_banks && fds )
+			{
+				// TODO: FDS bank switching is kind of hacky, might need to
+				// treat ROM as RAM so changes won't get lost when switching.
+				byte* out = sram;
+				if ( bank >= 2 )
+				{
+					out = fds->fdsram;
+					bank -= 2;
+				}
+				memcpy( &out [bank * bank_size], data, bank_size );
+				return;
+			}
+		#endif
+		
+		if ( bank >= 2 )
+		{
+			cpu::map_code( (bank + 6) * bank_size, bank_size, data );
+			return;
+		}
+	}
+	
 	#if !NSF_EMU_APU_ONLY
 	{
 		#if NSF_EMU_MMC5_VRC7
@@ -503,27 +536,11 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 					return;
 				}
 				
-				// TODO: FDS bank switching is kind of hacky, might need to
-				// treat ROM as RAM so changes won't get lost when switching.
-				
-				// copy banks to SRAM
-				unsigned bank = addr - fds_bank_select_addr;
-				if ( bank < 2 )
-				{
-					blargg_long offset = rom.mask_addr( data * (blargg_long) bank_size );
-					if ( offset >= rom.size() )
-						set_warning( "Invalid bank" );
-					memcpy( &sram [(blargg_long) bank * bank_size], rom.at_addr( offset ),
-							bank_size );
-					return;
-				}
-				
 				// 0x8000-0xDFFF is writable
 				unsigned i = addr ^ 0x8000;
-				if ( i <= 0xDFFF ^ 0x8000 )
+				if ( i <= sizeof fds->fdsram - 1 )
 				{
-					// TODO: avoid writing to rom pages
-					*(byte*) cpu::get_code( addr ) = data;
+					fds->fdsram [i] = data;
 					// fall through so writes can also go to sound chips
 				}
 			}
@@ -643,8 +660,8 @@ blargg_err_t Nsf_Emu::start_track_( int track )
 	
 	cpu::reset( unmapped_code ); // also maps low_mem
 	cpu::map_code( sram_addr, sizeof sram, sram );
-	for ( int i = 0; i < bank_count; ++i )
-		cpu_write( bank_select_addr + i, initial_banks [2 + i] );
+	for ( int i = (fds ? 0 : fds_extra_banks); i < bank_count; ++i )
+		cpu_write( bank_select_addr + i, initial_banks [i] );
 	
 	#if NSF_EMU_MMC5_VRC7
 		if ( mmc5 )
@@ -655,10 +672,7 @@ blargg_err_t Nsf_Emu::start_track_( int track )
 		}
 		
 		if ( fds )
-		{
-			cpu_write( fds_bank_select_addr    , initial_banks [0] );
-			cpu_write( fds_bank_select_addr + 1, initial_banks [1] );
-		}
+			cpu::map_code( 0x8000, sizeof fds->fdsram, fds->fdsram );
 	#endif
 	
 	apu.reset( pal_only, (header_.speed_flags & 0x20) ? 0x3F : 0 );

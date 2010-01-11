@@ -1,4 +1,4 @@
-// Multi-channel effects buffer with panning, echo and reverb
+// Multi-channel effects buffer with echo and individual panning for each channel
 
 // Game_Music_Emu 0.5.2
 #ifndef EFFECTS_BUFFER_H
@@ -6,41 +6,48 @@
 
 #include "Multi_Buffer.h"
 
-// Effects_Buffer uses several buffers and outputs stereo sample pairs.
 class Effects_Buffer : public Multi_Buffer {
 public:
-	// If center_only is true, only center buffers are created and
-	// less memory is used.
-	Effects_Buffer( bool center_only = false );
+	Effects_Buffer();
 	
-	// Channel  Effect    Center Pan
-	// ---------------------------------
-	//    0,5    reverb       pan_1
-	//    1,6    reverb       pan_2
-	//    2,7    echo         -
-	//    3      echo         -
-	//    4      echo         -
-	
-	// Channel configuration
-	struct config_t {
-		double pan_1;           // -1.0 = left, 0.0 = center, 1.0 = right
-		double pan_2;
-		double echo_delay;      // msec
-		double echo_level;      // 0.0 to 1.0
-		double reverb_delay;    // msec
-		double delay_variance;  // difference between left/right delays (msec)
-		double reverb_level;    // 0.0 to 1.0
-		bool effects_enabled;   // if false, use optimized simple mixer
-		config_t();
+	struct config_t
+	{
+		bool enabled; // false = disable all effects (acts like Stereo_Buffer)
+		
+		// Simpler configuration
+		struct {
+			float echo;     // 0.0 = none, 1.0 = lots
+			float stereo;   // 0.0 = channels in center, 1.0 = channels on left/right
+			bool surround;  // true = put some channels in back (phase inverted)
+			bool enabled;   // false = ignore simple configuration
+		} simple;
+		
+		// More complex configuration
+		// Current sound is echoed at adjustable left/right delay,
+		// with reduced treble and volume (feedback). 
+		float treble;   // 1.0 = full treble, 0.1 = very little, 0.0 = silent
+		int delay [2];  // left, right delays (msec)
+		float feedback; // 0.0 = no echo, 0.5 = each echo half previous, 1.0 = cacophony
+		float side_vol [2] [2]; // left and right volumes for left and right side channels
 	};
+	config_t& config() { return config_; }
 	
-	// Set configuration of buffer
-	virtual void config( const config_t& );
-	void set_depth( double );
+	struct chan_config_t
+	{
+		float vol [2]; // left, right volumes
+		int type;
+		bool echo;     // false = channel doesn't have any echo
+	};
+	chan_config_t& chan_config( int i ) { return chans [i + extra_chans].cfg; }
+	
+	// Apply any changes made to config() and chan_config()
+	void apply_config();
 	
 public:
 	~Effects_Buffer();
 	blargg_err_t set_sample_rate( long samples_per_sec, int msec = blip_default_length );
+	blargg_err_t set_channel_count( int );
+	void set_channel_types( int const* );
 	void clock_rate( long );
 	void bass_freq( int );
 	void clear();
@@ -48,39 +55,47 @@ public:
 	void end_frame( blip_time_t );
 	long read_samples( blip_sample_t*, long );
 	long samples_avail() const;
+	enum { stereo = 2 };
+	typedef blargg_long fixed_t;
 private:
-	typedef long fixed_t;
-	
-	enum { max_buf_count = 7 };
-	Blip_Buffer bufs [max_buf_count];
-	enum { chan_types_count = 3 };
-	channel_t chan_types [3];
 	config_t config_;
-	long stereo_remain;
-	long effect_remain;
-	int buf_count;
-	bool effects_enabled;
+	long clock_rate_;
+	int bass_freq_;
 	
-	blargg_vector<blip_sample_t> reverb_buf;
-	blargg_vector<blip_sample_t> echo_buf;
-	int reverb_pos;
-	int echo_pos;
+	long samples_avail_;
+	long samples_read;
+	
+	struct chan_t
+	{
+		fixed_t vol [stereo];
+		Blip_Buffer bb;
+		chan_config_t cfg;
+		channel_t channel;
+		int modified;
+	};
+	chan_t* chans;
+	int chans_size;
+	enum { extra_chans = stereo * stereo };
 	
 	struct {
-		fixed_t pan_1_levels [2];
-		fixed_t pan_2_levels [2];
-		int echo_delay_l;
-		int echo_delay_r;
-		fixed_t echo_level;
-		int reverb_delay_l;
-		int reverb_delay_r;
-		fixed_t reverb_level;
-	} chans;
+		long delay [stereo];
+		fixed_t treble;
+		fixed_t feedback;
+		fixed_t low_pass [stereo];
+	} s;
 	
-	void mix_mono( blip_sample_t*, blargg_long );
-	void mix_stereo( blip_sample_t*, blargg_long );
-	void mix_enhanced( blip_sample_t*, blargg_long );
-	void mix_mono_enhanced( blip_sample_t*, blargg_long );
+	blargg_vector<fixed_t> echo;
+	blargg_long echo_pos;
+	
+	bool no_effects;
+	bool no_echo;
+	
+	void apply_simple_config();
+	void optimize_config();
+	void clear_echo();
+	void mix_effects( blip_sample_t* out, int pair_count );
+	void mix_stereo ( blip_sample_t* out, int pair_count );
+	void mix_mono   ( blip_sample_t* out, int pair_count );
 };
 
 #endif

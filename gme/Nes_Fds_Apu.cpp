@@ -84,12 +84,15 @@ void Nes_Fds_Apu::write_( unsigned addr, int data )
 				break;
 			
 			case 0x4088:
-				int pos = mod_write_pos;
-				data &= 0x07;
-				mod_wave [pos    ] = data;
-				mod_wave [pos + 1] = data;
-				mod_write_pos = (pos     + 2) & (wave_size - 1);
-				mod_pos       = (mod_pos + 2) & (wave_size - 1);
+				if ( regs (0x4087) & 0x80 )
+				{
+					int pos = mod_write_pos;
+					data &= 0x07;
+					mod_wave [pos    ] = data;
+					mod_wave [pos + 1] = data;
+					mod_write_pos = (pos     + 2) & (wave_size - 1);
+					mod_pos       = (mod_pos + 2) & (wave_size - 1);
+				}
 				break;
 			}
 		}
@@ -151,8 +154,9 @@ void Nes_Fds_Apu::run_until( blip_time_t final_end_time )
 			if ( sweep_time <= end_time )
 			{
 				sweep_time += sweep_period;
-				int new_sweep_gain = sweep_gain + (regs (0x4084) >> 5 & 2) - 1;
-				if ( (unsigned) new_sweep_gain <= 0x20 )
+				int mode = regs (0x4084) >> 5 & 2;
+				int new_sweep_gain = sweep_gain + mode - 1;
+				if ( (unsigned) new_sweep_gain <= (unsigned) 0x80 >> mode )
 					sweep_gain = new_sweep_gain;
 				else
 					regs (0x4084) |= 0x80; // optimization only
@@ -162,8 +166,9 @@ void Nes_Fds_Apu::run_until( blip_time_t final_end_time )
 			if ( env_time <= end_time )
 			{
 				env_time += env_period;
-				int new_env_gain = env_gain + (regs (0x4080) >> 5 & 2) - 1;
-				if ( (unsigned) new_env_gain <= 0x3F )
+				int mode = regs (0x4080) >> 5 & 2;
+				int new_env_gain = env_gain + mode - 1;
+				if ( (unsigned) new_env_gain <= (unsigned) 0x80 >> mode )
 					env_gain = new_env_gain;
 				else
 					regs (0x4080) |= 0x80; // optimization only

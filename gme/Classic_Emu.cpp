@@ -83,6 +83,7 @@ blargg_err_t Classic_Emu::setup_buffer( long rate )
 {
 	change_clock_rate( rate );
 	RETURN_ERR( buf->set_channel_count( voice_count() ) );
+	buf->set_channel_types( voice_types );
 	set_equalizer( equalizer() );
 	buf_changed_count = buf->channels_changed_count();
 	return 0;

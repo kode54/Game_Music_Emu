@@ -21,12 +21,11 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 Multi_Buffer::Multi_Buffer( int spf ) : samples_per_frame_( spf )
 {
-	length_ = 0;
-	sample_rate_ = 0;
+	length_                 = 0;
+	sample_rate_            = 0;
 	channels_changed_count_ = 1;
+	channel_types_          = 0;
 }
-
-blargg_err_t Multi_Buffer::set_channel_count( int ) { return 0; }
 
 // Silent_Buffer
 

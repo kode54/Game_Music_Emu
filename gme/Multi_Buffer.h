@@ -26,6 +26,7 @@ public:
 	enum { type_index_mask = 0xFF };
 	enum { wave_type = 0x100, noise_type = 0x200, mixed_type = wave_type | noise_type };
 	virtual channel_t channel( int index, int type = 0 ) = 0;
+	virtual void set_channel_types( int const* );
 	
 	// See Blip_Buffer.h
 	virtual blargg_err_t set_sample_rate( long rate, int msec = blip_default_length ) = 0;
@@ -54,6 +55,7 @@ public:
 public:
 	BLARGG_DISABLE_NOTHROW
 protected:
+	int const* channel_types() const { return channel_types_; }
 	void channels_changed() { channels_changed_count_++; }
 private:
 	// noncopyable
@@ -64,6 +66,7 @@ private:
 	long sample_rate_;
 	int length_;
 	int const samples_per_frame_;
+	int const* channel_types_;
 };
 
 // Uses a single buffer and outputs mono samples.
@@ -152,5 +155,13 @@ inline int Multi_Buffer::samples_per_frame() const { return samples_per_frame_; 
 inline long Multi_Buffer::sample_rate() const { return sample_rate_; }
 
 inline int Multi_Buffer::length() const { return length_; }
+
+inline void Multi_Buffer::set_channel_types( int const* t ) { channel_types_ = t; }
+
+inline blargg_err_t Multi_Buffer::set_channel_count( int )
+{
+	channel_types_ = 0;
+	return 0;
+}
 
 #endif

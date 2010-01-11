@@ -347,6 +347,8 @@ void kss_cpu_write( Kss_Cpu* cpu, unsigned addr, int data )
 		STATIC_CAST(Kss_Emu&,*cpu).cpu_write( addr, data );
 }
 
+//static int ay_addr; // TODO: remove
+
 void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 {
 	data &= 0xFF;
@@ -355,11 +357,13 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	{
 	case 0xA0:
 		GME_APU_HOOK( &emu, 0, data );
+		//ay_addr = data & 0x0F;
 		emu.ay.write_addr( data );
 		return;
 	
 	case 0xA1:
 		GME_APU_HOOK( &emu, 1, data );
+		//if ( ay_addr == 7 ) dprintf( "%d <- $%02X\n", ay_addr, data );
 		emu.ay.write_data( time, data );
 		return;
 	
@@ -436,6 +440,7 @@ int kss_cpu_in( Kss_Cpu* cpu, cpu_time_t, unsigned addr )
 	switch ( addr & 0xFF )
 	{
 	case 0xA2:
+		//dprintf( "read %d\n", ay_addr );
 		return emu.ay.read();
 	}
 	
@@ -463,7 +468,7 @@ blargg_err_t Kss_Emu::run_clocks( blip_time_t& duration, int )
 				{
 					gain_updated = true;
 					if ( scc_accessed )
-						update_gain();
+						dprintf( "SCC accessed\n" ), update_gain();
 				}
 				
 				ram [--r.sp] = idle_addr >> 8;
