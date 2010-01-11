@@ -406,7 +406,7 @@ blargg_err_t Music_Emu::play( long out_count, sample_t* out )
 			}
 		}
 		
-		if ( out_time > fade_start )
+		if ( out_time > fade_start && fade_start < ( LONG_MAX / 2 + 1 ) )
 			handle_fade( out_count, out );
 	}
 	out_time += out_count;
