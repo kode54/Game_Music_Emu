@@ -43,6 +43,9 @@ public:
 	// Prevents channels and global volumes from being phase-negated
 	void disable_surround( bool disable = true );
 	
+	// If true, use cubic interpolation instead of Gaussian
+	void set_cubic_interpolation( bool enable = true );
+
 	static gme_type_t static_type() { return gme_spc_type; }
 	
 public:
@@ -73,5 +76,7 @@ private:
 };
 
 inline void Spc_Emu::disable_surround( bool b ) { apu.disable_surround( b ); }
+
+inline void Spc_Emu::set_cubic_interpolation( bool b ) { apu.set_cubic_interpolation( b ); }
 
 #endif

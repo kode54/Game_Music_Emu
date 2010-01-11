@@ -28,6 +28,9 @@ public:
 	// If true, prevent channels and global volumes from being phase-negated
 	void disable_surround( bool disable );
 	
+	// If true, use cubic interpolation instead of Gaussian
+	void set_cubic_interpolation( bool );
+	
 	// Read/write register 'n', where n ranges from 0 to register_count - 1.
 	enum { register_count = 128 };
 	int  read ( int n );
@@ -108,6 +111,9 @@ private:
 	int surround_threshold;
 	
 	static BOOST::int16_t const gauss [];
+	static BOOST::int16_t const cubic [];
+
+	BOOST::int16_t const* p_gauss [2];
 	
 	enum state_t {
 		state_attack,

@@ -44,6 +44,9 @@ public:
 	// If true, prevent channels and global volumes from being phase-negated
 	void disable_surround( bool disable = true );
 	
+	// If true, use cubic interpolation instead of Gaussian
+	void set_cubic_interpolation( bool );
+
 	// Set 128 bytes to use for IPL boot ROM. Makes copy. Default is zero filled,
 	// to avoid including copyrighted code from the SPC-700.
 	void set_ipl_rom( const void* );
@@ -113,6 +116,8 @@ private:
 };
 
 inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
+
+inline void Snes_Spc::set_cubic_interpolation( bool enable ) { dsp.set_cubic_interpolation( enable ); }
 
 inline void Snes_Spc::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 
