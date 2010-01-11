@@ -424,6 +424,25 @@
 			<File
 				RelativePath="..\gme\Ym2612_Emu.cpp"
 				>
+				<FileConfiguration
+					Name="Release staticlink|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\gme\Ym2612_Emu_Gens.cpp"
+				>
+				<FileConfiguration
+					Name="Release staticlink|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
