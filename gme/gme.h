@@ -92,6 +92,7 @@ struct track_info_t
 	/* moo */
 	char disc      [256];
 	char track     [256];
+	char ost       [256];
 };
 enum { gme_max_field = 255 };
 

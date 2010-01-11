@@ -192,6 +192,7 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 	out->dumper [0]    = 0;
 	out->disc [0]      = 0;
 	out->track [0]     = 0;
+	out->ost [0]       = 0;
 	out->system [0]    = 0;
 	
 	copy_field_( out->system, type()->system );

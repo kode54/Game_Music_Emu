@@ -1028,6 +1028,8 @@ loop:
 
 	case 0xDD: case 0xD3: case 0xDB: case 0xE3: case 0xE4: // ?
 	case 0xEB: case 0xEC: case 0xF4: case 0xFD: case 0xFC:
+		goto loop;
+
 	case 0x10: // STOP
 	case 0x27: // DAA (I'll have to implement this eventually...)
 	case 0xBF:

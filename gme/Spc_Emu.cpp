@@ -87,6 +87,7 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 			case 0x03: field = out->author;  break;
 			case 0x04: field = out->dumper;  break;
 			case 0x07: field = out->comment; break;
+			case 0x10: field = out->ost;     break;
 			case 0x11: disc = data;          break;
 			case 0x12: track = data;         break;
 			case 0x14: year = data;          break;
