@@ -182,6 +182,7 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 	out->length        = -1;
 	out->loop_length   = -1;
 	out->intro_length  = -1;
+	out->fade_length   = -1;
 	out->song [0]      = 0;
 	
 	out->game [0]      = 0;
@@ -189,6 +190,8 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 	out->copyright [0] = 0;
 	out->comment [0]   = 0;
 	out->dumper [0]    = 0;
+	out->disc [0]      = 0;
+	out->track [0]     = 0;
 	out->system [0]    = 0;
 	
 	copy_field_( out->system, type()->system );

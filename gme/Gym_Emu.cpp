@@ -22,11 +22,12 @@ double const min_tempo = 0.25;
 double const oversample_factor = 5 / 3.0;
 double const fm_gain = 3.0;
 
-const long base_clock = 53700300;
+const long base_clock = 53693175;
 const long clock_rate = base_clock / 15;
 
 Gym_Emu::Gym_Emu()
 {
+	disable_oversampling_ = false;
 	data = 0;
 	pos  = 0;
 	set_type( gme_gym_type );
@@ -172,7 +173,10 @@ blargg_err_t Gym_Emu::set_sample_rate_( long sample_rate )
 	dac_synth.treble_eq( eq );
 	apu.volume( 0.135 * fm_gain * gain() );
 	dac_synth.volume( 0.125 / 256 * fm_gain * gain() );
-	double factor = Dual_Resampler::setup( oversample_factor, 0.990, fm_gain * gain() );
+	double factor = oversample_factor;
+	if ( disable_oversampling_ )
+		factor = base_clock / 7 / 144 / sample_rate;
+	factor = Dual_Resampler::setup( factor, 0.990, fm_gain * gain() );
 	fm_sample_rate = sample_rate * factor;
 	
 	RETURN_ERR( blip_buf.set_sample_rate( sample_rate, int (1000 / 60.0 / min_tempo) ) );

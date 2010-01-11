@@ -62,6 +62,8 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 	char copyright [256 + 5];
 	int copyright_len = 0;
 	int const year_len = 5;
+
+	int disc = 0, track = 0;
 	
 	while ( end - in >= 4 )
 	{
@@ -87,6 +89,8 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 			case 0x04: field = out->dumper;  break;
 			case 0x07: field = out->comment; break;
 			case 0x14: year = data;          break;
+			case 0x11: disc = data;          break;
+			case 0x12: track = data;         break;
 			
 			//case 0x30: // intro length
 			// Many SPCs have intro length set wrong for looped tracks, making it useless
@@ -105,6 +109,13 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 				}
 				break;
 			*/
+			case 0x33:
+				check( len == 4 );
+				if ( len >= 4 )
+				{
+					out->fade_length = get_le32( in ) / 64;
+				}
+				break;
 			
 			case 0x13:
 				copyright_len = min( len, (int) sizeof copyright - year_len );
@@ -153,6 +164,26 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 	}
 	if ( copyright_len )
 		Gme_File::copy_field_( out->copyright, p, copyright_len );
+
+	if ( disc > 0 && disc <= 9 )
+	{
+		out->disc [0] = disc + '0';
+		out->disc [1] = 0;
+	}
+
+	if ( track > 255 && track < ( ( 100 << 8 ) - 1 ) )
+	{
+		char* p = &copyright [3];
+		*p = 0;
+		if ( track & 255 ) *--p = char (track & 255);
+		track >>= 8;
+		for ( int n = 2; n-- && track; )
+		{
+			*--p = char (track % 10 + '0');
+			track /= 10;
+		}
+		memcpy( out->track, p, &copyright [4] - p );
+	}
 	
 	check( in == end );
 }
@@ -162,7 +193,8 @@ static void get_spc_info( Spc_Emu::header_t const& h, byte const* xid6, long xid
 {
 	// decode length (can be in text or binary format, sometimes ambiguous ugh)
 	long len_secs = 0;
-	for ( int i = 0; i < 3; i++ )
+	int i;
+	for ( i = 0; i < 3; i++ )
 	{
 		unsigned n = h.len_secs [i] - '0';
 		if ( n > 9 )
@@ -180,6 +212,26 @@ static void get_spc_info( Spc_Emu::header_t const& h, byte const* xid6, long xid
 		len_secs = get_le16( h.len_secs );
 	if ( len_secs < 0x1FFF )
 		out->length = len_secs * 1000;
+
+	long fade_msec = 0;
+	for ( i = 0; i < 4; i++ )
+	{
+		unsigned n = h.fade_msec [i] - '0';
+		if ( n > 9 )
+		{
+			if ( i == 1 && (h.author [0] || !h.author [1]) )
+				fade_msec = -1;
+			break;
+		}
+		fade_msec *= 10;
+		fade_msec += n;
+	}
+	if ( i == 4 && unsigned( h.author [0] - '0' ) <= 9 )
+		fade_msec = fade_msec * 10 + h.author [0] - '0';
+	if ( fade_msec < 0 || fade_msec > 0x7FFF )
+		fade_msec = get_le32( h.fade_msec );
+	if ( fade_msec < 0x7FFF )
+		out->fade_length = fade_msec;
 	
 	int offset = (h.author [0] < ' ' || unsigned (h.author [0] - '0') <= 9);
 	Gme_File::copy_field_( out->author, &h.author [offset], sizeof h.author - offset );

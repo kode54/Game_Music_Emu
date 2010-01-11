@@ -12,6 +12,10 @@
 
 class Gym_Emu : public Music_Emu, private Dual_Resampler {
 public:
+	// Disable running FM chips at higher than normal rate. Will result in slightly
+	// more aliasing of high notes.
+	void disable_oversampling( bool disable = true ) { disable_oversampling_ = disable; }
+	
 	// GYM file header
 	enum { header_size = 428 };
 	struct header_t
@@ -67,6 +71,7 @@ private:
 	// dac (pcm)
 	int dac_amp;
 	int prev_dac_count;
+	bool disable_oversampling_;
 	bool dac_enabled;
 	bool dac_muted;
 	void run_dac( int );
