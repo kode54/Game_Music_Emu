@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="Game_Music_Emu"
 	ProjectGUID="{C3E262D2-2D15-4A46-98F1-2CE8A74F3590}"
 	RootNamespace="Game_Music_Emu"
@@ -9,6 +9,7 @@
 	SccLocalPath="..\.."
 	SccProvider="MSSCCI:Microsoft Visual SourceSafe"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -405,6 +406,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\SPC_Filter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Vgm_Emu.cpp"
 				>
 			</File>
@@ -644,6 +649,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Spc_Emu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\SPC_Filter.h"
 				>
 			</File>
 			<File
