@@ -1,6 +1,6 @@
 // snes_spc 0.9.0. http://www.slack.net/~ant/
 
-#include "SPC_DSP.h"
+#include "Spc_Dsp.h"
 
 #include "blargg_endian.h"
 #include <string.h>
@@ -31,7 +31,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define GET_LE16A( addr )       GET_LE16( addr )
 #define SET_LE16A( addr, data ) SET_LE16( addr, data )
 
-static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
+static BOOST::uint8_t const initial_regs [Spc_Dsp::register_count] =
 {
 	0x45,0x8B,0x5A,0x9A,0xE4,0x82,0x1B,0x78,0x00,0x00,0xAA,0x96,0x89,0x0E,0xE0,0x80,
 	0x2A,0x49,0x3D,0xBA,0x14,0xA0,0xAC,0xC5,0x00,0x00,0x51,0xBB,0x9C,0x4E,0x7B,0xFF,
@@ -72,7 +72,7 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 	}\
 }\
 
-void SPC_DSP::set_output( sample_t* out, int size )
+void Spc_Dsp::set_output( sample_t* out, int size )
 {
 	require( (size & 1) == 0 ); // must be even
 	if ( !out )
@@ -164,7 +164,7 @@ static short const cubic [514] =
    0
 };
 
-inline int SPC_DSP::interpolate( voice_t const* v )
+inline int Spc_Dsp::interpolate( voice_t const* v )
 {
 	// Make pointers into gaussian based on fractional position between samples
 	int offset = v->interp_pos >> 4 & 0xFF;
@@ -184,7 +184,7 @@ inline int SPC_DSP::interpolate( voice_t const* v )
 	return out;
 }
 
-inline int SPC_DSP::interpolate_cubic( voice_t const* v )
+inline int Spc_Dsp::interpolate_cubic( voice_t const* v )
 {
 	// Make pointers into cubic based on fractional position between samples
 	int offset = v->interp_pos >> 4 & 0xFF;
@@ -241,18 +241,18 @@ static unsigned const counter_offsets [32] =
 	     0
 };
 
-inline void SPC_DSP::init_counter()
+inline void Spc_Dsp::init_counter()
 {
 	m.counter = 0;
 }
 
-inline void SPC_DSP::run_counters()
+inline void Spc_Dsp::run_counters()
 {
 	if ( --m.counter < 0 )
 		m.counter = simple_counter_range - 1;
 }
 
-inline unsigned SPC_DSP::read_counter( int rate )
+inline unsigned Spc_Dsp::read_counter( int rate )
 {
 	return ((unsigned) m.counter + counter_offsets [rate]) % counter_rates [rate];
 }
@@ -260,7 +260,7 @@ inline unsigned SPC_DSP::read_counter( int rate )
 
 //// Envelope
 
-inline void SPC_DSP::run_envelope( voice_t* const v )
+inline void Spc_Dsp::run_envelope( voice_t* const v )
 {
 	int env = v->env;
 	if ( v->env_mode == env_release ) // 60%
@@ -342,7 +342,7 @@ inline void SPC_DSP::run_envelope( voice_t* const v )
 
 //// BRR Decoding
 
-inline void SPC_DSP::decode_brr( voice_t* v )
+inline void Spc_Dsp::decode_brr( voice_t* v )
 {
 	// Arrange the four input nybbles in 0xABCD order for easy decoding
 	int nybbles = m.t_brr_byte * 0x100 + m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
@@ -402,7 +402,7 @@ inline void SPC_DSP::decode_brr( voice_t* v )
 
 //// Misc
 
-#define MISC_CLOCK( n ) inline void SPC_DSP::misc_##n()
+#define MISC_CLOCK( n ) inline void Spc_Dsp::misc_##n()
 
 MISC_CLOCK( 27 )
 {
@@ -440,7 +440,7 @@ MISC_CLOCK( 30 )
 
 //// Voices
 
-#define VOICE_CLOCK( n ) void SPC_DSP::voice_##n( voice_t* const v )
+#define VOICE_CLOCK( n ) void Spc_Dsp::voice_##n( voice_t* const v )
 
 inline VOICE_CLOCK( V1 )
 {
@@ -539,7 +539,7 @@ VOICE_CLOCK( V3c )
 	if ( !v->kon_delay )
 		run_envelope( v );
 }
-inline void SPC_DSP::voice_output( voice_t const* v, int ch )
+inline void Spc_Dsp::voice_output( voice_t const* v, int ch )
 {
 	// Check surround removal
 	int vol = (int8_t) VREG(v->regs,voll + ch);
@@ -655,9 +655,9 @@ VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
 // Calculate FIR point for left/right channel
 #define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(fir + i * 0x10)) >> 6)
 
-#define ECHO_CLOCK( n ) inline void SPC_DSP::echo_##n()
+#define ECHO_CLOCK( n ) inline void Spc_Dsp::echo_##n()
 
-inline void SPC_DSP::echo_read( int ch )
+inline void Spc_Dsp::echo_read( int ch )
 {
 	int s = GET_LE16SA( ECHO_PTR( ch ) );
 	// second copy simplifies wrap-around handling
@@ -715,7 +715,7 @@ ECHO_CLOCK( 25 )
 	m.t_echo_in [0] = l & ~1;
 	m.t_echo_in [1] = r & ~1;
 }
-inline int SPC_DSP::echo_output( int ch )
+inline int Spc_Dsp::echo_output( int ch )
 {
 	// Check surround removal
 	int vol = (int8_t) REG(mvoll + ch * 0x10);
@@ -773,7 +773,7 @@ ECHO_CLOCK( 28 )
 {
 	m.t_echo_enabled = REG(flg);
 }
-inline void SPC_DSP::echo_write( int ch )
+inline void Spc_Dsp::echo_write( int ch )
 {
 	if ( !(m.t_echo_enabled & 0x20) )
 		SET_LE16A( ECHO_PTR( ch ), m.t_echo_out [ch] );
@@ -852,7 +852,7 @@ PHASE(31)  V(V4,0)       V(V1,2)\
 
 #if !SPC_DSP_CUSTOM_RUN
 
-void SPC_DSP::run( int clocks_remain )
+void Spc_Dsp::run( int clocks_remain )
 {
 	require( clocks_remain > 0 );
 	
@@ -876,7 +876,7 @@ void SPC_DSP::run( int clocks_remain )
 
 //// Setup
 
-void SPC_DSP::init( void* ram_64k )
+void Spc_Dsp::init( void* ram_64k )
 {
 	m.ram = (uint8_t*) ram_64k;
 	mute_voices( 0 );
@@ -901,7 +901,7 @@ void SPC_DSP::init( void* ram_64k )
 	#endif
 }
 
-void SPC_DSP::soft_reset_common()
+void Spc_Dsp::soft_reset_common()
 {
 	require( m.ram ); // init() must have been called already
 	
@@ -914,13 +914,13 @@ void SPC_DSP::soft_reset_common()
 	init_counter();
 }
 
-void SPC_DSP::soft_reset()
+void Spc_Dsp::soft_reset()
 {
 	REG(flg) = 0xE0;
 	soft_reset_common();
 }
 
-void SPC_DSP::load( uint8_t const regs [register_count] )
+void Spc_Dsp::load( uint8_t const regs [register_count] )
 {
 	memcpy( m.regs, regs, sizeof m.regs );
 	memset( &m.regs [register_count], 0, offsetof (state_t,ram) - register_count );
@@ -940,7 +940,7 @@ void SPC_DSP::load( uint8_t const regs [register_count] )
 	soft_reset_common();
 }
 
-void SPC_DSP::reset() { load( initial_regs ); }
+void Spc_Dsp::reset() { load( initial_regs ); }
 
 
 //// State save/load
@@ -986,7 +986,7 @@ void SPC_State_Copier::extra()
 	skip( n );
 }
 
-void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
+void Spc_Dsp::copy_state( unsigned char** io, copy_func_t copy )
 {
 	SPC_State_Copier copier( io, copy );
 	

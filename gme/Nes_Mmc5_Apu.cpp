@@ -26,6 +26,6 @@ void Nes_Mmc5_Apu::write_register( nes_time_t time, nes_addr_t addr, int data )
 		break;
 	
 	default:
-		dprintf( "Unmapped MMC5 write: $%04X <- $%02X\n", (unsigned) addr, data );
+		debug_printf( "Unmapped MMC5 write: $%04X <- $%02X\n", (unsigned) addr, data );
 	}
 }

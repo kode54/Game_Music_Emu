@@ -8,7 +8,7 @@
 
 extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
 
-class SPC_DSP {
+class Spc_Dsp {
 public:
 	typedef BOOST::uint8_t uint8_t;
 	
@@ -239,15 +239,15 @@ private:
 
 #include <assert.h>
 
-inline int SPC_DSP::sample_count() const { return m.out - m.out_begin; }
+inline int Spc_Dsp::sample_count() const { return m.out - m.out_begin; }
 
-inline int SPC_DSP::read( int addr ) const
+inline int Spc_Dsp::read( int addr ) const
 {
 	assert( (unsigned) addr < register_count );
 	return m.regs [addr];
 }
 
-inline void SPC_DSP::write( int addr, int data )
+inline void Spc_Dsp::write( int addr, int data )
 {
 	assert( (unsigned) addr < register_count );
 	
@@ -275,14 +275,14 @@ inline void SPC_DSP::write( int addr, int data )
 	}
 }
 
-inline void SPC_DSP::mute_voices( int mask ) { m.mute_mask = mask; }
+inline void Spc_Dsp::mute_voices( int mask ) { m.mute_mask = mask; }
 
-inline void SPC_DSP::disable_surround( bool disable )
+inline void Spc_Dsp::disable_surround( bool disable )
 {
 	m.surround_threshold = disable ? 0 : -0x4000;
 }
 
-inline bool SPC_DSP::check_kon()
+inline bool Spc_Dsp::check_kon()
 {
 	bool old = m.kon_check;
 	m.kon_check = 0;
@@ -292,10 +292,10 @@ inline bool SPC_DSP::check_kon()
 #if !SPC_NO_COPY_STATE_FUNCS
 
 class SPC_State_Copier {
-	SPC_DSP::copy_func_t func;
+	Spc_Dsp::copy_func_t func;
 	unsigned char** buf;
 public:
-	SPC_State_Copier( unsigned char** p, SPC_DSP::copy_func_t f ) { func = f; buf = p; }
+	SPC_State_Copier( unsigned char** p, Spc_Dsp::copy_func_t f ) { func = f; buf = p; }
 	void copy( void* state, size_t size );
 	int copy_int( int state, int size );
 	void skip( int count );

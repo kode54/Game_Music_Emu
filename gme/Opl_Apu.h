@@ -4,8 +4,6 @@
 #include "blargg_common.h"
 #include "Blip_Buffer.h"
 
-struct KMIF_SOUND_DEVICE;
-
 class Opl_Apu {
 public:
 	Opl_Apu();
@@ -25,6 +23,8 @@ public:
 	
 	void write_reg( int data ) { addr = data; }
 	void write_data( blip_time_t, int data );
+
+	int read( blip_time_t, int port );
 	
 private:
 	// noncopyable
@@ -32,7 +32,8 @@ private:
 	Opl_Apu& operator = ( const Opl_Apu& );
 
 	Blip_Buffer* output_;
-	KMIF_SOUND_DEVICE* opl;
+	type_t type_;
+	void* opl;
 	blip_time_t next_time;
 	int last_amp;
 	int addr;
@@ -41,7 +42,7 @@ private:
 	long rate_;
 	blip_time_t period_;
 	
-	Blip_Synth<blip_med_quality,2048*2> synth;
+	Blip_Synth<blip_med_quality,2048*9*2> synth;
 	
 	void run_until( blip_time_t );
 };

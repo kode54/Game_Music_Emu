@@ -1,5 +1,4 @@
-
-// Game_Music_Emu 0.3.0. http://www.slack.net/~ant/
+// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
 
 // File: fm.c -- software implementation of Yamaha FM sound generator
 // Copyright (C) 2001, 2002, 2003 Jarek Burczynski (bujar at mame dot net)

@@ -1,6 +1,6 @@
 // MSX computer KSS music file emulator
 
-// Game_Music_Emu 0.5.2
+// Game_Music_Emu 0.5.5
 #ifndef KSS_EMU_H
 #define KSS_EMU_H
 
@@ -70,6 +70,7 @@ private:
 	void update_gain();
 	
 	unsigned scc_enabled; // 0 or 0xC000
+	unsigned ram_mode;
 	byte const* bank_data;
 	int bank_count;
 	void set_bank( int logical, int physical );

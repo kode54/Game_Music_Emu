@@ -1,13 +1,13 @@
 // SNES SPC-700 APU emulator
 
-// snes_spc 0.9.0
+// Game_Music_Emu 0.5.5
 #ifndef SNES_SPC_H
 #define SNES_SPC_H
 
-#include "SPC_DSP.h"
+#include "Spc_Dsp.h"
 #include "blargg_endian.h"
 
-struct SNES_SPC {
+struct Snes_Spc {
 public:
 	typedef BOOST::uint8_t uint8_t;
 	
@@ -92,7 +92,7 @@ public:
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
 	enum { state_size = 67 * 1024L }; // maximum space needed when saving
-	typedef SPC_DSP::copy_func_t copy_func_t;
+	typedef Spc_Dsp::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 	
 	// Writes minimal header to spc_out
@@ -107,6 +107,22 @@ public:
 	bool check_kon();
 #endif
 
+public:
+	// TODO: document
+	struct regs_t
+	{
+		int pc;
+		int a;
+		int x;
+		int y;
+		int psw;
+		int sp;
+	};
+	regs_t& smp_regs() { return m.cpu_regs; }
+	
+	uint8_t* smp_ram() { return m.ram.ram; }
+	
+	void run_until( time_t t ) { run_until_( t ); }
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -128,12 +144,12 @@ public:
 	};
 	enum { reg_count = 0x10 };
 	enum { timer_count = 3 };
-	enum { extra_size = SPC_DSP::extra_size };
+	enum { extra_size = Spc_Dsp::extra_size };
 	
 	enum { signature_size = 35 };
 	
 private:
-	SPC_DSP dsp;
+	Spc_Dsp dsp;
 	
 	#if SPC_LESS_ACCURATE
 		static signed char const reg_times_ [256];
@@ -146,15 +162,7 @@ private:
 		
 		uint8_t smp_regs [2] [reg_count];
 		
-		struct
-		{
-			int pc;
-			int a;
-			int x;
-			int y;
-			int psw;
-			int sp;
-		} cpu_regs;
+		regs_t cpu_regs;
 		
 		rel_time_t  dsp_time;
 		time_t      spc_time;
@@ -257,28 +265,28 @@ private:
 
 #include <assert.h>
 
-inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
+inline int Snes_Spc::sample_count() const { return (m.extra_clocks >> 5) * 2; }
 
-inline int SNES_SPC::read_port( time_t t, int port )
+inline int Snes_Spc::read_port( time_t t, int port )
 {
 	assert( (unsigned) port < port_count );
 	return run_until_( t ) [port];
 }
 
-inline void SNES_SPC::write_port( time_t t, int port, int data )
+inline void Snes_Spc::write_port( time_t t, int port, int data )
 {
 	assert( (unsigned) port < port_count );
 	run_until_( t ) [0x10 + port] = data;
 }
 
-inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
+inline void Snes_Spc::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
-inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
+inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
 
-inline void SNES_SPC::cubic_interpolation( bool cubic ) { dsp.cubic_interpolation( cubic ); }
+inline void Snes_Spc::cubic_interpolation( bool cubic ) { dsp.cubic_interpolation( cubic ); }
 
 #if !SPC_NO_COPY_STATE_FUNCS
-inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }
+inline bool Snes_Spc::check_kon() { return dsp.check_kon(); }
 #endif
 
 #endif

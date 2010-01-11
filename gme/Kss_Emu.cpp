@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.5.2. http://www.slack.net/~ant/
+// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
 
 #include "Kss_Emu.h"
 
@@ -110,7 +110,9 @@ struct Kss_File : Gme_Info_
 static Music_Emu* new_kss_emu () { return BLARGG_NEW Kss_Emu ; }
 static Music_Emu* new_kss_file() { return BLARGG_NEW Kss_File; }
 
-gme_type_t_ const gme_kss_type [1] = { "MSX", 256, &new_kss_emu, &new_kss_file, "KSS", 0x03 };
+static gme_type_t_ const gme_kss_type_ = { "MSX", 256, &new_kss_emu, &new_kss_file, "KSS", 0x03 };
+gme_type_t const gme_kss_type = &gme_kss_type_;
+
 
 // Setup
 
@@ -156,17 +158,16 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 			set_warning( "Unknown data in header" );
 	}
 	
-	if ( header_.device_flags & 0x08 )
-		set_warning( "FM sound not supported" );
-	
 	scc_enabled = 0xC000;
 	if ( header_.device_flags & 0x04 )
 		scc_enabled = 0;
 	
 	if ( header_.device_flags & 0x02 && !sn )
 		CHECK_ALLOC( sn = BLARGG_NEW( Sms_Apu ) );
+
+	ram_mode = 0;
 	
-	if ( header_.device_flags & 0x04 )
+	if ( header_.device_flags & 0x02 )
 	{
 		// TODO: this is wrong
 		if ( header_.device_flags & 0x01 && !msxaudio )
@@ -176,13 +177,37 @@ blargg_err_t Kss_Emu::load_( Data_Reader& in )
 			long const rate = 3579545 / period;
 			RETURN_ERR( msxaudio->init( rate * period, rate, period, msxmusic->type_smsfmunit ) );
 		}
+
+		ram_mode = header_.device_flags & ( 0x08 | 0x80 );
 	}
-	else if ( header_.device_flags & 0x01 && !msxmusic )
+	else
 	{
-		CHECK_ALLOC( msxmusic = BLARGG_NEW( Opl_Apu ) );
-		blip_time_t const period = 72;
-		long const rate = 3579545 / period;
-		RETURN_ERR( msxmusic->init( rate * period, rate, period, msxmusic->type_msxmusic ) );
+		if ( header_.device_flags & 0x01 && !msxmusic )
+		{
+			CHECK_ALLOC( msxmusic = BLARGG_NEW( Opl_Apu ) );
+			blip_time_t const period = 72;
+			long const rate = 3579545 / period;
+			RETURN_ERR( msxmusic->init( rate * period, rate, period, msxmusic->type_msxmusic ) );
+		}
+
+		if ( header_.device_flags & 0x08 && !msxaudio )
+		{
+			CHECK_ALLOC( msxaudio = BLARGG_NEW( Opl_Apu ) );
+			blip_time_t const period = 72;
+			long const rate = 3579545 / period;
+			RETURN_ERR( msxaudio->init( rate * period, rate, period, msxmusic->type_msxaudio ) );
+		}
+
+		if ( header_.device_flags & 0x80 )
+		{
+			ram_mode = 1;
+			scc_enabled = 0;
+		}
+		else
+		{
+			ram_mode = header_.device_flags & 0x04;
+			if ( ram_mode ) scc_enabled = 0;
+		}
 	}
 	
 	set_voice_count( osc_count );
@@ -265,9 +290,9 @@ blargg_err_t Kss_Emu::start_track_( int track )
 		bank_count = max_banks;
 		set_warning( "Bank data missing" );
 	}
-	//dprintf( "load_size : $%X\n", load_size );
-	//dprintf( "bank_size : $%X\n", bank_size );
-	//dprintf( "bank_count: %d (%d claimed)\n", bank_count, header_.bank_mode & 0x7F );
+	//debug_printf( "load_size : $%X\n", load_size );
+	//debug_printf( "bank_size : $%X\n", bank_size );
+	//debug_printf( "bank_count: %d (%d claimed)\n", bank_count, header_.bank_mode & 0x7F );
 	
 	ram [idle_addr] = 0xFF;
 	cpu::reset( unmapped_write, unmapped_read );
@@ -337,14 +362,17 @@ void Kss_Emu::cpu_write( unsigned addr, int data )
 		return;
 	}
 	
-	dprintf( "LD ($%04X),$%02X\n", addr, data );
+	debug_printf( "LD ($%04X),$%02X\n", addr, data );
 }
 
 void kss_cpu_write( Kss_Cpu* cpu, unsigned addr, int data )
 {
 	*cpu->write( addr ) = data;
-	if ( (addr & STATIC_CAST(Kss_Emu&,*cpu).scc_enabled) == 0x8000 )
-		STATIC_CAST(Kss_Emu&,*cpu).cpu_write( addr, data );
+	Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
+	if ( (addr & emu.scc_enabled) == 0x8000 )
+		emu.cpu_write( addr, data );
+	else if ( emu.ram_mode )
+		emu.ram [addr] = data;
 }
 
 //static int ay_addr; // TODO: remove
@@ -363,7 +391,7 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	
 	case 0xA1:
 		GME_APU_HOOK( &emu, 1, data );
-		//if ( ay_addr == 7 ) dprintf( "%d <- $%02X\n", ay_addr, data );
+		//if ( ay_addr == 7 ) debug_printf( "%d <- $%02X\n", ay_addr, data );
 		emu.ay.write_data( time, data );
 		return;
 	
@@ -400,7 +428,7 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 			return;
 		}
 		break;
-	/*
+	case 0xC0:
 	case 0xF0:
 		if ( emu.msxaudio )
 		{
@@ -409,6 +437,7 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 		}
 		break;
 	
+	case 0xC1:
 	case 0xF1:
 		if ( emu.msxaudio )
 		{
@@ -416,36 +445,49 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 			return;
 		}
 		break;
-	*/
 	case 0xFE:
 		emu.set_bank( 0, data );
 		return;
 	
 	#ifndef NDEBUG
-	case 0xF1: // FM data
+	/*(case 0xF1: // FM data
 		if ( data )
 			break; // trap non-zero data
-	case 0xF0: // FM addr
+	case 0xF0: // FM addr*/
 	case 0xA8: // PPI
 		return;
 	#endif
 	}
 	
-	dprintf( "OUT $%04X,$%02X\n", addr, data );
+	debug_printf( "OUT $%04X,$%02X\n", addr, data );
 }
 
-int kss_cpu_in( Kss_Cpu* cpu, cpu_time_t, unsigned addr )
+int kss_cpu_in( Kss_Cpu* cpu, cpu_time_t time, unsigned addr )
 {
 	Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
 	switch ( addr & 0xFF )
 	{
 	case 0xA2:
-		//dprintf( "read %d\n", ay_addr );
+		//debug_printf( "read %d\n", ay_addr );
 		return emu.ay.read();
+
+	case 0xC0:
+		if ( emu.msxaudio )
+		{
+			return emu.msxaudio->read( time, 0 );
+		}
+		break;
+
+	case 0xC1:
+		if ( emu.msxaudio )
+		{
+			return emu.msxaudio->read( time, 1 );
+		}
+		break;
 	}
 	
-	dprintf( "IN $%04X\n", addr );
-	return 0;
+	debug_printf( "IN $%04X\n", addr );
+	return 0xff;
 }
 
 // Emulation
@@ -468,7 +510,7 @@ blargg_err_t Kss_Emu::run_clocks( blip_time_t& duration, int )
 				{
 					gain_updated = true;
 					if ( scc_accessed )
-						dprintf( "SCC accessed\n" ), update_gain();
+						debug_printf( "SCC accessed\n" ), update_gain();
 				}
 				
 				ram [--r.sp] = idle_addr >> 8;

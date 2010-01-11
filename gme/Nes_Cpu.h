@@ -1,6 +1,6 @@
 // NES 6502 CPU emulator
 
-// Game_Music_Emu 0.5.2
+// Game_Music_Emu 0.5.5
 #ifndef NES_CPU_H
 #define NES_CPU_H
 
@@ -8,7 +8,7 @@
 
 typedef blargg_long nes_time_t; // clock cycle count
 typedef unsigned nes_addr_t; // 16-bit address
-enum { future_nes_time = LONG_MAX / 2 + 1 };
+enum { future_nes_time = INT_MAX / 2 + 1 };
 
 class Nes_Cpu {
 public:

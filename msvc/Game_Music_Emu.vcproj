@@ -263,6 +263,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\fmopl.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Gb_Apu.cpp"
 				>
 			</File>
@@ -395,19 +399,10 @@
 				>
 			</File>
 			<File
-				RelativePath="..\gme\SNES_SPC_misc.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\gme\SNES_SPC_state.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\gme\Spc_Cpu.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
-					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -415,7 +410,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32"
-					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -423,7 +417,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release staticlink|Win32"
-					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -490,6 +483,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\gme\ymdeltat.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -550,6 +547,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Fir_Resampler.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\fmopl.h"
 				>
 			</File>
 			<File
@@ -759,6 +760,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Ym2612_Emu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\ymdeltat.h"
 				>
 			</File>
 		</Filter>
