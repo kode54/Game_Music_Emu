@@ -1,12 +1,18 @@
 // Nintendo NES/Famicom NSF music file emulator
 
-// Game_Music_Emu 0.5.2
+// Game_Music_Emu $vers
 #ifndef NSF_EMU_H
 #define NSF_EMU_H
 
 #include "Classic_Emu.h"
 #include "Nes_Apu.h"
 #include "Nes_Cpu.h"
+
+class Nes_Namco_Apu;
+class Nes_Vrc6_Apu;
+class Nes_Vrc7_Apu;
+class Nes_Fme7_Apu;
+struct Nes_Mmc5_Data;
 
 class Nsf_Emu : private Nes_Cpu, public Classic_Emu {
 	typedef Nes_Cpu cpu;
@@ -84,14 +90,24 @@ protected:
 public: private: friend class Nes_Cpu;
 	void cpu_jsr( nes_addr_t );
 	int cpu_read( nes_addr_t );
+	int cpu_read_misc( nes_addr_t );
 	void cpu_write( nes_addr_t, int );
 	void cpu_write_misc( nes_addr_t, int );
-	enum { badop_addr = bank_select_addr };
+	enum { idle_addr = bank_select_addr };
 	
 private:
+	enum { max_voices = 32 };
+	const char* voice_names_ [32];
+	int voice_types_ [32];
+	int voice_count_;
+	void append_voices( const char* const* names, int const* types, int count );
+	
 	class Nes_Namco_Apu* namco;
 	class Nes_Vrc6_Apu*  vrc6;
 	class Nes_Fme7_Apu*  fme7;
+	byte mmc5_mul [2];
+	class Nes_Mmc5_Data* mmc5;
+	class Nes_Vrc7_Apu*  vrc7;
 	Nes_Apu apu;
 	static int pcm_read( void*, nes_addr_t );
 	blargg_err_t init_sound();

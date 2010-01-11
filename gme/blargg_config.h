@@ -22,6 +22,8 @@
 // Uncomment if you get errors in the bool section of blargg_common.h
 //#define BLARGG_COMPILER_HAS_BOOL 1
 
+#define NSF_EMU_MMC5_VRC7 1
+
 // Use standard config.h if present
 #ifdef HAVE_CONFIG_H
 	#include "config.h"

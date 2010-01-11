@@ -253,6 +253,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\emu2413.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Fir_Resampler.cpp"
 				>
 			</File>
@@ -333,6 +337,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\Nes_Mmc5_Apu.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Nes_Namco_Apu.cpp"
 				>
 			</File>
@@ -342,6 +350,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Nes_Vrc6_Apu.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\Nes_Vrc7_Apu.cpp"
 				>
 			</File>
 			<File
@@ -455,6 +467,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\emu2413.h"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Fir_Resampler.h"
 				>
 			</File>
@@ -547,6 +563,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\Nes_Mmc5_Apu.h"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Nes_Namco_Apu.h"
 				>
 			</File>
@@ -556,6 +576,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Nes_Vrc6_Apu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\Nes_Vrc7_Apu.h"
 				>
 			</File>
 			<File
@@ -612,6 +636,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Vgm_Emu_Impl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\vrc7tone.h"
 				>
 			</File>
 			<File
