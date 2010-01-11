@@ -96,10 +96,11 @@ typedef unsigned char   UINT8;
 #define TYPE_6CH    0x04    /* FM 6CH / 3CH         */
 #define TYPE_DAC    0x08    /* YM2612's DAC device  */
 #define TYPE_ADPCM  0x10    /* two ADPCM units      */
+#define TYPE_2610   0x20    /* bogus flag to differentiate 2608 from 2610 */
 
 #define TYPE_YM2203 (TYPE_SSG)
 #define TYPE_YM2608 (TYPE_SSG |TYPE_LFOPAN |TYPE_6CH |TYPE_ADPCM)
-#define TYPE_YM2610 (TYPE_SSG |TYPE_LFOPAN |TYPE_6CH |TYPE_ADPCM)
+#define TYPE_YM2610 (TYPE_SSG |TYPE_LFOPAN |TYPE_6CH |TYPE_ADPCM |TYPE_2610)
 #define TYPE_YM2612 (TYPE_DAC |TYPE_LFOPAN |TYPE_6CH)
 
 #define FREQ_SH         16  /* 16.16 fixed point (frequency calculations) */
@@ -229,10 +230,52 @@ O(16),O(16),O(16),O(16),O(16),O(16),O(16),O(16),
 O(16),O(16),O(16),O(16),O(16),O(16),O(16),O(16)
 
 };
+
+static const UINT8 eg_rate_select2612[32+64+32]={    /* Envelope Generator rates (32 + 64 rates + 32 RKS) from tests on YM2612 */
+/* 32 infinite time rates */
+O(18),O(18),O(18),O(18),O(18),O(18),O(18),O(18),
+O(18),O(18),O(18),O(18),O(18),O(18),O(18),O(18),
+O(18),O(18),O(18),O(18),O(18),O(18),O(18),O(18),
+O(18),O(18),O(18),O(18),O(18),O(18),O(18),O(18),
+
+/* rates 00-11 */
+O( 18),O( 18),O( 0),O( 0),
+O( 0),O( 0),O( 2),O( 2),  // Nemesis's tests
+
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+O( 0),O( 1),O( 2),O( 3),
+
+/* rate 12 */
+O( 4),O( 5),O( 6),O( 7),
+
+/* rate 13 */
+O( 8),O( 9),O(10),O(11),
+
+/* rate 14 */
+O(12),O(13),O(14),O(15),
+
+/* rate 15 */
+O(16),O(16),O(16),O(16),
+
+/* 32 dummy rates (same as 15 3) */
+O(16),O(16),O(16),O(16),O(16),O(16),O(16),O(16),
+O(16),O(16),O(16),O(16),O(16),O(16),O(16),O(16),
+O(16),O(16),O(16),O(16),O(16),O(16),O(16),O(16),
+O(16),O(16),O(16),O(16),O(16),O(16),O(16),O(16)
+
+};
 #undef O
 
-/*rate  0,    1,    2,   3,   4,   5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15*/
-/*shift 11,   10,   9,   8,   7,   6,  5,  4,  3,  2, 1,  0,  0,  0,  0,  0 */
+/*rate  0,    1,    2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15*/
+/*shift 11,  10,  9,  8,  7,  6,  5,  4,  3,  2, 1,  0,  0,  0,  0,  0 */
 /*mask  2047, 1023, 511, 255, 127, 63, 31, 15, 7,  3, 1,  0,  0,  0,  0,  0 */
 
 #define O(a) (a*1)
@@ -481,7 +524,7 @@ typedef struct
 
 	/* Phase Generator */
 	UINT32  phase;      /* phase counter */
-	UINT32  Incr;       /* phase step */
+	INT32	Incr;		/* phase step */
 
 	/* Envelope Generator */
 	UINT8   state;      /* phase type */
@@ -605,6 +648,8 @@ typedef struct
 		but LFO works with one more bit of a precision so we really need 4096 elements */
 
 	UINT32  fn_table[4096]; /* fnumber->increment counter */
+
+	UINT32  fn_max;
 } FM_OPN;
 
 
@@ -811,7 +856,18 @@ INLINE void FM_KEYON(FM_CH *CH , int s )
 		SLOT->phase = 0;		/* restart Phase Generator */
 		SLOT->ssgt = SLOT->ssg;
 		SLOT->ssgn = (SLOT->ssgt&0x04)>>1;
-		SLOT->state = EG_ATT;	/* phase -> Attack */
+
+		if( (SLOT->ar + SLOT->ksr) < 32+62 )
+		{
+			SLOT->state = EG_ATT;    /* phase -> Attack */
+			SLOT->volume = MAX_ATT_INDEX;    /* fix Ecco 2 splash sound */
+		}
+		else
+		{
+			/* directly switch to Decay */
+			SLOT->state = EG_DEC;
+			SLOT->volume = MIN_ATT_INDEX;
+		}
 	}
 }
 
@@ -947,19 +1003,17 @@ INLINE void set_ar_ksr(FM_CH *CH,FM_SLOT *SLOT,int v)
 	{
 		CH->SLOT[SLOT1].Incr=-1;
 	}
+
+	/* refresh Attack rate */
+	if ((SLOT->ar + SLOT->ksr) < 32+62)
+	{
+		SLOT->eg_sh_ar  = eg_rate_shift [SLOT->ar  + SLOT->ksr ];
+		SLOT->eg_sel_ar = eg_rate_select2612[SLOT->ar  + SLOT->ksr ];
+	}
 	else
 	{
-		/* refresh Attack rate */
-		if ((SLOT->ar + SLOT->ksr) < 32+62)
-		{
-			SLOT->eg_sh_ar  = eg_rate_shift [SLOT->ar  + SLOT->ksr ];
-			SLOT->eg_sel_ar = eg_rate_select[SLOT->ar  + SLOT->ksr ];
-		}
-		else
-		{
-			SLOT->eg_sh_ar  = 0;
-			SLOT->eg_sel_ar = 17*RATE_STEPS;
-		}
+		SLOT->eg_sh_ar  = 0;
+		SLOT->eg_sel_ar = 17*RATE_STEPS;
 	}
 }
 
@@ -969,8 +1023,7 @@ INLINE void set_dr(FM_SLOT *SLOT,int v)
 	SLOT->d1r = (v&0x1f) ? 32 + ((v&0x1f)<<1) : 0;
 
 	SLOT->eg_sh_d1r = eg_rate_shift [SLOT->d1r + SLOT->ksr];
-	SLOT->eg_sel_d1r= eg_rate_select[SLOT->d1r + SLOT->ksr];
-
+	SLOT->eg_sel_d1r= eg_rate_select2612[SLOT->d1r + SLOT->ksr];
 }
 
 /* set sustain rate */
@@ -979,7 +1032,7 @@ INLINE void set_sr(FM_SLOT *SLOT,int v)
 	SLOT->d2r = (v&0x1f) ? 32 + ((v&0x1f)<<1) : 0;
 
 	SLOT->eg_sh_d2r = eg_rate_shift [SLOT->d2r + SLOT->ksr];
-	SLOT->eg_sel_d2r= eg_rate_select[SLOT->d2r + SLOT->ksr];
+	SLOT->eg_sel_d2r= eg_rate_select2612[SLOT->d2r + SLOT->ksr];
 }
 
 /* set release rate */
@@ -990,7 +1043,7 @@ INLINE void set_sl_rr(FM_SLOT *SLOT,int v)
 	SLOT->rr  = 34 + ((v&0x0f)<<2);
 
 	SLOT->eg_sh_rr  = eg_rate_shift [SLOT->rr  + SLOT->ksr];
-	SLOT->eg_sel_rr = eg_rate_select[SLOT->rr  + SLOT->ksr];
+	SLOT->eg_sel_rr = eg_rate_select2612[SLOT->rr  + SLOT->ksr];
 }
 
 
@@ -1098,7 +1151,7 @@ INLINE void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 				{
 					SLOT->volume += 4 * eg_inc[SLOT->eg_sel_d1r + ((OPN->eg_cnt>>SLOT->eg_sh_d1r)&7)];
 
-					if ( SLOT->volume >= SLOT->sl )
+					if ( SLOT->volume >= (INT32)(SLOT->sl) )
 						SLOT->state = EG_SUS;
 				}
 			}
@@ -1108,7 +1161,7 @@ INLINE void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 				{
 					SLOT->volume += eg_inc[SLOT->eg_sel_d1r + ((OPN->eg_cnt>>SLOT->eg_sh_d1r)&7)];
 
-					if ( SLOT->volume >= SLOT->sl )
+					if ( SLOT->volume >= (INT32)(SLOT->sl) )
 						SLOT->state = EG_SUS;
 				}
 			}
@@ -1121,7 +1174,7 @@ INLINE void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 				{
 					SLOT->volume += 4 * eg_inc[SLOT->eg_sel_d2r + ((OPN->eg_cnt>>SLOT->eg_sh_d2r)&7)];
 
-					if ( SLOT->volume >= MAX_ATT_INDEX )
+					if ( SLOT->volume >= 512 )
 					{
 						SLOT->volume = MAX_ATT_INDEX;
 
@@ -1141,9 +1194,10 @@ INLINE void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 
 							/* restart of the Phase Generator should be here,
 								only if AR is not maximum ??? */
-							/*SLOT->phase = 0;*/
+							SLOT->phase = 0;
 
 							/* phase -> Attack */
+							SLOT->volume = 511;
 							SLOT->state = EG_ATT;
 
 							swap_flag = (SLOT->ssgt&0x02); /* bit 1 = alternate */
@@ -1184,8 +1238,8 @@ INLINE void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 
 		out = ((UINT32)SLOT->volume);
 
-		if ((SLOT->ssgt&0x08) && (SLOT->ssgn&2))	/* negate output (changes come from alternate bit, init comes from attack bit) */
-			out ^= ((1<<ENV_BITS)-1); /* 1023 */
+		if ((SLOT->ssgt&0x08) && (SLOT->ssgn&2) && (SLOT->state != EG_OFF))	/* negate output (changes come from alternate bit, init comes from attack bit) */
+			out ^= 511; // was ((1<<ENV_BITS)-1); /* 1023 */
 
 		out += SLOT->tl;
 		if (out > ((1<<ENV_BITS)-1)) out = ((1<<ENV_BITS)-1);
@@ -1206,7 +1260,92 @@ INLINE void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 
 #define volume_calc(OP) ((OP)->vol_out + (AM & (OP)->AMmask))
 
-INLINE void chan_calc(FM_HELPER *CRAP, FM_OPN *OPN, FM_CH *CH)
+INLINE void update_phase_lfo_slot(FM_HELPER *CRAP, FM_OPN *OPN, FM_SLOT *SLOT, INT32 pms, UINT32 block_fnum)
+{
+	UINT32 fnum_lfo  = ((block_fnum & 0x7f0) >> 4) * 32 * 8;
+	INT32  lfo_fn_table_index_offset = lfo_pm_table[ fnum_lfo + pms + CRAP->LFO_PM ];
+
+	if (lfo_fn_table_index_offset)    /* LFO phase modulation active */
+	{
+		UINT8 blk;
+		UINT32 fn;
+		int kc, fc;
+
+		block_fnum = block_fnum*2 + lfo_fn_table_index_offset;
+
+		blk = (block_fnum&0x7000) >> 12;
+		fn  = block_fnum & 0xfff;
+
+		/* keyscale code */
+		kc = (blk<<2) | opn_fktable[fn >> 8];
+
+		/* phase increment counter */
+		fc = (OPN->fn_table[fn]>>(7-blk)) + SLOT->DT[kc];
+
+		/* detects frequency overflow (credits to Nemesis) */
+		if (fc < 0) fc += OPN->fn_max;
+
+		/* update phase */
+		SLOT->phase += (fc * SLOT->mul) >> 1;
+	}
+	else    /* LFO phase modulation  = zero */
+	{
+		SLOT->phase += SLOT->Incr;
+	}
+}
+
+INLINE void update_phase_lfo_channel(FM_HELPER *CRAP, FM_OPN *OPN, FM_CH *CH)
+{
+	UINT32 block_fnum = CH->block_fnum;
+
+	UINT32 fnum_lfo  = ((block_fnum & 0x7f0) >> 4) * 32 * 8;
+	INT32  lfo_fn_table_index_offset = lfo_pm_table[ fnum_lfo + CH->pms + CRAP->LFO_PM ];
+
+	if (lfo_fn_table_index_offset)    /* LFO phase modulation active */
+	{
+	        UINT8 blk;
+	        UINT32 fn;
+		int kc, fc, finc;
+
+		block_fnum = block_fnum*2 + lfo_fn_table_index_offset;
+
+	        blk = (block_fnum&0x7000) >> 12;
+	        fn  = block_fnum & 0xfff;
+
+		/* keyscale code */
+	        kc = (blk<<2) | opn_fktable[fn >> 8];
+
+	        /* phase increment counter */
+		fc = (OPN->fn_table[fn]>>(7-blk));
+
+		/* detects frequency overflow (credits to Nemesis) */
+		finc = fc + CH->SLOT[SLOT1].DT[kc];
+
+		if (finc < 0) finc += OPN->fn_max;
+		CH->SLOT[SLOT1].phase += (finc*CH->SLOT[SLOT1].mul) >> 1;
+
+		finc = fc + CH->SLOT[SLOT2].DT[kc];
+		if (finc < 0) finc += OPN->fn_max;
+		CH->SLOT[SLOT2].phase += (finc*CH->SLOT[SLOT2].mul) >> 1;
+
+		finc = fc + CH->SLOT[SLOT3].DT[kc];
+		if (finc < 0) finc += OPN->fn_max;
+		CH->SLOT[SLOT3].phase += (finc*CH->SLOT[SLOT3].mul) >> 1;
+
+		finc = fc + CH->SLOT[SLOT4].DT[kc];
+		if (finc < 0) finc += OPN->fn_max;
+		CH->SLOT[SLOT4].phase += (finc*CH->SLOT[SLOT4].mul) >> 1;
+	}
+	else    /* LFO phase modulation  = zero */
+	{
+	        CH->SLOT[SLOT1].phase += CH->SLOT[SLOT1].Incr;
+	        CH->SLOT[SLOT2].phase += CH->SLOT[SLOT2].Incr;
+	        CH->SLOT[SLOT3].phase += CH->SLOT[SLOT3].Incr;
+	        CH->SLOT[SLOT4].phase += CH->SLOT[SLOT4].Incr;
+	}
+}
+
+INLINE void chan_calc(FM_HELPER *CRAP, FM_OPN *OPN, FM_CH *CH, int chnum)
 {
 	unsigned int eg_out;
 
@@ -1225,7 +1364,9 @@ INLINE void chan_calc(FM_HELPER *CRAP, FM_OPN *OPN, FM_CH *CH)
 		if( !CH->connect1 ){
 			/* algorithm 5  */
 			CRAP->mem = CRAP->c1 = CRAP->c2 = CH->op1_out[0];
-		}else{
+		}
+		else
+		{
 			/* other algorithms */
 			*CH->connect1 += CH->op1_out[0];
 		}
@@ -1259,44 +1400,15 @@ INLINE void chan_calc(FM_HELPER *CRAP, FM_OPN *OPN, FM_CH *CH)
 	/* update phase counters AFTER output calculations */
 	if(CH->pms)
 	{
-
-
-	/* add support for 3 slot mode */
-
-
-		UINT32 block_fnum = CH->block_fnum;
-
-		UINT32 fnum_lfo   = ((block_fnum & 0x7f0) >> 4) * 32 * 8;
-		INT32  lfo_fn_table_index_offset = lfo_pm_table[ fnum_lfo + CH->pms + CRAP->LFO_PM ];
-
-		if (lfo_fn_table_index_offset)	/* LFO phase modulation active */
+		/* add support for 3 slot mode */
+		if ((OPN->ST.mode & 0xC0) && (chnum == 2))
 		{
-			UINT8  blk;
-			UINT32 fn;
-			int kc,fc;
-
-			block_fnum = block_fnum*2 + lfo_fn_table_index_offset;
-
-			blk = (block_fnum&0x7000) >> 12;
-			fn  = block_fnum & 0xfff;
-
-			/* keyscale code */
-			kc = (blk<<2) | opn_fktable[fn >> 8];
- 			/* phase increment counter */
-			fc = OPN->fn_table[fn]>>(7-blk);
-
-			CH->SLOT[SLOT1].phase += ((fc+CH->SLOT[SLOT1].DT[kc])*CH->SLOT[SLOT1].mul) >> 1;
-			CH->SLOT[SLOT2].phase += ((fc+CH->SLOT[SLOT2].DT[kc])*CH->SLOT[SLOT2].mul) >> 1;
-			CH->SLOT[SLOT3].phase += ((fc+CH->SLOT[SLOT3].DT[kc])*CH->SLOT[SLOT3].mul) >> 1;
-			CH->SLOT[SLOT4].phase += ((fc+CH->SLOT[SLOT4].DT[kc])*CH->SLOT[SLOT4].mul) >> 1;
+			update_phase_lfo_slot(CRAP, OPN, &CH->SLOT[SLOT1], CH->pms, OPN->SL3.block_fnum[1]);
+			update_phase_lfo_slot(CRAP, OPN, &CH->SLOT[SLOT2], CH->pms, OPN->SL3.block_fnum[2]);
+			update_phase_lfo_slot(CRAP, OPN, &CH->SLOT[SLOT3], CH->pms, OPN->SL3.block_fnum[0]);
+			update_phase_lfo_slot(CRAP, OPN, &CH->SLOT[SLOT4], CH->pms, CH->block_fnum);
 		}
-		else	/* LFO phase modulation  = zero */
-		{
-			CH->SLOT[SLOT1].phase += CH->SLOT[SLOT1].Incr;
-			CH->SLOT[SLOT2].phase += CH->SLOT[SLOT2].Incr;
-			CH->SLOT[SLOT3].phase += CH->SLOT[SLOT3].Incr;
-			CH->SLOT[SLOT4].phase += CH->SLOT[SLOT4].Incr;
-		}
+		else update_phase_lfo_channel(CRAP, OPN, CH);
 	}
 	else	/* no LFO phase modulation */
 	{
@@ -1308,14 +1420,18 @@ INLINE void chan_calc(FM_HELPER *CRAP, FM_OPN *OPN, FM_CH *CH)
 }
 
 /* update phase increment and envelope generator */
-INLINE void refresh_fc_eg_slot(FM_SLOT *SLOT , int fc , int kc )
+INLINE void refresh_fc_eg_slot(FM_OPN *OPN, FM_SLOT *SLOT , int fc , int kc )
 {
-	int ksr;
+	int ksr = kc >> SLOT->KSR;
+
+	fc += SLOT->DT[kc];
+
+	/* detects frequency overflow (credits to Nemesis) */
+	if (fc < 0) fc += OPN->fn_max;
 
 	/* (frequency) phase increment counter */
-	SLOT->Incr = ((fc+SLOT->DT[kc])*SLOT->mul) >> 1;
+	SLOT->Incr = (fc * SLOT->mul) >> 1;
 
-	ksr = kc >> SLOT->KSR;
 	if( SLOT->ksr != ksr )
 	{
 		SLOT->ksr = ksr;
@@ -1324,7 +1440,7 @@ INLINE void refresh_fc_eg_slot(FM_SLOT *SLOT , int fc , int kc )
 		if ((SLOT->ar + SLOT->ksr) < 32+62)
 		{
 			SLOT->eg_sh_ar  = eg_rate_shift [SLOT->ar  + SLOT->ksr ];
-			SLOT->eg_sel_ar = eg_rate_select[SLOT->ar  + SLOT->ksr ];
+			SLOT->eg_sel_ar = eg_rate_select2612[SLOT->ar  + SLOT->ksr ];
 		}
 		else
 		{
@@ -1333,26 +1449,25 @@ INLINE void refresh_fc_eg_slot(FM_SLOT *SLOT , int fc , int kc )
 		}
 
 		SLOT->eg_sh_d1r = eg_rate_shift [SLOT->d1r + SLOT->ksr];
-		SLOT->eg_sel_d1r= eg_rate_select[SLOT->d1r + SLOT->ksr];
-
 		SLOT->eg_sh_d2r = eg_rate_shift [SLOT->d2r + SLOT->ksr];
-		SLOT->eg_sel_d2r= eg_rate_select[SLOT->d2r + SLOT->ksr];
-
 		SLOT->eg_sh_rr  = eg_rate_shift [SLOT->rr  + SLOT->ksr];
-		SLOT->eg_sel_rr = eg_rate_select[SLOT->rr  + SLOT->ksr];
+
+		SLOT->eg_sel_d1r= eg_rate_select2612[SLOT->d1r + SLOT->ksr];
+		SLOT->eg_sel_d2r= eg_rate_select2612[SLOT->d2r + SLOT->ksr];
+		SLOT->eg_sel_rr = eg_rate_select2612[SLOT->rr  + SLOT->ksr];
 	}
 }
 
 /* update phase increment counters */
-INLINE void refresh_fc_eg_chan(FM_CH *CH )
+INLINE void refresh_fc_eg_chan(FM_OPN *OPN, FM_CH *CH )
 {
 	if( CH->SLOT[SLOT1].Incr==-1){
 		int fc = CH->fc;
 		int kc = CH->kcode;
-		refresh_fc_eg_slot(&CH->SLOT[SLOT1] , fc , kc );
-		refresh_fc_eg_slot(&CH->SLOT[SLOT2] , fc , kc );
-		refresh_fc_eg_slot(&CH->SLOT[SLOT3] , fc , kc );
-		refresh_fc_eg_slot(&CH->SLOT[SLOT4] , fc , kc );
+		refresh_fc_eg_slot(OPN, &CH->SLOT[SLOT1] , fc , kc );
+		refresh_fc_eg_slot(OPN, &CH->SLOT[SLOT2] , fc , kc );
+		refresh_fc_eg_slot(OPN, &CH->SLOT[SLOT3] , fc , kc );
+		refresh_fc_eg_slot(OPN, &CH->SLOT[SLOT4] , fc , kc );
 	}
 }
 
@@ -1634,6 +1749,9 @@ static void OPNSetPres(FM_OPN *OPN , int pres , int TimerPres, int SSGpres)
 #endif
 	}
 
+	/* maximal frequency, used for overflow, best setting with BLOCK=5 (notaz) */
+	OPN->fn_max = ((UINT32)((double)OPN->fn_table[0x7ff*2] / OPN->ST.freqbase) >> 2);
+
 	/* LFO freq. table */
 	for(i = 0; i < 8; i++)
 	{
@@ -1752,7 +1870,6 @@ static void OPNWriteReg(FM_HELPER *CRAP, FM_OPN *OPN, int r, int v)
 		break;
 
 	case 0x90:	/* SSG-EG */
-
 		//if( OPN->type & TYPE_SSG )
 		{
 			SLOT->ssg  =  v&0x0f;
@@ -1865,7 +1982,7 @@ static void OPNWriteReg(FM_HELPER *CRAP, FM_OPN *OPN, int r, int v)
 				OPN->SL3.kcode[c]= (blk<<2) | opn_fktable[fn >> 7];
 				/* phase increment counter */
 				OPN->SL3.fc[c] = OPN->fn_table[fn*2]>>(7-blk);
-				OPN->SL3.block_fnum[c] = fn;
+				OPN->SL3.block_fnum[c] = (blk<<11) | fn;
 				(OPN->P_CH)[2].SLOT[SLOT1].Incr=-1;
 			}
 			break;
@@ -1952,22 +2069,22 @@ void YM2612UpdateOne(YM2612 *F2612, short *buffer, int length)
 	}
 
 	/* refresh PG and EG */
-	refresh_fc_eg_chan( CRAP->cch[0] );
-	refresh_fc_eg_chan( CRAP->cch[1] );
+	refresh_fc_eg_chan( OPN, CRAP->cch[0] );
+	refresh_fc_eg_chan( OPN, CRAP->cch[1] );
 	if( (CRAP->State->mode & 0xc0) )
 	{
 		/* 3SLOT MODE */
 		if( CRAP->cch[2]->SLOT[SLOT1].Incr==-1)
 		{
-			refresh_fc_eg_slot(&CRAP->cch[2]->SLOT[SLOT1] , OPN->SL3.fc[1] , OPN->SL3.kcode[1] );
-			refresh_fc_eg_slot(&CRAP->cch[2]->SLOT[SLOT2] , OPN->SL3.fc[2] , OPN->SL3.kcode[2] );
-			refresh_fc_eg_slot(&CRAP->cch[2]->SLOT[SLOT3] , OPN->SL3.fc[0] , OPN->SL3.kcode[0] );
-			refresh_fc_eg_slot(&CRAP->cch[2]->SLOT[SLOT4] , CRAP->cch[2]->fc , CRAP->cch[2]->kcode );
+			refresh_fc_eg_slot(OPN, &CRAP->cch[2]->SLOT[SLOT1] , OPN->SL3.fc[1] , OPN->SL3.kcode[1] );
+			refresh_fc_eg_slot(OPN, &CRAP->cch[2]->SLOT[SLOT2] , OPN->SL3.fc[2] , OPN->SL3.kcode[2] );
+			refresh_fc_eg_slot(OPN, &CRAP->cch[2]->SLOT[SLOT3] , OPN->SL3.fc[0] , OPN->SL3.kcode[0] );
+			refresh_fc_eg_slot(OPN, &CRAP->cch[2]->SLOT[SLOT4] , CRAP->cch[2]->fc , CRAP->cch[2]->kcode );
 		}
-	}else refresh_fc_eg_chan( CRAP->cch[2] );
-	refresh_fc_eg_chan( CRAP->cch[3] );
-	refresh_fc_eg_chan( CRAP->cch[4] );
-	refresh_fc_eg_chan( CRAP->cch[5] );
+	}else refresh_fc_eg_chan( OPN, CRAP->cch[2] );
+	refresh_fc_eg_chan( OPN, CRAP->cch[3] );
+	refresh_fc_eg_chan( OPN, CRAP->cch[4] );
+	refresh_fc_eg_chan( OPN, CRAP->cch[5] );
 
 	/* buffering */
 	for(i=0; i < length ; i++)
@@ -1999,13 +2116,13 @@ void YM2612UpdateOne(YM2612 *F2612, short *buffer, int length)
 		}
 
 		/* calculate FM */
-		chan_calc(CRAP, OPN, CRAP->cch[0] );
-		chan_calc(CRAP, OPN, CRAP->cch[1] );
-		chan_calc(CRAP, OPN, CRAP->cch[2] );
-		chan_calc(CRAP, OPN, CRAP->cch[3] );
-		chan_calc(CRAP, OPN, CRAP->cch[4] );
+		chan_calc(CRAP, OPN, CRAP->cch[0], 0 );
+		chan_calc(CRAP, OPN, CRAP->cch[1], 1 );
+		chan_calc(CRAP, OPN, CRAP->cch[2], 2 );
+		chan_calc(CRAP, OPN, CRAP->cch[3], 3 );
+		chan_calc(CRAP, OPN, CRAP->cch[4], 4 );
 		if( ! CRAP->dacen )
-			chan_calc(CRAP, OPN, CRAP->cch[5] );
+			chan_calc(CRAP, OPN, CRAP->cch[5], 5 );
 		/* handle DAC externally
 		else
 			*CRAP->cch[5]->connect4 += dacout;*/
