@@ -23,7 +23,7 @@ Spc_Emu::Spc_Emu()
 {
 	set_type( gme_spc_type );
 	
-	static const char* const names [Snes_Spc::voice_count] = {
+	static const char* const names [SNES_SPC::voice_count] = {
 		"DSP 1", "DSP 2", "DSP 3", "DSP 4", "DSP 5", "DSP 6", "DSP 7", "DSP 8"
 	};
 	set_voice_names( names );
@@ -268,7 +268,7 @@ struct Spc_File : Gme_Info_
 	blargg_err_t load_( Data_Reader& in )
 	{
 		long file_size = in.remain();
-		if ( file_size < Snes_Spc::spc_min_file_size )
+		if ( file_size < SNES_SPC::spc_min_file_size )
 			return gme_wrong_file_type;
 		RETURN_ERR( in.read( &header, Spc_Emu::header_size ) );
 		RETURN_ERR( check_spc_header( header.tag ) );
@@ -300,7 +300,7 @@ gme_type_t_ const gme_spc_type [1] = { "Super Nintendo", 1, &new_spc_emu, &new_s
 blargg_err_t Spc_Emu::set_sample_rate_( long sample_rate )
 {
 	RETURN_ERR( apu.init() );
-	apu.set_gain( (int) (gain() * Snes_Spc::gain_unit) );
+	//apu.set_gain( (int) (gain() * SNES_SPC::gain_unit) );
 	if ( sample_rate != native_sample_rate )
 	{
 		RETURN_ERR( resampler.buffer_size( native_sample_rate / 20 * 2 ) );
@@ -320,15 +320,15 @@ blargg_err_t Spc_Emu::load_mem_( byte const* in, long size )
 	assert( offsetof (header_t,unused2 [46]) == header_size );
 	file_data = in;
 	file_size = size;
-	set_voice_count( Snes_Spc::voice_count );
-	if ( size < Snes_Spc::spc_min_file_size )
+	set_voice_count( SNES_SPC::voice_count );
+	if ( size < SNES_SPC::spc_min_file_size )
 		return gme_wrong_file_type;
 	return check_spc_header( in );
 }
 
 // Emulation
 
-void Spc_Emu::set_tempo_( double t ) { apu.set_tempo( (int) (t * Snes_Spc::tempo_unit) ); }
+void Spc_Emu::set_tempo_( double t ) { apu.set_tempo( (int) (t * SNES_SPC::tempo_unit) ); }
 
 blargg_err_t Spc_Emu::start_track_( int track )
 {

@@ -69,7 +69,7 @@ private:
 	byte const* file_data;
 	long        file_size;
 	Fir_Resampler<24> resampler;
-	Snes_Spc apu;
+	SNES_SPC apu;
 };
 
 inline void Spc_Emu::disable_surround( bool b ) { apu.disable_surround( b ); }

@@ -4,10 +4,10 @@
 #ifndef SNES_SPC_H
 #define SNES_SPC_H
 
-#include "Spc_Dsp.h"
+#include "SPC_DSP.h"
 #include "blargg_endian.h"
 
-struct Snes_Spc {
+struct SNES_SPC {
 public:
 	typedef BOOST::uint8_t uint8_t;
 	
@@ -66,10 +66,7 @@ public:
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
-	
-	enum { gain_unit = Spc_Dsp::gain_unit };
-	void set_gain( int gain );
-	
+
 // SPC music files
 
 	// Loads SPC data into emulator
@@ -92,7 +89,7 @@ public:
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
 	enum { state_size = 67 * 1024L }; // maximum space needed when saving
-	typedef Spc_Dsp::copy_func_t copy_func_t;
+	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 	
 	// Writes minimal header to spc_out
@@ -128,12 +125,12 @@ public:
 	};
 	enum { reg_count = 0x10 };
 	enum { timer_count = 3 };
-	enum { extra_size = Spc_Dsp::extra_size };
+	enum { extra_size = SPC_DSP::extra_size };
 	
 	enum { signature_size = 35 };
 	
 private:
-	Spc_Dsp dsp;
+	SPC_DSP dsp;
 	
 	#if SPC_LESS_ACCURATE
 		static signed char const reg_times_ [256];
@@ -257,28 +254,26 @@ private:
 
 #include <assert.h>
 
-inline int Snes_Spc::sample_count() const { return (m.extra_clocks >> 5) * 2; }
+inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
 
-inline int Snes_Spc::read_port( time_t t, int port )
+inline int SNES_SPC::read_port( time_t t, int port )
 {
 	assert( (unsigned) port < port_count );
 	return run_until_( t ) [port];
 }
 
-inline void Snes_Spc::write_port( time_t t, int port, int data )
+inline void SNES_SPC::write_port( time_t t, int port, int data )
 {
 	assert( (unsigned) port < port_count );
 	run_until_( t ) [0x10 + port] = data;
 }
 
-inline void Snes_Spc::set_gain( int gain ) { dsp.set_gain( gain ); }
-
-inline void Snes_Spc::mute_voices( int mask ) { dsp.mute_voices( mask ); }
+inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
-inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
+inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
 
 #if !SPC_NO_COPY_STATE_FUNCS
-inline bool Snes_Spc::check_kon() { return dsp.check_kon(); }
+inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }
 #endif
 
 #endif

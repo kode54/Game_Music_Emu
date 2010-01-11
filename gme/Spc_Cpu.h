@@ -121,7 +121,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #define MEM_BIT( rel ) CPU_mem_bit( pc, rel_time + rel )
 
-unsigned Snes_Spc::CPU_mem_bit( uint8_t const* pc, rel_time_t rel_time )
+unsigned SNES_SPC::CPU_mem_bit( uint8_t const* pc, rel_time_t rel_time )
 {
 	unsigned addr = READ_PC16( pc );
 	unsigned t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
