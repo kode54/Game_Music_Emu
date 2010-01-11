@@ -5,7 +5,7 @@
 
 #include "blargg_source.h"
 
-int const period = 36; // NES CPU clocks between FM clocks
+int const period = 36; // NES CPU clocks per FM clock
 
 Nes_Vrc7_Apu::Nes_Vrc7_Apu()
 {
@@ -15,6 +15,7 @@ Nes_Vrc7_Apu::Nes_Vrc7_Apu()
 blargg_err_t Nes_Vrc7_Apu::init()
 {
 	CHECK_ALLOC( opll = VRC7_new( 3579545 ) );
+	
 	output( 0 );
 	volume( 1.0 );
 	reset();
@@ -58,8 +59,8 @@ void Nes_Vrc7_Apu::output_changed()
 
 void Nes_Vrc7_Apu::reset()
 {
-	last_time = 0;
-	delay     = 0;
+	addr      = 0;
+	next_time = 0;
 	mono.last_amp = 0;
 	
 	for ( int i = 0; i < osc_count; ++i )
@@ -75,33 +76,34 @@ void Nes_Vrc7_Apu::reset()
 
 void Nes_Vrc7_Apu::write_reg( int data )
 {
-	VRC7_writeIO( opll, 0, data );
+	addr = data;
 }
 
 void Nes_Vrc7_Apu::write_data( nes_time_t time, int data )
 {
-	int type = (opll->adr >> 4) - 1;
-	int chan = opll->adr & 15;
+	int type = (addr >> 4) - 1;
+	int chan = addr & 15;
 	if ( (unsigned) type < 3 && chan < osc_count )
 		oscs [chan].regs [type] = data;
 	
-	run_until( time );
-	VRC7_writeIO( opll, 1, data );
+	if ( time > next_time )
+		run_until( time );
+	VRC7_writeReg( opll, addr, data );
 }
 
 void Nes_Vrc7_Apu::end_frame( nes_time_t time )
 {
-	if ( time > last_time )
+	if ( time > next_time )
 		run_until( time );
 	
-	last_time -= time;
-	assert( last_time >= 0 );
+	next_time -= time;
+	assert( next_time >= 0 );
 }
 
 void Nes_Vrc7_Apu::save_snapshot( vrc7_snapshot_t* out ) const
 {
-	out->latch = opll->adr;
-	out->delay = delay;
+	out->latch = addr;
+	out->delay = next_time;
 	for ( int i = 0; i < osc_count; ++i )
 	{
 		for ( int j = 0; j < 3; ++j )
@@ -115,7 +117,7 @@ void Nes_Vrc7_Apu::load_snapshot( vrc7_snapshot_t const& in )
 	assert( offsetof (vrc7_snapshot_t,delay) == 28 - 1 );
 	
 	reset();
-	delay = in.delay;
+	next_time = in.delay;
 	write_reg( in.latch );
 	int i;
 	for ( i = 0; i < osc_count; ++i )
@@ -136,55 +138,53 @@ void Nes_Vrc7_Apu::load_snapshot( vrc7_snapshot_t const& in )
 
 void Nes_Vrc7_Apu::run_until( nes_time_t end_time )
 {
-	require( end_time >= last_time );
+	require( end_time > next_time );
 
-	nes_time_t time = last_time + delay;
-	last_time = end_time;
-	
-	if ( time < end_time )
+	nes_time_t time = next_time;
+	OPLL* const opll = this->opll; // cache
+	Blip_Buffer* const mono_output = mono.output;
+	if ( mono_output )
 	{
-		Blip_Buffer* const mono_output = mono.output;
-		if ( mono_output )
+		// optimal case
+		do
 		{
-			// optimal case
-			do
+			VRC7_run( opll );
+			int amp = 0;
+			for ( int i = 0; i < osc_count; i++ )
+				amp += VRC7_calcCh( opll, i );
+			int delta = amp - mono.last_amp;
+			if ( delta )
 			{
-				int amp = VRC7_calc( opll );
-				int delta = amp - mono.last_amp;
-				if ( delta )
-				{
-					mono.last_amp = amp;
-					synth.offset_inline( time, delta, mono_output );
-				}
-				time += period;
+				mono.last_amp = amp;
+				synth.offset_inline( time, delta, mono_output );
 			}
-			while ( time < end_time );
+			time += period;
 		}
-		else
+		while ( time < end_time );
+	}
+	else
+	{
+		mono.last_amp = 0;
+		do
 		{
-			mono.last_amp = 0;
-			do
+			VRC7_run( opll );
+			for ( int i = 0; i < osc_count; ++i )
 			{
-				VRC7_run( opll );
-				for ( int i = 0; i < osc_count; ++i )
+				Vrc7_Osc& osc = oscs [i];
+				if ( osc.output )
 				{
-					Vrc7_Osc& osc = oscs [i];
-					if ( osc.output )
+					int amp = VRC7_calcCh( opll, i );
+					int delta = amp - osc.last_amp;
+					if ( delta )
 					{
-						int amp = VRC7_calcCh( opll, i );
-						int delta = amp - osc.last_amp;
-						if ( delta )
-						{
-							osc.last_amp = amp;
-							synth.offset( time, delta, osc.output );
-						}
+						osc.last_amp = amp;
+						synth.offset( time, delta, osc.output );
 					}
 				}
-				time += period;
 			}
-			while ( time < end_time );
+			time += period;
 		}
+		while ( time < end_time );
 	}
-	delay = time - end_time;
+	next_time = time;
 }
-

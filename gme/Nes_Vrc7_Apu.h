@@ -43,8 +43,8 @@ private:
 
 	Vrc7_Osc oscs [osc_count];
 	OPLL* opll;
-	nes_time_t last_time;
-	int delay;
+	int addr;
+	nes_time_t next_time;
 	struct {
 		Blip_Buffer* output;
 		int last_amp;

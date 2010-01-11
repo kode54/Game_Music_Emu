@@ -639,10 +639,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\gme\vrc7tone.h"
-				>
-			</File>
-			<File
 				RelativePath="..\gme\Ym2413_Emu.h"
 				>
 			</File>

@@ -434,15 +434,15 @@ int Nsf_Emu::cpu_read_misc( nes_addr_t addr )
 		#if NSF_EMU_MMC5_VRC7
 			if ( mmc5 )
 			{
-				unsigned int i = addr ^ 0x5C00;
-				if ( i < (unsigned int) sizeof mmc5->exram )
+				int i = addr ^ 0x5C00;
+				if ( i < (int) sizeof mmc5->exram )
 					return mmc5->exram [i];
 				
-				i = addr - 0x5205;
-				if ( i < 2 )
+				unsigned m = addr - 0x5205;
+				if ( m < 2 )
 				{
 					unsigned product = mmc5_mul [0] * mmc5_mul [1];
-					return product >> (i * 8) & 0xFF;
+					return product >> (m * 8) & 0xFF;
 				}
 			}
 		#endif
@@ -509,14 +509,14 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 					return;
 				}
 				
-				unsigned int i = addr - 0x5205;
-				if ( i < 2 )
+				unsigned int m = addr - 0x5205;
+				if ( m < 2 )
 				{
-					mmc5_mul [i] = data;
+					mmc5_mul [m] = data;
 					return;
 				}
 				
-				i = addr ^ 0x5C00;
+				int i = addr ^ 0x5C00;
 				if ( i < (unsigned int) sizeof mmc5->exram )
 				{
 					mmc5->exram [i] = data;
