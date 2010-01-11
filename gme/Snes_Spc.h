@@ -63,6 +63,9 @@ public:
 	// Only supported by fast DSP.
 	void disable_surround( bool disable = true );
 	
+	// If true, enables cubic interpolation
+	void cubic_interpolation( bool cubic = true );
+	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
@@ -271,6 +274,8 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
 inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
+
+inline void SNES_SPC::cubic_interpolation( bool cubic ) { dsp.cubic_interpolation( cubic ); }
 
 #if !SPC_NO_COPY_STATE_FUNCS
 inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }

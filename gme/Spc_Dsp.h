@@ -93,7 +93,8 @@ public:
 	enum { extra_size = 16 };
 	sample_t* extra()               { return m.extra; }
 	sample_t const* out_pos() const { return m.out; }
-	void disable_surround( bool ) { } // not supported
+	void disable_surround( bool disable = true );
+	void cubic_interpolation( bool b = true ) { m.cubic_interpolation = b; }
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -180,6 +181,8 @@ private:
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
 		int mute_mask;
+		int surround_threshold;
+		bool cubic_interpolation;
 		sample_t* out;
 		sample_t* out_end;
 		sample_t* out_begin;
@@ -192,6 +195,7 @@ private:
 	unsigned read_counter( int rate );
 	
 	int  interpolate( voice_t const* v );
+	int  interpolate_cubic( voice_t const* v );
 	void run_envelope( voice_t* const v );
 	void decode_brr( voice_t* v );
 
@@ -272,6 +276,11 @@ inline void SPC_DSP::write( int addr, int data )
 }
 
 inline void SPC_DSP::mute_voices( int mask ) { m.mute_mask = mask; }
+
+inline void SPC_DSP::disable_surround( bool disable )
+{
+	m.surround_threshold = disable ? 0 : -0x4000;
+}
 
 inline bool SPC_DSP::check_kon()
 {
