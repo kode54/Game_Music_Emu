@@ -362,9 +362,9 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 int kss_cpu_in( Kss_Cpu*, cpu_time_t, unsigned addr )
 {
 	//Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
-	switch ( addr & 0xFF )
-	{
-	}
+	//switch ( addr & 0xFF )
+	//{
+	//}
 	
 	dprintf( "IN $%04X\n", addr );
 	return 0;

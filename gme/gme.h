@@ -140,17 +140,9 @@ void gme_set_equalizer( Music_Emu*, gme_equalizer_t const* eq );
 
 /******** Game music types ********/
 
-/* Emulator type constants for each supported file type */
-extern struct gme_type_t_ const gme_ay_type [], gme_gbs_type [], gme_gym_type [],
-		gme_hes_type [], gme_kss_type [], gme_nsf_type [], gme_nsfe_type [],
-		gme_sap_type [], gme_spc_type [], gme_vgm_type [], gme_vgz_type [];
-typedef struct gme_type_t_ const* gme_type_t;
-
-/* Type of this emulator */
-gme_type_t gme_type( Music_Emu const* );
-
 /* gme_type_t is a pointer to this structure. For example, gme_nsf_type->system is 
 "Nintendo NES" and gme_nsf_type->new_emu() is equilvant to new Nsf_Emu (in C++). */
+typedef struct gme_type_t_ const* gme_type_t;
 struct gme_type_t_
 {
 	const char* system;         /* name of system this music file type is generally for */
@@ -162,6 +154,14 @@ struct gme_type_t_
 	const char* extension_;
 	int flags_;
 };
+
+/* Emulator type constants for each supported file type */
+extern struct gme_type_t_ const gme_ay_type [], gme_gbs_type [], gme_gym_type [],
+		gme_hes_type [], gme_kss_type [], gme_nsf_type [], gme_nsfe_type [],
+		gme_sap_type [], gme_spc_type [], gme_vgm_type [], gme_vgz_type [];
+
+/* Type of this emulator */
+gme_type_t gme_type( Music_Emu const* );
 
 /* Pointer to array of all music types, with NULL entry at end. Allows a player linked
 to this library to support new music types without having to be updated. */

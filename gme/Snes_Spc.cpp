@@ -376,7 +376,7 @@ void Snes_Spc::write( spc_addr_t addr, int data )
 				mem.ram [0xF7] = 0;
 			}
 			
-			enable_rom( data & 0x80 );
+			enable_rom( (data & 0x80) != 0 );
 			
 			break;
 		}

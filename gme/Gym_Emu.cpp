@@ -207,7 +207,7 @@ void Gym_Emu::mute_voices_( int mask )
 {
 	Music_Emu::mute_voices_( mask );
 	fm.mute_voices( mask );
-	dac_muted = mask & 0x40;
+	dac_muted = (mask & 0x40) != 0;
 	apu.output( (mask & 0x80) ? 0 : &blip_buf );
 }
 

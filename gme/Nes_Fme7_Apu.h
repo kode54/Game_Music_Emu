@@ -30,9 +30,9 @@ public:
 	void load_state( fme7_apu_state_t const& );
 	
 	// Mask and addresses of registers
-	enum { addr_mask = 0xe000 };
-	enum { data_addr = 0xe000 };
-	enum { latch_addr = 0xc000 };
+	enum { addr_mask = 0xE000 };
+	enum { data_addr = 0xE000 };
+	enum { latch_addr = 0xC000 };
 	
 	// (addr & addr_mask) == latch_addr
 	void write_latch( int );

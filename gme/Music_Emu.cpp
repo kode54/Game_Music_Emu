@@ -147,7 +147,7 @@ blargg_err_t Music_Emu::start_track( int track )
 		for ( long end = max_initial_silence * stereo * sample_rate(); emu_time < end; )
 		{
 			fill_buf();
-			if ( buf_remain | emu_track_ended_ )
+			if ( buf_remain | (int) emu_track_ended_ )
 				break;
 		}
 		

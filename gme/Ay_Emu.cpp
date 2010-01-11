@@ -380,8 +380,8 @@ blargg_err_t Ay_Emu::run_clocks( blip_time_t& duration, int )
 				
 				r.iff1 = r.iff2 = 0;
 				
-				mem.ram [--r.sp] = r.pc >> 8;
-				mem.ram [--r.sp] = r.pc;
+				mem.ram [--r.sp] = uint8_t (r.pc >> 8);
+				mem.ram [--r.sp] = uint8_t (r.pc);
 				r.pc = 0x38;
 				cpu::adjust_time( 12 );
 				if ( r.im == 2 )

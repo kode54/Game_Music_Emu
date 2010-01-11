@@ -263,7 +263,7 @@ void blip_eq_t::generate( float* out, int count ) const
 	// apply (half of) hamming window
 	double to_fraction = PI / (count - 1);
 	for ( int i = count; i--; )
-		out [i] *= 0.54 - 0.46 * cos( i * to_fraction );
+		out [i] *= 0.54f - 0.46f * (float) cos( i * to_fraction );
 }
 
 void Blip_Synth_::adjust_impulse()
@@ -281,7 +281,7 @@ void Blip_Synth_::adjust_impulse()
 		}
 		if ( p == p2 )
 			error /= 2; // phase = 0.5 impulse uses same half for both sides
-		impulses [size - blip_res + p] += error;
+		impulses [size - blip_res + p] += (short) error;
 		//printf( "error: %ld\n", error );
 	}
 	

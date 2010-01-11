@@ -1155,9 +1155,9 @@ possibly_out_of_time:
 	case 0xF4: { // SET
 		//fuint16 operand = GET_MSB();
 		dprintf( "SET not handled\n" );
-		switch ( data )
-		{
-		}
+		//switch ( data )
+		//{
+		//}
 		illegal_encountered = true;
 		goto loop;
 	}

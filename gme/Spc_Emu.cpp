@@ -345,6 +345,9 @@ blargg_err_t Spc_Emu::skip_( long count )
 		count = long (count * resampler.ratio()) & ~1;
 		count -= resampler.skip_input( count );
 	}
+	
+	// TODO: shouldn't skip be adjusted for the 64 samples read afterwards?
+	
 	if ( count > 0 )
 		RETURN_ERR( apu.skip( count ) );
 	
