@@ -860,7 +860,7 @@ INLINE void FM_KEYON(FM_CH *CH , int s )
 		if( (SLOT->ar + SLOT->ksr) < 32+62 )
 		{
 			SLOT->state = EG_ATT;    /* phase -> Attack */
-			SLOT->volume = MAX_ATT_INDEX;    /* fix Ecco 2 splash sound */
+			//SLOT->volume = MAX_ATT_INDEX;    /* fix Ecco 2 splash sound */
 		}
 		else
 		{
