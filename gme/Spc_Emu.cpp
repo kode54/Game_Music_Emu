@@ -62,7 +62,6 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 	char copyright [256 + 5];
 	int copyright_len = 0;
 	int const year_len = 5;
-
 	int disc = 0, track = 0;
 	
 	while ( end - in >= 4 )
@@ -88,9 +87,9 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 			case 0x03: field = out->author;  break;
 			case 0x04: field = out->dumper;  break;
 			case 0x07: field = out->comment; break;
-			case 0x14: year = data;          break;
 			case 0x11: disc = data;          break;
 			case 0x12: track = data;         break;
+			case 0x14: year = data;          break;
 			
 			//case 0x30: // intro length
 			// Many SPCs have intro length set wrong for looped tracks, making it useless
@@ -109,6 +108,7 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 				}
 				break;
 			*/
+			
 			case 0x33:
 				check( len == 4 );
 				if ( len >= 4 )
@@ -164,7 +164,7 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 	}
 	if ( copyright_len )
 		Gme_File::copy_field_( out->copyright, p, copyright_len );
-
+	
 	if ( disc > 0 && disc <= 9 )
 	{
 		out->disc [0] = disc + '0';
@@ -184,7 +184,7 @@ static void get_spc_xid6( byte const* begin, long size, track_info_t* out )
 		}
 		memcpy( out->track, p, &copyright [4] - p );
 	}
-	
+
 	check( in == end );
 }
 
@@ -232,7 +232,7 @@ static void get_spc_info( Spc_Emu::header_t const& h, byte const* xid6, long xid
 		fade_msec = get_le32( h.fade_msec );
 	if ( fade_msec < 0x7FFF )
 		out->fade_length = fade_msec;
-	
+
 	int offset = (h.author [0] < ' ' || unsigned (h.author [0] - '0') <= 9);
 	Gme_File::copy_field_( out->author, &h.author [offset], sizeof h.author - offset );
 	
@@ -268,7 +268,7 @@ struct Spc_File : Gme_Info_
 	blargg_err_t load_( Data_Reader& in )
 	{
 		long file_size = in.remain();
-		if ( file_size < Snes_Spc::spc_file_size )
+		if ( file_size < Snes_Spc::spc_min_file_size )
 			return gme_wrong_file_type;
 		RETURN_ERR( in.read( &header, Spc_Emu::header_size ) );
 		RETURN_ERR( check_spc_header( header.tag ) );
@@ -299,7 +299,8 @@ gme_type_t_ const gme_spc_type [1] = { "Super Nintendo", 1, &new_spc_emu, &new_s
 
 blargg_err_t Spc_Emu::set_sample_rate_( long sample_rate )
 {
-	apu.set_gain( gain() );
+	RETURN_ERR( apu.init() );
+	apu.set_gain( (int) (gain() * Snes_Spc::gain_unit) );
 	if ( sample_rate != native_sample_rate )
 	{
 		RETURN_ERR( resampler.buffer_size( native_sample_rate / 20 * 2 ) );
@@ -320,14 +321,14 @@ blargg_err_t Spc_Emu::load_mem_( byte const* in, long size )
 	file_data = in;
 	file_size = size;
 	set_voice_count( Snes_Spc::voice_count );
-	if ( size < Snes_Spc::spc_file_size )
+	if ( size < Snes_Spc::spc_min_file_size )
 		return gme_wrong_file_type;
 	return check_spc_header( in );
 }
 
 // Emulation
 
-void Spc_Emu::set_tempo_( double t ) { apu.set_tempo( t ); }
+void Spc_Emu::set_tempo_( double t ) { apu.set_tempo( (int) (t * Snes_Spc::tempo_unit) ); }
 
 blargg_err_t Spc_Emu::start_track_( int track )
 {
