@@ -82,7 +82,7 @@ static char* parse_filename( char* in, M3u_Playlist::entry_t& entry )
 		if ( !c ) break;
 		in++;
 		
-		if ( c == ',' ) // commas in filename
+		/*if ( c == ',' ) // commas in filename
 		{
 			char* p = skip_white( in );
 			if ( *p == '$' || from_dec( *p ) <= 9 )
@@ -90,7 +90,7 @@ static char* parse_filename( char* in, M3u_Playlist::entry_t& entry )
 				in = p;
 				break;
 			}
-		}
+		}*/
 		
 		if ( c == ':' && in [0] == ':' && in [1] && in [2] != ',' ) // ::type suffix
 		{
@@ -200,12 +200,20 @@ static char* parse_time_( char* in, int* out )
 	if ( n >= 0 )
 	{
 		*out = n;
-		if ( *in == ':' )
+		while ( *in == ':' )
 		{
 			n = -1;
 			in = parse_int_( in + 1, &n );
 			if ( n >= 0 )
 				*out = *out * 60 + n;
+		}
+		*out = *out * 1000L;
+		if ( *in == '.' )
+		{
+			n = -1;
+			in = parse_int_( in + 1, &n );
+			if ( n >= 0 )
+				*out = *out + n; 
 		}
 	}
 	return in;
