@@ -433,13 +433,6 @@
 			<File
 				RelativePath="..\gme\Spc_Dsp.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\gme\Spc_Emu.cpp"
@@ -468,6 +461,22 @@
 			<File
 				RelativePath="..\gme\Ym2612_Emu_Gens.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Release staticlink|Win32"
 					ExcludedFromBuild="true"
