@@ -5,7 +5,7 @@
 #define YM2413_EMU_H
 
 class Ym2413_Emu  {
-	struct OPLL* opll;
+	void* opll;
 public:
 	Ym2413_Emu();
 	~Ym2413_Emu();

@@ -451,6 +451,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gme\ym2413.c"
+				>
+			</File>
+			<File
 				RelativePath="..\gme\Ym2413_Emu.cpp"
 				>
 			</File>
@@ -743,6 +747,10 @@
 			</File>
 			<File
 				RelativePath="..\gme\Vgm_Emu_Impl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gme\ym2413.h"
 				>
 			</File>
 			<File

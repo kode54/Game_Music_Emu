@@ -6,7 +6,7 @@
 #include "Nes_Apu.h"
 
 struct vrc7_snapshot_t;
-struct OPLL;
+//struct OPLL;
 
 class Nes_Vrc7_Apu {
 public:
@@ -42,7 +42,8 @@ private:
 	};
 
 	Vrc7_Osc oscs [osc_count];
-	OPLL* opll;
+	//OPLL* opll;
+	void* opll;
 	int addr;
 	nes_time_t next_time;
 	struct {
