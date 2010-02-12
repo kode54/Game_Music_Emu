@@ -1,10 +1,8 @@
 // Core SPC emulation: CPU, timers, SMP registers, memory
 
-// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
+// snes_spc $vers. http://www.slack.net/~ant/
 
 #include "Snes_Spc.h"
-
-#include <string.h>
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -30,10 +28,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 // do crazy echo buffer accesses.
 #ifndef SPC_MORE_ACCURACY
 	#define SPC_MORE_ACCURACY 0
-#endif
-
-#ifdef BLARGG_ENABLE_OPTIMIZER
-	#include BLARGG_ENABLE_OPTIMIZER
 #endif
 
 
@@ -96,6 +90,9 @@ void Snes_Spc::enable_rom( int enable )
 #if SPC_LESS_ACCURATE
 	int const max_reg_time = 29;
 	
+	/* Fast DSP only runs every 32nd clock. By adjusting the end time based
+	on which register is being accessed, in most cases the register access
+	is emulated at the precise time. */
 	signed char const Snes_Spc::reg_times_ [256] =
 	{
 		 -1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
@@ -176,7 +173,7 @@ inline void Snes_Spc::dsp_write( int data, rel_time_t time )
 	if ( REGS [r_dspaddr] <= 0x7F )
 		dsp.write( REGS [r_dspaddr], data );
 	else if ( !SPC_MORE_ACCURACY )
-		debug_printf( "SPC wrote to DSP register > $7F\n" );
+		dprintf( "SPC wrote to DSP register > $7F\n" );
 }
 
 
@@ -303,7 +300,7 @@ void Snes_Spc::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 						t->next_time == time + TIMER_MUL( t, 1 ) &&
 						((period - 1) | ~0x0F) & period )
 				{
-					//debug_printf( "SPC pathological timer target write\n" );
+					//dprintf( "SPC pathological timer target write\n" );
 					
 					// If the period is 3, 5, or 9, there's a probability this behavior won't occur,
 					// based on the previous period
@@ -332,7 +329,7 @@ void Snes_Spc::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 	case r_t1out:
 	case r_t2out:
 		if ( !SPC_MORE_ACCURACY )
-			debug_printf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
+			dprintf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
 		
 		if ( data < no_read_before_write  / 2 )
 			run_timer( &m.timers [addr - r_t0out], time - 1 )->counter = 0;
@@ -346,7 +343,7 @@ void Snes_Spc::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 	
 	case r_test:
 		if ( (uint8_t) data != 0x0A )
-			debug_printf( "SPC wrote to test register\n" );
+			dprintf( "SPC wrote to test register\n" );
 		break;
 	
 	case r_control:

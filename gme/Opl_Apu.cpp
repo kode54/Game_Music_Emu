@@ -13,7 +13,7 @@ blargg_err_t Opl_Apu::init( long clock, long rate, blip_time_t period, type_t ty
 	clock_ = clock;
 	rate_ = rate;
 	period_ = period;
-	output( 0 );
+	set_output( 0, 0 );
 	volume( 1.0 );
 	switch (type)
 	{
@@ -32,6 +32,7 @@ blargg_err_t Opl_Apu::init( long clock, long rate, blip_time_t period, type_t ty
 		break;
 
 	case type_msxaudio:
+		//logfile = fopen("c:\\temp\\msxaudio.log", "wb");
 		opl = y8950_init( clock, rate );
 		opl_memory = malloc( 32768 );
 		y8950_set_delta_t_memory( opl, opl_memory, 32768 );
@@ -65,6 +66,7 @@ Opl_Apu::~Opl_Apu()
 		case type_msxaudio:
 			y8950_shutdown( opl );
 			free( opl_memory );
+			//fclose( logfile );
 			break;
 
 		case type_opl2:
@@ -122,6 +124,11 @@ void Opl_Apu::write_data( blip_time_t time, int data )
 		break;
 
 	case type_msxaudio:
+		/*if ( addr >= 7 && addr <= 7 + 11 )
+		{
+			unsigned char temp [2] = { addr - 7, data };
+			fwrite( &temp, 1, 2, logfile );
+		}*/
 		y8950_write( opl, 0, addr );
 		y8950_write( opl, 1, data );
 		break;
@@ -148,7 +155,12 @@ int Opl_Apu::read( blip_time_t time, int port )
 		return ym3526_read( opl, port );
 
 	case type_msxaudio:
-		return y8950_read( opl, port );
+		{
+			int ret = y8950_read( opl, port );
+			/*unsigned char temp [2] = { port + 0x80, ret };
+			fwrite( &temp, 1, 2, logfile );*/
+			return ret;
+		}
 
 	case type_opl2:
 		return ym3812_read( opl, port );
@@ -161,6 +173,9 @@ void Opl_Apu::end_frame( blip_time_t time )
 {
 	run_until( time );
 	next_time -= time;
+
+	if ( output_ )
+		output_->set_modified();
 }
 
 void Opl_Apu::run_until( blip_time_t end_time )

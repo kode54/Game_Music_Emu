@@ -75,9 +75,14 @@ Revision History:
 #include "ymdeltat.h"
 
 #define INLINE __inline
-#define NULL ((void *)0)
-#define logerror(a)
+#ifndef NULL
+	#define NULL ((void *)0)
+#endif
+#define logerror (void)
 
+#ifndef M_PI
+	#define M_PI 3.14159265358979323846
+#endif
 
 /* output final shift */
 #if (OPL_SAMPLE_BITS==16)

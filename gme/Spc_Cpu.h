@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
+// snes_spc $vers. http://www.slack.net/~ant/
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -16,7 +16,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #if SPC_MORE_ACCURACY
 	#define SUSPICIOUS_OPCODE( name ) ((void) 0)
 #else
-	#define SUSPICIOUS_OPCODE( name ) debug_printf( "SPC: suspicious opcode: " name "\n" )
+	#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
 #endif
 
 #define CPU_READ( time, offset, addr )\
@@ -130,8 +130,8 @@ unsigned Snes_Spc::CPU_mem_bit( uint8_t const* pc, rel_time_t rel_time )
 
 //// Status flag handling
 
-// Hex value in name to clarify code and bit shifting.
-// Flag stored in indicated variable during emulation
+// Flags with hex value for clarity when used as mask.
+// Stored in indicated variable during emulation.
 int const n80 = 0x80; // nz
 int const v40 = 0x40; // psw
 int const p20 = 0x20; // dp
@@ -202,6 +202,11 @@ loop:
 	#ifdef SPC_CPU_OPCODE_HOOK
 		SPC_CPU_OPCODE_HOOK( GET_PC(), opcode );
 	#endif
+	
+	#ifdef CPU_INSTR_HOOK
+		CPU_INSTR_HOOK( GET_PC(), pc, a, x, y, GET_SP(), rel_time );
+	#endif
+	
 	/*
 	//SUB_CASE_COUNTER( 1 );
 	#define PROFILE_TIMER_LOOP( op, addr, len )\
@@ -1184,7 +1189,7 @@ loop:
 		{
 			addr &= 0xFFFF;
 			SET_PC( addr );
-			debug_printf( "SPC: PC wrapped around\n" );
+			dprintf( "SPC: PC wrapped around\n" );
 			goto loop;
 		}
 	}
@@ -1205,7 +1210,7 @@ stop:
 	
 	// Uncache registers
 	if ( GET_PC() >= 0x10000 )
-		debug_printf( "SPC: PC wrapped around\n" );
+		dprintf( "SPC: PC wrapped around\n" );
 	m.cpu_regs.pc = (uint16_t) GET_PC();
 	m.cpu_regs.sp = ( uint8_t) GET_SP();
 	m.cpu_regs.a  = ( uint8_t) a;

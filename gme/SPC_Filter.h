@@ -1,6 +1,6 @@
 // Simple low-pass and high-pass filter to better match sound output of a SNES
 
-// Game_Music_Emu 0.5.5
+// snes_spc $vers
 #ifndef SPC_FILTER_H
 #define SPC_FILTER_H
 
@@ -11,7 +11,7 @@ public:
 	
 	// Filters count samples of stereo sound in place. Count must be a multiple of 2.
 	typedef short sample_t;
-	void run( sample_t* io, int count );
+	void run( sample_t io [], int count );
 	
 // Optional features
 

@@ -1,6 +1,6 @@
 // SNES SPC-700 APU emulator
 
-// Game_Music_Emu 0.5.5
+// snes_spc $vers
 #ifndef SNES_SPC_H
 #define SNES_SPC_H
 
@@ -60,11 +60,10 @@ public:
 	void mute_voices( int mask );
 	
 	// If true, prevents channels and global volumes from being phase-negated.
-	// Only supported by fast DSP.
 	void disable_surround( bool disable = true );
-	
+
 	// If true, enables cubic interpolation
-	void cubic_interpolation( bool cubic = true );
+	void interpolation_level( int level = 0 );
 	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
@@ -82,7 +81,7 @@ public:
 
 	// Plays for count samples and write samples to out. Discards samples if out
 	// is NULL. Count must be a multiple of 2 since output is stereo.
-	blargg_err_t play( int count, sample_t* out );
+	blargg_err_t play( int count, sample_t out [] );
 	
 	// Skips count samples. Several times faster than play() when using fast DSP.
 	blargg_err_t skip( int count );
@@ -91,7 +90,7 @@ public:
 
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
-	enum { state_size = 67 * 1024L }; // maximum space needed when saving
+	enum { state_size = 67 * 1024 }; // maximum space needed when saving
 	typedef Spc_Dsp::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 	
@@ -283,7 +282,7 @@ inline void Snes_Spc::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
 inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
 
-inline void Snes_Spc::cubic_interpolation( bool cubic ) { dsp.cubic_interpolation( cubic ); }
+inline void Snes_Spc::interpolation_level( int level ) { dsp.interpolation_level( level ); }
 
 #if !SPC_NO_COPY_STATE_FUNCS
 inline bool Snes_Spc::check_kon() { return dsp.check_kon(); }

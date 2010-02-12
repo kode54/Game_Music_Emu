@@ -1,8 +1,6 @@
-// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
+// snes_spc $vers. http://www.slack.net/~ant/
 
-#include "Spc_Filter.h"
-
-#include <string.h>
+#include "SPC_Filter.h"
 
 /* Copyright (C) 2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -27,7 +25,7 @@ SPC_Filter::SPC_Filter()
 	clear();
 }
 
-void SPC_Filter::run( short* io, int count )
+void SPC_Filter::run( short io [], int count )
 {
 	require( (count & 1) == 0 ); // must be even
 	

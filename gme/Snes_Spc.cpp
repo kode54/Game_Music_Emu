@@ -1,10 +1,8 @@
 // SPC emulation support: init, sample buffering, reset, SPC loading
 
-// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
+// snes_spc $vers. http://www.slack.net/~ant/
 
 #include "Snes_Spc.h"
-
-#include <string.h>
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -74,7 +72,7 @@ blargg_err_t Snes_Spc::init()
 	#endif
 	
 	reset();
-	return 0;
+	return blargg_ok;
 }
 
 void Snes_Spc::init_rom( uint8_t const in [rom_size] )
@@ -156,7 +154,7 @@ void Snes_Spc::regs_loaded()
 
 void Snes_Spc::reset_time_regs()
 {
-	m.cpu_error     = 0;
+	m.cpu_error     = NULL;
 	m.echo_accessed = 0;
 	m.spc_time      = 0;
 	m.dsp_time      = 0;
@@ -243,7 +241,7 @@ blargg_err_t Snes_Spc::load_spc( void const* data, long size )
 	
 	reset_time_regs();
 	
-	return 0;
+	return blargg_ok;
 }
 
 void Snes_Spc::clear_echo()
@@ -269,12 +267,12 @@ void Snes_Spc::reset_buf()
 		*out++ = 0;
 	
 	m.extra_pos = out;
-	m.buf_begin = 0;
+	m.buf_begin = NULL;
 	
-	dsp.set_output( 0, 0 );
+	dsp.set_output( NULL, 0 );
 }
 
-void Snes_Spc::set_output( sample_t* out, int size )
+void Snes_Spc::set_output( sample_t out [], int size )
 {
 	require( (size & 1) == 0 ); // size must be even
 	
@@ -334,7 +332,7 @@ void Snes_Spc::save_extra()
 	assert( out <= &m.extra_buf [extra_size] );
 }
 
-blargg_err_t Snes_Spc::play( int count, sample_t* out )
+blargg_err_t Snes_Spc::play( int count, sample_t out [] )
 {
 	require( (count & 1) == 0 ); // must be even
 	if ( count )
@@ -344,7 +342,7 @@ blargg_err_t Snes_Spc::play( int count, sample_t* out )
 	}
 	
 	const char* err = m.cpu_error;
-	m.cpu_error = 0;
+	m.cpu_error = NULL;
 	return err;
 }
 
@@ -353,7 +351,7 @@ blargg_err_t Snes_Spc::skip( int count )
 	#if SPC_LESS_ACCURATE
 	if ( count > 2 * sample_rate * 2 )
 	{
-		set_output( 0, 0 );
+		set_output( NULL, 0 );
 		
 		// Skip a multiple of 4 samples
 		time_t end = count;
@@ -376,5 +374,5 @@ blargg_err_t Snes_Spc::skip( int count )
 	}
 	#endif
 	
-	return play( count, 0 );
+	return play( count, NULL );
 }

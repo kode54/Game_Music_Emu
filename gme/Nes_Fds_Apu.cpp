@@ -2,8 +2,6 @@
 
 #include "Nes_Fds_Apu.h"
 
-#include <string.h>
-
 /* Copyright (C) 2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
 General Public License as published by the Free Software Foundation; either
@@ -17,7 +15,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #include "blargg_source.h"
 
-blargg_long const fract_range = 65536;
+int const fract_range = 65536;
 
 void Nes_Fds_Apu::reset()
 {
@@ -35,24 +33,24 @@ void Nes_Fds_Apu::reset()
 	mod_write_pos = 0;
 	
 	static byte const initial_regs [0x0B] = {
-		0x80,		// disable envelope
-		0, 0, 0xC0,	// disable wave and lfo
-		0x80,		// disable sweep
-		0, 0, 0x80,	// disable modulation
-		0, 0, 0xFF	// LFO period // TODO: use 0xE8 as FDS ROM does?
+		0x80,       // disable envelope
+		0, 0, 0xC0, // disable wave and lfo
+		0x80,       // disable sweep
+		0, 0, 0x80, // disable modulation
+		0, 0, 0xFF  // LFO period // TODO: use 0xE8 as FDS ROM does?
 	};
 	for ( int i = 0; i < (int) sizeof initial_regs; i++ )
 	{
 		// two writes to set both gain and period for envelope registers
-		write_( start_addr + wave_size + i, 0 );
-		write_( start_addr + wave_size + i, initial_regs [i] );
+		write_( io_addr + wave_size + i, 0 );
+		write_( io_addr + wave_size + i, initial_regs [i] );
 	}
 }
 
 void Nes_Fds_Apu::write_( unsigned addr, int data )
 {
-	unsigned reg = addr - start_addr;
-	if ( reg < reg_count )
+	unsigned reg = addr - io_addr;
+	if ( reg < io_size )
 	{
 		if ( reg < wave_size )
 		{
@@ -225,7 +223,7 @@ void Nes_Fds_Apu::run_until( blip_time_t final_end_time )
 			}
 			
 			// wave
-			blargg_long wave_fract = this->wave_fract;
+			int wave_fract = this->wave_fract;
 			blip_time_t delay = (wave_fract + freq - 1) / freq;
 			blip_time_t time = start_time + delay;
 			
@@ -241,7 +239,7 @@ void Nes_Fds_Apu::run_until( blip_time_t final_end_time )
 					volume = vol_max;
 				volume *= master_volume;
 				
-				blargg_long const min_fract = min_delay * freq;
+				int const min_fract = min_delay * freq;
 				
 				do
 				{

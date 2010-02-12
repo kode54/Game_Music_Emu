@@ -4,6 +4,8 @@
 #include "blargg_common.h"
 #include "Blip_Buffer.h"
 
+#include <stdio.h>
+
 class Opl_Apu {
 public:
 	Opl_Apu();
@@ -14,18 +16,20 @@ public:
 	blargg_err_t init( long clock, long rate, blip_time_t period, type_t );
 	
 	void reset();
-	void volume( double v ) { synth.volume( 1.0 / 3 * v ); }
+	void volume( double v ) { synth.volume( 1.0 / (4096 * 6) * v ); }
 	void treble_eq( blip_eq_t const& eq ) { synth.treble_eq( eq ); }
 	enum { osc_count = 1 };
 	void osc_output( int index, Blip_Buffer* );
-	void output( Blip_Buffer* buf ) { osc_output( 0, buf ); }
+	void set_output( int i, Blip_Buffer* buf, Blip_Buffer* = NULL, Blip_Buffer* = NULL ) { osc_output( 0, buf ); }
 	void end_frame( blip_time_t );
 	
-	void write_reg( int data ) { addr = data; }
+	void write_addr( int data ) { addr = data; }
 	void write_data( blip_time_t, int data );
 
 	int read( blip_time_t, int port );
 	
+	static bool supported() { return true; }
+
 private:
 	// noncopyable
 	Opl_Apu( const Opl_Apu& );
@@ -35,6 +39,7 @@ private:
 	type_t type_;
 	void* opl;
 	void* opl_memory;
+	//FILE* logfile;
 	unsigned char regs[ 0x100 ];
 	blip_time_t next_time;
 	int last_amp;
@@ -44,7 +49,7 @@ private:
 	long rate_;
 	blip_time_t period_;
 	
-	Blip_Synth<blip_med_quality,2048*9*2> synth;
+	Blip_Synth_Fast synth;
 	
 	void run_until( blip_time_t );
 };

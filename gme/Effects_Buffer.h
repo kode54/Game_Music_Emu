@@ -1,101 +1,149 @@
 // Multi-channel effects buffer with echo and individual panning for each channel
 
-// Game_Music_Emu 0.5.5
+// Game_Music_Emu $vers
 #ifndef EFFECTS_BUFFER_H
 #define EFFECTS_BUFFER_H
 
 #include "Multi_Buffer.h"
 
+// See Simple_Effects_Buffer (below) for a simpler interface
+
 class Effects_Buffer : public Multi_Buffer {
 public:
-	Effects_Buffer();
+	// To reduce memory usage, fewer buffers can be used (with a best-fit
+	// approach if there are too few), and maximum echo delay can be reduced
+	Effects_Buffer( int max_bufs = 32, int echo_size = 24 * 1024 );
 	
+	struct pan_vol_t
+	{
+		float vol; // 0.0 = silent, 0.5 = half volume, 1.0 = normal
+		float pan; // -1.0 = left, 0.0 = center, +1.0 = right
+	};
+	
+	// Global configuration
 	struct config_t
 	{
-		bool enabled; // false = disable all effects (acts like Stereo_Buffer)
+		bool enabled; // false = disable all effects
 		
-		// Simpler configuration
-		struct {
-			float echo;     // 0.0 = none, 1.0 = lots
-			float stereo;   // 0.0 = channels in center, 1.0 = channels on left/right
-			bool surround;  // true = put some channels in back (phase inverted)
-			bool enabled;   // false = ignore simple configuration
-		} simple;
-		
-		// More complex configuration
 		// Current sound is echoed at adjustable left/right delay,
 		// with reduced treble and volume (feedback). 
 		float treble;   // 1.0 = full treble, 0.1 = very little, 0.0 = silent
 		int delay [2];  // left, right delays (msec)
 		float feedback; // 0.0 = no echo, 0.5 = each echo half previous, 1.0 = cacophony
-		float side_vol [2] [2]; // left and right volumes for left and right side channels
+		pan_vol_t side_chans [2]; // left and right side channel volume and pan
 	};
 	config_t& config() { return config_; }
 	
-	struct chan_config_t
+	// Limits of delay (msec)
+	int min_delay() const;
+	int max_delay() const;
+	
+	// Per-channel configuration. Two or more channels with matching parameters are
+	// optimized to internally use the same buffer.
+	struct chan_config_t : pan_vol_t
 	{
-		float vol [2]; // left, right volumes
-		int type;
-		bool echo;     // false = channel doesn't have any echo
+		// (inherited from pan_vol_t)
+		//float vol;        // these only affect center channel
+		//float pan;
+		bool surround;  // if true, negates left volume to put sound in back
+		bool echo;      // false = channel doesn't have any echo
 	};
 	chan_config_t& chan_config( int i ) { return chans [i + extra_chans].cfg; }
 	
-	// Apply any changes made to config() and chan_config()
-	void apply_config();
+	// Applies any changes made to config() and chan_config()
+	virtual void apply_config();
 	
+// Implementation
 public:
 	~Effects_Buffer();
-	blargg_err_t set_sample_rate( long samples_per_sec, int msec = blip_default_length );
-	blargg_err_t set_channel_count( int );
-	void set_channel_types( int const* );
-	void clock_rate( long );
+	blargg_err_t set_sample_rate( int samples_per_sec, int msec = blip_default_length );
+	blargg_err_t set_channel_count( int, int const* = NULL );
+	void clock_rate( int );
 	void bass_freq( int );
 	void clear();
-	channel_t channel( int, int );
+	channel_t channel( int );
 	void end_frame( blip_time_t );
-	long read_samples( blip_sample_t*, long );
-	long samples_avail() const;
+	int read_samples( blip_sample_t [], int );
+	int samples_avail() const { return (bufs [0].samples_avail() - mixer.samples_read) * 2; }
 	enum { stereo = 2 };
-	typedef blargg_long fixed_t;
+	typedef int fixed_t;
+
+protected:
+	enum { extra_chans = stereo * stereo };
+
 private:
 	config_t config_;
-	long clock_rate_;
+	int clock_rate_;
 	int bass_freq_;
 	
-	long samples_avail_;
-	long samples_read;
+	int echo_size;
 	
 	struct chan_t
 	{
 		fixed_t vol [stereo];
-		Blip_Buffer bb;
 		chan_config_t cfg;
 		channel_t channel;
-		int modified;
 	};
-	chan_t* chans;
-	int chans_size;
-	enum { extra_chans = stereo * stereo };
+	blargg_vector<chan_t> chans;
+	
+	struct buf_t : Tracked_Blip_Buffer
+	{
+		// nasty: Blip_Buffer has something called fixed_t
+		Effects_Buffer::fixed_t vol [stereo];
+		bool echo;
+		
+		void* operator new ( size_t, void* p ) { return p; }
+		void operator delete ( void* ) { }
+		
+		~buf_t() { }
+	};
+	buf_t* bufs;
+	int bufs_size;
+	int bufs_max; // bufs_size <= bufs_max, to limit memory usage
+	Stereo_Mixer mixer;
 	
 	struct {
-		long delay [stereo];
+		int delay [stereo];
 		fixed_t treble;
 		fixed_t feedback;
 		fixed_t low_pass [stereo];
 	} s;
 	
 	blargg_vector<fixed_t> echo;
-	blargg_long echo_pos;
+	int echo_pos;
 	
 	bool no_effects;
 	bool no_echo;
 	
-	void apply_simple_config();
-	void optimize_config();
+	void assign_buffers();
 	void clear_echo();
-	void mix_effects( blip_sample_t* out, int pair_count );
-	void mix_stereo ( blip_sample_t* out, int pair_count );
-	void mix_mono   ( blip_sample_t* out, int pair_count );
+	void mix_effects( blip_sample_t out [], int pair_count );
+	blargg_err_t new_bufs( int size );
+	void delete_bufs();
+};
+
+// Simpler interface and lower memory usage
+class Simple_Effects_Buffer : public Effects_Buffer {
+public:
+	struct config_t
+	{
+		bool enabled;   // false = disable all effects
+		
+		float echo;     // 0.0 = none, 1.0 = lots
+		float stereo;   // 0.0 = channels in center, 1.0 = channels on left/right
+		bool surround;  // true = put some channels in back
+	};
+	config_t& config() { return config_; }
+	
+	// Applies any changes made to config()
+	void apply_config();
+	
+// Implementation
+public:
+	Simple_Effects_Buffer();
+private:
+	config_t config_;
+	void chan_config(); // hide
 };
 
 #endif

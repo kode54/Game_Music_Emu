@@ -1,6 +1,6 @@
 // M3U playlist file parser, with support for subtrack information
 
-// Game_Music_Emu 0.5.5
+// Game_Music_Emu $vers
 #ifndef M3U_PLAYLIST_H
 #define M3U_PLAYLIST_H
 
@@ -18,6 +18,7 @@ public:
 	// errors are ignored.
 	int first_error() const { return first_error_; }
 	
+	// All string pointers point to valid string, or "" if not available
 	struct info_t
 	{
 		const char* title;
@@ -31,12 +32,12 @@ public:
 	struct entry_t
 	{
 		const char* file; // filename without stupid ::TYPE suffix
-		const char* type; // if filename has ::TYPE suffix, this will be "TYPE". "" if none.
+		const char* type; // if filename has ::TYPE suffix, this is "TYPE", otherwise ""
 		const char* name;
-		bool decimal_track; // true if track was specified in hex
+		bool decimal_track; // true if track was specified in decimal
 		// integers are -1 if not present
-		int track;  // 1-based
-		int length; // seconds
+		int track;
+		int length; // milliseconds
 		int intro;
 		int loop;
 		int fade;
@@ -55,13 +56,24 @@ private:
 	
 	blargg_err_t parse();
 	blargg_err_t parse_();
+	void clear_();
 };
+
+inline void M3u_Playlist::clear_()
+{
+	info_.title    = "";
+	info_.composer = "";
+	info_.engineer = "";
+	info_.ripping  = "";
+	info_.tagging  = "";
+	entries.clear();
+	data.clear();
+}
 
 inline void M3u_Playlist::clear()
 {
 	first_error_ = 0;
-	entries.clear();
-	data.clear();
+	clear_();
 }
 
 #endif

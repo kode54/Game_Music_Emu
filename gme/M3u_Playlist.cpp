@@ -1,9 +1,7 @@
-// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
+// Game_Music_Emu $vers. http://www.slack.net/~ant/
 
 #include "M3u_Playlist.h"
 #include "Music_Emu.h"
-
-#include <string.h>
 
 /* Copyright (C) 2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -22,10 +20,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 blargg_err_t Gme_File::load_m3u_( blargg_err_t err )
 {
-	require( raw_track_count_ ); // file must be loaded first
-	
 	if ( !err )
 	{
+		require( raw_track_count_ ); // file must be loaded first
 		if ( playlist.size() )
 			track_count_ = playlist.size();
 		
@@ -48,19 +45,17 @@ blargg_err_t Gme_File::load_m3u_( blargg_err_t err )
 	return err;
 }
 
-blargg_err_t Gme_File::load_m3u( const char* path ) { return load_m3u_( playlist.load( path ) ); }
+blargg_err_t Gme_File::load_m3u( const char path [] ) { return load_m3u_( playlist.load( path ) ); }
 
 blargg_err_t Gme_File::load_m3u( Data_Reader& in )  { return load_m3u_( playlist.load( in ) ); }
 
-gme_err_t gme_load_m3u( Music_Emu* me, const char* path ) { return me->load_m3u( path ); }
+gme_err_t gme_load_m3u( Music_Emu* me, const char path [] ) { return me->load_m3u( path ); }
 
 gme_err_t gme_load_m3u_data( Music_Emu* me, const void* data, long size )
 {
 	Mem_File_Reader in( data, size );
 	return me->load_m3u( in );
 }
-
-
 
 static char* skip_white( char* in )
 {
@@ -82,7 +77,7 @@ static char* parse_filename( char* in, M3u_Playlist::entry_t& entry )
 		if ( !c ) break;
 		in++;
 		
-		/*if ( c == ',' ) // commas in filename
+		if ( c == ',' ) // commas in filename
 		{
 			char* p = skip_white( in );
 			if ( *p == '$' || from_dec( *p ) <= 9 )
@@ -90,7 +85,7 @@ static char* parse_filename( char* in, M3u_Playlist::entry_t& entry )
 				in = p;
 				break;
 			}
-		}*/
+		}
 		
 		if ( c == ':' && in [0] == ':' && in [1] && in [2] != ',' ) // ::type suffix
 		{
@@ -207,7 +202,7 @@ static char* parse_time_( char* in, int* out )
 			if ( n >= 0 )
 				*out = *out * 60 + n;
 		}
-		*out = *out * 1000L;
+		*out *= 1000;
 		if ( *in == '.' )
 		{
 			n = -1;
@@ -367,7 +362,7 @@ blargg_err_t M3u_Playlist::parse_()
 		while ( *in != CR && *in != LF )
 		{
 			if ( !*in )
-				return "Not an m3u playlist";
+				return blargg_err_file_type;
 			in++;
 		}
 		if ( in [0] == CR && in [1] == LF ) // treat CR,LF as a single line
@@ -393,8 +388,9 @@ blargg_err_t M3u_Playlist::parse_()
 		}
 	}
 	if ( count <= 0 )
-		return "Not an m3u playlist";
+		return blargg_err_file_type;
 	
+	// Treat first comment as title only if another field is also specified
 	if ( !(info_.composer [0] | info_.engineer [0] | info_.ripping [0] | info_.tagging [0]) )
 		info_.title = "";
 	
@@ -405,10 +401,7 @@ blargg_err_t M3u_Playlist::parse()
 {
 	blargg_err_t err = parse_();
 	if ( err )
-	{
-		entries.clear();
-		data.clear();
-	}
+		clear_();
 	return err;
 }
 
@@ -419,7 +412,7 @@ blargg_err_t M3u_Playlist::load( Data_Reader& in )
 	return parse();
 }
 
-blargg_err_t M3u_Playlist::load( const char* path )
+blargg_err_t M3u_Playlist::load( const char path [] )
 {
 	GME_FILE_READER in;
 	RETURN_ERR( in.open( path ) );
