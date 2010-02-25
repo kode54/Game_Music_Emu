@@ -271,7 +271,7 @@ int Hes_Apu_Adpcm::adpcm_decode( int code )
 	int step = stepsize[state.ad_ref_index];
 	int delta;
 	int c = code & 7;
-#if 0
+#if 1
 	delta = 0;
 	if ( c & 4 ) delta += step;
 	step >>= 1;
@@ -281,7 +281,7 @@ int Hes_Apu_Adpcm::adpcm_decode( int code )
 	step >>= 1;
 	delta += step;
 #else
-	delta = ( ( c + c + 1 ) * step ) / 8;
+	delta = ( ( c + c + 1 ) * step ) / 8; // maybe faster, but introduces rounding
 #endif
 	if ( c != code )
 	{
