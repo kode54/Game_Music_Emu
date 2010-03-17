@@ -27,6 +27,8 @@ public:
 
 	// Enables gaussian, cubic or sinc interpolation
 	void interpolation_level( int level = 0 )   { apu.interpolation_level( level ); }
+
+	const Snes_Spc * get_apu() const;
 	
 	// SPC file header
 	struct header_t
@@ -81,5 +83,7 @@ private:
 	int trailer_size_() const;
 	blargg_err_t play_and_filter( int count, sample_t out [] );
 };
+
+inline const Snes_Spc * Spc_Emu::get_apu() const { return &apu; }
 
 #endif

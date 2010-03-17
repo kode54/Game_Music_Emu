@@ -120,6 +120,9 @@ public:
 		int hidden_env;         // used by GAIN mode 7, very obscure quirk
 		uint8_t t_envx_out;
 	};
+
+	// kill me now
+	const voice_t * get_voice( int ch ) const;
 private:
 	enum { brr_block_size = 9 };
 	
@@ -281,6 +284,12 @@ inline void Spc_Dsp::mute_voices( int mask ) { m.mute_mask = mask; }
 inline void Spc_Dsp::disable_surround( bool disable )
 {
 	m.surround_threshold = disable ? 0 : -0x4000;
+}
+
+inline const Spc_Dsp::voice_t * Spc_Dsp::get_voice( int ch ) const
+{
+	assert( (unsigned) ch < voice_count );
+	return &m.voices[ ch ];
 }
 
 inline bool Spc_Dsp::check_kon()

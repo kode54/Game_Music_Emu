@@ -85,6 +85,9 @@ public:
 	
 	// Skips count samples. Several times faster than play() when using fast DSP.
 	blargg_err_t skip( int count );
+
+	// blah
+	const Spc_Dsp * get_dsp() const;
 	
 // State save/load (only available with accurate DSP)
 
@@ -283,6 +286,8 @@ inline void Snes_Spc::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
 
 inline void Snes_Spc::interpolation_level( int level ) { dsp.interpolation_level( level ); }
+
+inline const Spc_Dsp * Snes_Spc::get_dsp() const { return &dsp; };
 
 #if !SPC_NO_COPY_STATE_FUNCS
 inline bool Snes_Spc::check_kon() { return dsp.check_kon(); }
