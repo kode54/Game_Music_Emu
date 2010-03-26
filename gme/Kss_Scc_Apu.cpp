@@ -35,10 +35,10 @@ void Scc_Apu::volume( double v )
 void Scc_Apu::reset()
 {
 	last_time = 0;
-	
+
 	for ( int i = osc_count; --i >= 0; )
 		memset( &oscs [i], 0, offsetof (osc_t,output) );
-	
+
 	memset( regs, 0, sizeof regs );
 }
 
@@ -54,26 +54,26 @@ void Scc_Apu::run_until( blip_time_t end_time )
 	for ( int index = 0; index < osc_count; index++ )
 	{
 		osc_t& osc = oscs [index];
-		
+
 		Blip_Buffer* const output = osc.output;
 		if ( !output )
 			continue;
-		
-		blip_time_t period = (regs [0x80 + index * 2 + 1] & 0x0F) * 0x100 +
-				regs [0x80 + index * 2] + 1;
+
+		blip_time_t period = (regs [0xA0 + index * 2 + 1] & 0x0F) * 0x100 +
+				regs [0xA0 + index * 2] + 1;
 		int volume = 0;
-		if ( regs [0x8F] & (1 << index) )
+		if ( regs [0xAF] & (1 << index) )
 		{
 			blip_time_t inaudible_period = (unsigned) (output->clock_rate() +
 					inaudible_freq * 32) / (unsigned) (inaudible_freq * 16);
 			if ( period > inaudible_period )
-				volume = (regs [0x8A + index] & 0x0F) * (amp_range / 256 / 15);
+				volume = (regs [0xAA + index] & 0x0F) * (amp_range / 256 / 15);
 		}
-		
+
 		BOOST::int8_t const* wave = (BOOST::int8_t*) regs + index * wave_size;
-		if ( index == osc_count - 1 )
-			wave -= wave_size; // last two oscs share same wave RAM
-		
+		/*if ( index == osc_count - 1 )
+			wave -= wave_size; // last two oscs share same wave RAM*/
+
 		{
 			int delta = wave [osc.phase] * volume - osc.last_amp;
 			if ( delta )
@@ -83,7 +83,7 @@ void Scc_Apu::run_until( blip_time_t end_time )
 				synth.offset( last_time, delta, output );
 			}
 		}
-		
+
 		blip_time_t time = last_time + osc.delay;
 		if ( time < end_time )
 		{
@@ -111,7 +111,7 @@ void Scc_Apu::run_until( blip_time_t end_time )
 					time += period;
 				}
 				while ( time < end_time );
-				
+
 				osc.last_amp = last_wave * volume;
 				output->set_modified();
 				phase--; // undo pre-advance
