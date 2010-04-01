@@ -849,6 +849,10 @@ inline void Spc_Dsp::voice_output( voice_t const* v, int ch )
 	// Apply left/right volume
 	int amp = (m.t_output * vol) >> 7;
 	
+	int abs_amp = abs( amp );
+	if ( abs_amp > m.max_level[v - (const Spc_Dsp::voice_t *)&m.voices][ch] )
+		m.max_level[v - (const Spc_Dsp::voice_t *)&m.voices][ch] = abs_amp;
+	
 	// Add to output total
 	m.t_main_out [ch] += amp;
 	CLAMP16( m.t_main_out [ch] );

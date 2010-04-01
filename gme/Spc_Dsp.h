@@ -123,6 +123,7 @@ public:
 
 	// kill me now
 	const voice_t * get_voice( int ch ) const;
+	const int get_max_level( int v, int ch ) const;
 private:
 	enum { brr_block_size = 9 };
 	
@@ -190,6 +191,8 @@ private:
 		sample_t* out_end;
 		sample_t* out_begin;
 		sample_t extra [extra_size];
+
+		int max_level[voice_count][2];
 	};
 	state_t m;
 	
@@ -290,6 +293,15 @@ inline const Spc_Dsp::voice_t * Spc_Dsp::get_voice( int ch ) const
 {
 	assert( (unsigned) ch < voice_count );
 	return &m.voices[ ch ];
+}
+
+inline const int Spc_Dsp::get_max_level( int v, int ch ) const
+{
+	assert( (unsigned) v < voice_count );
+	assert( (unsigned) ch < 2 );
+	int ret = m.max_level[ v ][ ch ];
+	(( Spc_Dsp * )this)->m.max_level[ v ][ ch ] = 0;
+	return ret;
 }
 
 inline bool Spc_Dsp::check_kon()
