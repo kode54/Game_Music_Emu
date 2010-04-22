@@ -72,7 +72,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>c:\programming;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\programming;c:\programming\File_Extractor\fex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -87,7 +87,7 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>c:\programming;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\programming;c:\programming\File_Extractor\fex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
@@ -105,7 +105,7 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>c:\programming;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\programming;c:\programming\File_Extractor\fex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
@@ -128,7 +128,6 @@
     <ClCompile Include="..\gme\blargg_errors.cpp" />
     <ClCompile Include="..\gme\Blip_Buffer.cpp" />
     <ClCompile Include="..\gme\Classic_Emu.cpp" />
-    <ClCompile Include="..\gme\Data_Reader.cpp" />
     <ClCompile Include="..\gme\Downsampler.cpp" />
     <ClCompile Include="..\gme\Dual_Resampler.cpp" />
     <ClCompile Include="..\gme\Effects_Buffer.cpp" />
@@ -210,7 +209,6 @@
     <ClInclude Include="..\gme\Blip_Buffer_impl.h" />
     <ClInclude Include="..\gme\Blip_Buffer_impl2.h" />
     <ClInclude Include="..\gme\Classic_Emu.h" />
-    <ClInclude Include="..\gme\Data_Reader.h" />
     <ClInclude Include="..\gme\Downsampler.h" />
     <ClInclude Include="..\gme\Dual_Resampler.h" />
     <ClInclude Include="..\gme\Effects_Buffer.h" />
@@ -279,6 +277,11 @@
     <ClInclude Include="..\gme\ymdeltat.h" />
     <ClInclude Include="..\gme\Z80_Cpu.h" />
     <ClInclude Include="..\gme\Z80_Cpu_run.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\File_Extractor\win32\File_Extractor\File_Extractor.vcxproj">
+      <Project>{e7dd9fb8-a045-42a3-a25a-37a96b1421ae}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
