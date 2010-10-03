@@ -212,7 +212,6 @@
     <ClInclude Include="..\gme\Downsampler.h" />
     <ClInclude Include="..\gme\Dual_Resampler.h" />
     <ClInclude Include="..\gme\Effects_Buffer.h" />
-    <ClInclude Include="..\gme\emu2413.h" />
     <ClInclude Include="..\gme\Fir_Resampler.h" />
     <ClInclude Include="..\gme\fmopl.h" />
     <ClInclude Include="..\gme\Gb_Apu.h" />
