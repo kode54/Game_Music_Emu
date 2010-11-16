@@ -2170,17 +2170,17 @@ void YM2612UpdateOne(YM2612 *F2612, short *buffer, int length)
 		{
 			int lt,rt;
 
-			if (OPN->out_fm[0] > 8191) OPN->out_fm[0] = 8191;
+			if (OPN->out_fm[0] > 8192) OPN->out_fm[0] = 8192;
 			else if (OPN->out_fm[0] < -8192) OPN->out_fm[0] = -8192;
-			if (OPN->out_fm[1] > 8191) OPN->out_fm[1] = 8191;
+			if (OPN->out_fm[1] > 8192) OPN->out_fm[1] = 8192;
 			else if (OPN->out_fm[1] < -8192) OPN->out_fm[1] = -8192;
-			if (OPN->out_fm[2] > 8191) OPN->out_fm[2] = 8191;
+			if (OPN->out_fm[2] > 8192) OPN->out_fm[2] = 8192;
 			else if (OPN->out_fm[2] < -8192) OPN->out_fm[2] = -8192;
-			if (OPN->out_fm[3] > 8191) OPN->out_fm[3] = 8191;
+			if (OPN->out_fm[3] > 8192) OPN->out_fm[3] = 8192;
 			else if (OPN->out_fm[3] < -8192) OPN->out_fm[3] = -8192;
-			if (OPN->out_fm[4] > 8191) OPN->out_fm[4] = 8191;
+			if (OPN->out_fm[4] > 8192) OPN->out_fm[4] = 8192;
 			else if (OPN->out_fm[4] < -8192) OPN->out_fm[4] = -8192;
-			if (OPN->out_fm[5] > 8191) OPN->out_fm[5] = 8191;
+			if (OPN->out_fm[5] > 8192) OPN->out_fm[5] = 8192;
 			else if (OPN->out_fm[5] < -8192) OPN->out_fm[5] = -8192;
 
 			lt  = ((OPN->out_fm[0]>>0) & OPN->pan[0]);
