@@ -169,6 +169,7 @@ private:
 		rel_time_t  dsp_time;
 		time_t      spc_time;
 		bool        echo_accessed;
+		bool        echo_cleared;
 		
 		int         tempo;
 		int         skipped_kon;

@@ -171,7 +171,16 @@ inline void Snes_Spc::dsp_write( int data, rel_time_t time )
 	#endif
 	
 	if ( REGS [r_dspaddr] <= 0x7F )
-		dsp.write( REGS [r_dspaddr], data );
+	{
+		if ( REGS [r_dspaddr] != Spc_Dsp::r_flg )
+			dsp.write( REGS [r_dspaddr], data );
+		else
+		{
+			int prev = dsp.read( Spc_Dsp::r_flg );
+			dsp.write( Spc_Dsp::r_flg, data );
+			if ( ( data & 0x20 ) == ( ( data ^ prev ) & 0x20 ) ) clear_echo();
+		}
+	}
 	else if ( !SPC_MORE_ACCURACY )
 		dprintf( "SPC wrote to DSP register > $7F\n" );
 }
