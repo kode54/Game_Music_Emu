@@ -127,7 +127,12 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 	out->song      [0] = 0;
 	out->game      [0] = 0;
 	out->author    [0] = 0;
+	out->composer  [0] = 0;
+	out->engineer  [0] = 0;
+	out->sequencer [0] = 0;
+	out->tagger    [0] = 0;
 	out->copyright [0] = 0;
+	out->date      [0] = 0;
 	out->comment   [0] = 0;
 	out->dumper    [0] = 0;
 	out->system    [0] = 0;
@@ -145,10 +150,14 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 	if ( playlist.size() )
 	{
 		M3u_Playlist::info_t const& i = playlist.info();
-		copy_field_( out->game  , i.title );
-		copy_field_( out->author, i.engineer );
-		copy_field_( out->author, i.composer );
-		copy_field_( out->dumper, i.ripping );
+		copy_field_( out->game     , i.title );
+		copy_field_( out->author   , i.artist );
+		copy_field_( out->engineer , i.engineer );
+		copy_field_( out->composer , i.composer );
+		copy_field_( out->sequencer, i.sequencer );
+		copy_field_( out->dumper   , i.ripping );
+		copy_field_( out->tagger   , i.tagging );
+		copy_field_( out->date     , i.date );
 		
 		M3u_Playlist::entry_t const& e = playlist [track];
 		if ( e.length >= 0 ) out->length       = e.length;

@@ -27,7 +27,12 @@ struct track_info_t
 	char game      [256];
 	char song      [256];
 	char author    [256];
+	char composer  [256];
+	char engineer  [256];
+	char sequencer [256];
+	char tagger    [256];
 	char copyright [256];
+	char date      [256];
 	char comment   [256];
 	char dumper    [256];
 	char disc      [256];
