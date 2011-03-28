@@ -43,7 +43,7 @@ Music_Emu::gme_t()
 	
 	// defaults
 	tfilter = track_filter.setup();
-	set_max_initial_silence( 2 );
+	set_max_initial_silence( 15 );
 	set_silence_lookahead( 3 );
 	ignore_silence( false );
 	

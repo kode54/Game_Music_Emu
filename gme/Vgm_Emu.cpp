@@ -27,6 +27,7 @@ Vgm_Emu::Vgm_Emu()
 	resampler.set_callback( play_frame_, this );
 	disable_oversampling_ = false;
 	set_type( gme_vgm_type );
+	set_max_initial_silence( 1 );
 	set_silence_lookahead( 1 ); // tracks should already be trimmed
 	
 	static equalizer_t const eq = { -14.0, 80 };
