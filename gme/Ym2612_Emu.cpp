@@ -2199,6 +2199,9 @@ void YM2612UpdateOne(YM2612 *F2612, short *buffer, int length)
 			lt >>= 1;
 			rt >>= 1;
 
+			lt += buffer[i*2];
+			rt += buffer[i*2+1];
+
 			Limit( lt );
 			Limit( rt );
 

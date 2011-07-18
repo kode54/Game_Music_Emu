@@ -79,6 +79,20 @@ inline unsigned get_be16( void const* p )
 			(unsigned) ((unsigned char const*) p) [1];
 }
 
+inline unsigned get_le24( void const* p )
+{
+	return	(unsigned) ((unsigned char const*) p) [2] << 16 |
+			(unsigned) ((unsigned char const*) p) [1] << 8 |
+			(unsigned) ((unsigned char const*) p) [0];
+}
+
+inline unsigned get_be24( void const* p )
+{
+	return	(unsigned) ((unsigned char const*) p) [0] << 16 |
+			(unsigned) ((unsigned char const*) p) [1] << 8 |
+			(unsigned) ((unsigned char const*) p) [2];
+}
+
 inline unsigned get_le32( void const* p )
 {
 	return  (unsigned) ((unsigned char const*) p) [3] << 24 |
