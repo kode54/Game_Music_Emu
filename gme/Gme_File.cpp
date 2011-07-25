@@ -155,6 +155,7 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 		copy_field_( out->engineer , i.engineer );
 		copy_field_( out->composer , i.composer );
 		copy_field_( out->sequencer, i.sequencer );
+		copy_field_( out->copyright, i.copyright );
 		copy_field_( out->dumper   , i.ripping );
 		copy_field_( out->tagger   , i.tagging );
 		copy_field_( out->date     , i.date );

@@ -320,10 +320,13 @@ static void parse_comment( char* in, M3u_Playlist::info_t& info, char *& last_co
 		if ( *text )
 		{
 			*in = 0;
-			     if ( !strcmp( "Composer", field ) ) info.composer = text;
-			else if ( !strcmp( "Engineer", field ) ) info.engineer = text;
-			else if ( !strcmp( "Ripping" , field ) ) info.ripping  = text;
-			else if ( !strcmp( "Tagging" , field ) ) info.tagging  = text;
+			     if ( !strcmp( "Composer" , field ) ) info.composer  = text;
+			else if ( !strcmp( "Engineer" , field ) ) info.engineer  = text;
+			else if ( !strcmp( "Ripping"  , field ) ) info.ripping   = text;
+			else if ( !strcmp( "Tagging"  , field ) ) info.tagging   = text;
+			else if ( !strcmp( "Game"     , field ) ) info.title     = text;
+			else if ( !strcmp( "Artist"   , field ) ) info.artist    = text;
+			else if ( !strcmp( "Copyright", field ) ) info.copyright = text;
 			else
 				text = 0;
 			if ( text )
@@ -385,6 +388,7 @@ blargg_err_t M3u_Playlist::parse_()
 	info_.engineer  = "";
 	info_.ripping   = "";
 	info_.tagging   = "";
+	info_.copyright = "";
 	
 	int const CR = 13;
 	int const LF = 10;
@@ -435,7 +439,7 @@ blargg_err_t M3u_Playlist::parse_()
 		return blargg_err_file_type;
 	
 	// Treat first comment as title only if another field is also specified
-	if ( !(info_.artist [0] | info_.composer [0] | info_.date [0] | info_.engineer [0] | info_.ripping [0] | info_.sequencer [0] | info_.tagging [0]) )
+	if ( !(info_.artist [0] | info_.composer [0] | info_.date [0] | info_.engineer [0] | info_.ripping [0] | info_.sequencer [0] | info_.tagging [0] | info_.copyright[0]) )
 		info_.title = "";
 	
 	return entries.resize( count );

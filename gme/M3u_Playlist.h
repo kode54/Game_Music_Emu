@@ -29,6 +29,7 @@ public:
 		const char* engineer;
 		const char* ripping;
 		const char* tagging;
+		const char* copyright;
 	};
 	info_t const& info() const { return info_; }
 	
@@ -64,11 +65,15 @@ private:
 
 inline void M3u_Playlist::clear_()
 {
-	info_.title    = "";
-	info_.composer = "";
-	info_.engineer = "";
-	info_.ripping  = "";
-	info_.tagging  = "";
+	info_.title     = "";
+	info_.artist    = "";
+	info_.date      = "";
+	info_.composer  = "";
+	info_.sequencer = "";
+	info_.engineer  = "";
+	info_.ripping   = "";
+	info_.tagging   = "";
+	info_.copyright = "";
 	entries.clear();
 	data.clear();
 }
