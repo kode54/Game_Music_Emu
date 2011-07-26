@@ -129,7 +129,7 @@ blargg_err_t Vgm_Emu::track_info_( track_info_t* out, int ) const
 	if ( gd3_offset < 0 )
 		return blargg_ok;
 	
-	byte const* gd3 = core.file_begin() + header_t::size + gd3_offset;
+	byte const* gd3 = core.file_begin() + 0x40 + gd3_offset;
 	int gd3_size = check_gd3_header( gd3, core.file_end() - gd3 );
 	if ( gd3_size )
 	{
@@ -149,7 +149,7 @@ blargg_err_t Vgm_Emu::gd3_data( const unsigned char ** data, int * size )
 	if ( gd3_offset < 0 )
 		return blargg_ok;
 
-	byte const* gd3 = core.file_begin() + header_t::size + gd3_offset;
+	byte const* gd3 = core.file_begin() + 0x40 + gd3_offset;
 	int gd3_size = check_gd3_header( gd3, core.file_end() - gd3 );
 	if ( gd3_size )
 	{
@@ -178,7 +178,7 @@ struct Vgm_File : Gme_Info_
 			return blargg_err_file_type;
 		
 		int gd3_offset = get_le32( h.gd3_offset ) - 0x2C;
-		int remain = file_size - h.size - gd3_offset;
+		int remain = file_size - 0x40 - gd3_offset;
 		byte gd3_h [gd3_header_size];
 		if ( gd3_offset > 0 && remain >= gd3_header_size )
 		{

@@ -253,7 +253,7 @@ void Vgm_Core::start_track()
 
 	dac_disabled[ 0 ] = -1;
 	dac_disabled[ 1 ] = -1;
-	pos          = file_begin() + header_t::size;
+	pos          = file_begin() + 0x40;
 	pcm_data     = pos;
 	pcm_pos      = pos;
 	dac_amp[ 0 ] = -1;
