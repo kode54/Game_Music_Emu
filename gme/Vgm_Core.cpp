@@ -23,8 +23,6 @@ int const fm_time_bits   = 12;
 int const blip_time_bits = 12;
 
 enum {
-	cmd_psg_2           = 0x30,
-	cmd_gg_stereo_2     = 0x3F,
 	cmd_gg_stereo       = 0x4F,
 	cmd_psg             = 0x50,
 	cmd_ym2413          = 0x51,
@@ -37,28 +35,11 @@ enum {
 	cmd_byte_delay      = 0x64,
 	cmd_end             = 0x66,
 	cmd_data_block      = 0x67,
-	cmd_data_write      = 0x68,
 	cmd_short_delay     = 0x70,
 	cmd_pcm_delay       = 0x80,
-	cmd_dac_ctrl_setup  = 0x90,
-	cmd_dac_ctrl_data   = 0x91,
-	cmd_dac_ctrl_freq   = 0x92,
-	cmd_dac_ctrl_play   = 0x93,
-	cmd_dac_ctrl_stop   = 0x94,
-	cmd_dac_ctrl_play_s = 0x95,
-	cmd_ym2413_2        = 0xA1,
-	cmd_ym2612_2_port0  = 0xA2,
-	cmd_ym2612_2_port1  = 0xA3,
-	cmd_ym2151_2        = 0xA4,
-	cmd_rf5c164_write   = 0xB1,
-	cmd_pwm_write       = 0xB2,
-	cmd_rf5c164_write_m = 0xC2,
 	cmd_pcm_seek        = 0xE0,
 	
 	pcm_block_type      = 0x00,
-	rf5c164_block_type  = 0x02,
-	rf5c164_ram_write   = 0xC1,
-	pwm_block_type      = 0x03,
 	ym2612_dac_port     = 0x2A,
 	ym2612_dac_pan_port = 0xB6
 };
@@ -74,17 +55,17 @@ inline int command_len( int command )
 	return len;
 }
 
-int Vgm_Core::run_ym2413( int chip, int time )
+int Vgm_Core::run_ym2413( int time )
 {
-	return ym2413[ chip ].run_until( time );
+	return ym2413.run_until( time );
 }
 
-int Vgm_Core::run_ym2612( int chip, int time )
+int Vgm_Core::run_ym2612( int time )
 {
-	return ym2612[ chip ].run_until( time );
+	return ym2612.run_until( time );
 }
 
-Vgm_Core::Vgm_Core() { blip_buf[ 1 ] = blip_buf[ 0 ] = stereo_buf.center(); }
+Vgm_Core::Vgm_Core() { blip_buf = stereo_buf.center(); }
 
 void Vgm_Core::set_tempo( double t )
 {
@@ -110,7 +91,7 @@ bool Vgm_Core::header_t::valid_tag() const
 
 blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 {
-	assert( offsetof (header_t,loop_modifier) + sizeof (((header_t*)0)->loop_modifier) == header_t::size );
+	assert( offsetof (header_t,unused2 [8]) == header_t::size );
 	
 	if ( size <= header_t::size )
 		return blargg_err_file_type;
@@ -135,10 +116,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	
 	// Disable FM
 	fm_rate = 0;
-	ym2612[ 0 ].enable( false );
-	ym2612[ 1 ].enable( false );
-	ym2413[ 0 ].enable( false );
-	ym2413[ 1 ].enable( false );
+	ym2612.enable( false );
+	ym2413.enable( false );
 	
 	set_tempo( 1 );
 	
@@ -157,7 +136,6 @@ void Vgm_Core::update_fm_rates( int* ym2413_rate, int* ym2612_rate ) const
 			return;
 		
 		case cmd_psg:
-		case cmd_psg_2:
 		case cmd_byte_delay:
 			p += 2;
 			break;
@@ -169,26 +147,18 @@ void Vgm_Core::update_fm_rates( int* ym2413_rate, int* ym2612_rate ) const
 		case cmd_data_block:
 			p += 7 + get_le32( p + 3 );
 			break;
-
-		case cmd_data_write:
-			p += 12;
-			break;
 		
 		case cmd_ym2413:
-		case cmd_ym2413_2:
 			*ym2612_rate = 0;
 			return;
 		
 		case cmd_ym2612_port0:
 		case cmd_ym2612_port1:
-		case cmd_ym2612_2_port0:
-		case cmd_ym2612_2_port1:
 			*ym2612_rate = *ym2413_rate;
 			*ym2413_rate = 0;
 			return;
 		
 		case cmd_ym2151:
-		case cmd_ym2151_2:
 			*ym2413_rate = 0;
 			*ym2612_rate = 0;
 			return;
@@ -208,34 +178,20 @@ blargg_err_t Vgm_Core::init_fm( double* rate )
 	
 	if ( ym2612_rate )
 	{
-		bool second_chip = !!(ym2612_rate & 0x40000000);
-		ym2612_rate &= ~0x40000000;
 		if ( !*rate )
 			*rate = ym2612_rate / 144.0;
-		RETURN_ERR( ym2612[0].set_rate( *rate, ym2612_rate ) );
-		ym2612[0].enable();
-		if ( second_chip )
-		{
-			RETURN_ERR( ym2612[1].set_rate( *rate, ym2612_rate ) );
-			ym2612[1].enable();
-		}
+		RETURN_ERR( ym2612.set_rate( *rate, ym2612_rate ) );
+		ym2612.enable();
 	}
 	else if ( ym2413_rate )
 	{
-		bool second_chip = !!( ym2413_rate & 0x40000000 );
-		ym2413_rate &= ~0x40000000;
 		if ( !*rate )
 			*rate = ym2413_rate / 72.0;
-		int result = ym2413[0].set_rate( *rate, ym2413_rate );
+		int result = ym2413.set_rate( *rate, ym2413_rate );
 		if ( result == 2 )
 			return "YM2413 FM sound not supported";
 		CHECK_ALLOC( !result );
-		ym2413[0].enable();
-		if ( second_chip )
-		{
-			ym2413[1].set_rate( *rate, ym2413_rate );
-			ym2413[1].enable();
-		}
+		ym2413.enable();
 	}
 	
 	fm_rate = *rate;
@@ -245,19 +201,15 @@ blargg_err_t Vgm_Core::init_fm( double* rate )
 
 void Vgm_Core::start_track()
 {
-	psg[ 0 ].reset( get_le16( header().noise_feedback ), header().noise_width );
-	psg[ 1 ].reset( get_le16( header().noise_feedback ), header().noise_width );
+	psg.reset( get_le16( header().noise_feedback ), header().noise_width );
 	
-	blip_buf[ 0 ] = stereo_buf.center();
-	blip_buf[ 1 ] = blip_buf[ 0 ];
+	blip_buf = stereo_buf.center();
 
-	dac_disabled[ 0 ] = -1;
-	dac_disabled[ 1 ] = -1;
-	pos          = file_begin() + 0x40;
+	dac_disabled = -1;
+	pos          = file_begin() + header_t::size;
 	pcm_data     = pos;
 	pcm_pos      = pos;
-	dac_amp[ 0 ] = -1;
-	dac_amp[ 1 ] = -1;
+	dac_amp      = -1;
 	vgm_time     = 0;
 	if ( get_le32( header().version ) >= 0x150 )
 	{
@@ -269,15 +221,11 @@ void Vgm_Core::start_track()
 	
 	if ( uses_fm() )
 	{
-		if ( ym2413[0].enabled() )
-			ym2413[0].reset();
-		if ( ym2413[1].enabled() )
-			ym2413[1].reset();
+		if ( ym2413.enabled() )
+			ym2413.reset();
 		
-		if ( ym2612[0].enabled() )
-			ym2612[0].reset();
-		if ( ym2612[1].enabled() )
-			ym2612[1].reset();
+		if ( ym2612.enabled() )
+			ym2612.reset();
 		
 		stereo_buf.clear();
 	}
@@ -295,39 +243,40 @@ inline blip_time_t Vgm_Core::to_psg_time( vgm_time_t t ) const
 	return (t * blip_time_factor) >> blip_time_bits;
 }
 
-void Vgm_Core::write_pcm( vgm_time_t vgm_time, int chip, int amp )
+void Vgm_Core::write_pcm( vgm_time_t vgm_time, int amp )
 {
-	if ( blip_buf[ chip ] )
+	if ( blip_buf )
 	{
 		check( amp >= 0 );
 		blip_time_t blip_time = to_psg_time( vgm_time );
-		int old = dac_amp[ chip ];
+		int old = dac_amp;
 		int delta = amp - old;
-		dac_amp[ chip ] = amp;
-		blip_buf[ chip ]->set_modified();
+		dac_amp = amp;
+		blip_buf->set_modified();
 		if ( old >= 0 ) // first write is ignored, to avoid click
-			pcm.offset_inline( blip_time, delta, blip_buf[ chip ] );
+			pcm.offset_inline( blip_time, delta, blip_buf );
 		else
-			dac_amp[ chip ] |= dac_disabled[ chip ];
+			dac_amp |= dac_disabled;
 	}
 }
 
 blip_time_t Vgm_Core::run( vgm_time_t end_time )
 {
 	vgm_time_t vgm_time = this->vgm_time; 
+	vgm_time_t vgm_loop_time = ~0;
 	byte const* pos = this->pos;
 	if ( pos > file_end() )
 		set_warning( "Stream lacked end event" );
 	
 	while ( vgm_time < end_time && pos < file_end() )
 	{
-		int current_chip = 0;
-
 		// TODO: be sure there are enough bytes left in stream for particular command
 		// so we don't read past end
 		switch ( *pos++ )
 		{
 		case cmd_end:
+			if ( vgm_loop_time == ~0 ) vgm_loop_time = vgm_time;
+			else if ( vgm_loop_time == vgm_time ) loop_begin = file_end(); // XXX some files may loop forever on a region without any delay commands
 			pos = loop_begin; // if not looped, loop_begin == file_end()
 			break;
 		
@@ -339,16 +288,12 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			vgm_time += 882;
 			break;
 		
-		case cmd_gg_stereo_2:
-			current_chip = 1;
 		case cmd_gg_stereo:
-			psg[ current_chip ].write_ggstereo( to_psg_time( vgm_time ), *pos++ );
+			psg.write_ggstereo( to_psg_time( vgm_time ), *pos++ );
 			break;
 		
-		case cmd_psg_2:
-			current_chip = 1;
 		case cmd_psg:
-			psg[ current_chip ].write_data( to_psg_time( vgm_time ), *pos++ );
+			psg.write_data( to_psg_time( vgm_time ), *pos++ );
 			break;
 		
 		case cmd_delay:
@@ -360,37 +305,31 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			vgm_time += *pos++;
 			break;
 		
-		case cmd_ym2413_2:
-			current_chip = 1;
 		case cmd_ym2413:
-			if ( run_ym2413( current_chip, to_fm_time( vgm_time ) ) )
-				ym2413[ current_chip ].write( pos [0], pos [1] );
+			if ( run_ym2413( to_fm_time( vgm_time ) ) )
+				ym2413.write( pos [0], pos [1] );
 			pos += 2;
 			break;
 		
-		case cmd_ym2612_2_port0:
-			current_chip = 1;
 		case cmd_ym2612_port0:
 			if ( pos [0] == ym2612_dac_port )
 			{
-				write_pcm( vgm_time, current_chip, pos [1] );
+				write_pcm( vgm_time, pos [1] );
 			}
-			else if ( run_ym2612( current_chip, to_fm_time( vgm_time ) ) )
+			else if ( run_ym2612( to_fm_time( vgm_time ) ) )
 			{
 				if ( pos [0] == 0x2B )
 				{
-					dac_disabled[ current_chip ] = (pos [1] >> 7 & 1) - 1;
-					dac_amp[ current_chip ] |= dac_disabled[ current_chip ];
+					dac_disabled = (pos [1] >> 7 & 1) - 1;
+					dac_amp |= dac_disabled;
 				}
-				ym2612[ current_chip ].write0( pos [0], pos [1] );
+				ym2612.write0( pos [0], pos [1] );
 			}
 			pos += 2;
 			break;
 		
-		case cmd_ym2612_2_port1:
-			current_chip = 1;
 		case cmd_ym2612_port1:
-			if ( run_ym2612( current_chip, to_fm_time( vgm_time ) ) )
+			if ( run_ym2612( to_fm_time( vgm_time ) ) )
 			{
 				if ( pos [0] == ym2612_dac_pan_port )
 				{
@@ -408,9 +347,9 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 						if ( this->blip_buf ) pcm.offset_inline( blip_time, -dac_amp, this->blip_buf );
 						if ( blip_buf )       pcm.offset_inline( blip_time,  dac_amp, blip_buf );
 					}*/
-					this->blip_buf[ current_chip ] = blip_buf;
+					this->blip_buf = blip_buf;
 				}
-				ym2612[ current_chip ].write1( pos [0], pos [1] );
+				ym2612.write1( pos [0], pos [1] );
 			}
 			pos += 2;
 			break;
@@ -420,48 +359,9 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			int type = pos [1];
 			int size = get_le32( pos + 2 );
 			pos += 6;
-			switch ( type & 0xC0 )
-			{
-			case 0x00:
-			case 0x40:
-				if ( type == pcm_block_type )
-					pcm_data = pos;
-				else if ( type == rf5c164_block_type )
-					rf5c164_data = pos;
-				else if ( type == pwm_block_type )
-					pwm_data = pos;
-				break;
-			case 0xC0:
-				{
-					int write_offset = get_le16( pos );
-					if ( type == rf5c164_ram_write )
-					{
-						// rf5c164.write_ram( write_offset, pos + 2, size - 2 )
-					}
-				}
-				break;
-			}
+			if ( type == pcm_block_type )
+				pcm_data = pos;
 			pos += size;
-			break;
-		}
-
-		case cmd_data_write: {
-			check( *pos == cmd_end );
-			int type = pos [1];
-			int data_start = get_le24( pos + 2 );
-			int write_offset = get_le24( pos + 5 );
-			int data_length = get_le24( pos + 8 );
-			pos += 11;
-			if ( !data_length ) data_length = 0x1000000;
-			byte const* rom_data;
-			switch ( type )
-			{
-			// case 0x01: // rf5c68
-			case 0x02:
-				rom_data = rf5c164_data + data_start;
-				// rf5c68.rom_write( write_offset, data_length, rom_data );
-				break;
-			}
 			break;
 		}
 		
@@ -476,7 +376,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			switch ( cmd & 0xF0 )
 			{
 				case cmd_pcm_delay:
-					write_pcm( vgm_time, 0, *pcm_pos++ );
+					write_pcm( vgm_time, *pcm_pos++ );
 					vgm_time += cmd & 0x0F;
 					break;
 				
@@ -504,8 +404,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 blip_time_t Vgm_Core::run_psg( int msec )
 {
 	blip_time_t t = run( msec * vgm_rate / 1000 );
-	psg[ 0 ].end_frame( t );
-	psg[ 1 ].end_frame( t );
+	psg.end_frame( t );
 	return t;
 }
 
@@ -520,31 +419,23 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		vgm_time++;
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
-	if ( ym2612[ 0 ].enabled() )
+	if ( ym2612.enabled() )
 	{
-		ym2612[ 0 ].begin_frame( out );
-		if ( ym2612[ 1 ].enabled() )
-			ym2612[ 1 ].begin_frame( out );
+		ym2612.begin_frame( out );
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
-	else if ( ym2413[ 0 ].enabled() )
+	else if ( ym2413.enabled() )
 	{
-		ym2413[ 0 ].begin_frame( out );
-		if ( ym2413[ 1 ].enabled() )
-			ym2413[ 1 ].begin_frame( out );
-		memset( out, 0, pairs * stereo * sizeof *out );
+		ym2413.begin_frame( out );
 	}
 	
 	run( vgm_time );
-	run_ym2612( 0, pairs );
-	run_ym2612( 1, pairs );
-	run_ym2413( 0, pairs );
-	run_ym2413( 1, pairs );
+	run_ym2612( pairs );
+	run_ym2413( pairs );
 	
 	fm_time_offset = (vgm_time * fm_time_factor + fm_time_offset) - (pairs << fm_time_bits);
 	
-	psg[ 0 ].end_frame( blip_time );
-	psg[ 1 ].end_frame( blip_time );
+	psg.end_frame( blip_time );
 	
 	return pairs * stereo;
 }
