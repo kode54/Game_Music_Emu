@@ -17,6 +17,7 @@ struct track_info_t
 	int intro_length;   /* length of song up to looping section */
 	int loop_length;    /* length of looping section */
 	int fade_length;
+	int repeat_count;
 	
 	/* Length if available, otherwise intro_length+loop_length*2 if available,
 	otherwise a default of 150000 (2.5 minutes). */

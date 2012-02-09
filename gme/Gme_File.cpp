@@ -124,6 +124,7 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 	out->intro_length  = -1;
 	out->fade_length   = -1;
 	out->play_length   = -1;
+	out->repeat_count  = -1;
 	out->song      [0] = 0;
 	out->game      [0] = 0;
 	out->author    [0] = 0;
@@ -165,6 +166,7 @@ blargg_err_t Gme_File::track_info( track_info_t* out, int track ) const
 		if ( e.intro  >= 0 ) out->intro_length = e.intro;
 		if ( e.loop   >= 0 ) out->loop_length  = e.loop;
 		if ( e.fade   >= 0 ) out->fade_length  = e.fade;
+		if ( e.repeat >= 0 ) out->repeat_count = e.repeat;
 		copy_field_( out->song, e.name );
 	}
 	

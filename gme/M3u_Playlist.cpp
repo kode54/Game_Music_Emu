@@ -285,7 +285,7 @@ static int parse_line( char* in, M3u_Playlist::entry_t& entry )
 		in = parse_time_( in, &entry.loop );
 		if ( entry.loop >= 0 )
 		{
-			entry.intro = 0;
+			entry.intro = entry.length - entry.loop;
 			if ( *in == '-' ) // trailing '-' means that intro length was specified 
 			{
 				in++;
@@ -311,8 +311,9 @@ static void parse_comment( char* in, M3u_Playlist::info_t& info, char *& last_co
 {
 	in = skip_white( in + 1 );
 	const char* field = in;
-	while ( *in && *in != ':' )
-		in++;
+	if ( *field != '@' )
+		while ( *in && *in != ':' )
+			in++;
 	
 	if ( *in == ':' )
 	{
