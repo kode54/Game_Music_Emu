@@ -43,7 +43,7 @@ public:
 	// VGM file header
 	struct header_t
 	{
-		enum { size = 0x70 };
+		enum { size = 0x40 };
 		
 		char tag            [4];
 		byte data_size      [4];
@@ -61,28 +61,7 @@ public:
 		byte ym2612_rate    [4];
 		byte ym2151_rate    [4];
 		byte data_offset    [4];
-		byte spcm_clock     [4];
-		byte spcm_interface [4];
-		byte rf5c68_clock   [4];
-		byte ym2203_clock   [4];
-		byte ym2608_clock   [4];
-		byte ym2610_clock   [4];
-		byte ym3812_clock   [4];
-		byte ym3526_clock   [4];
-		byte y8950_clock    [4];
-		byte ymf262_clock   [4];
-		byte ymf278b_clock  [4];
-		byte ymf271_clock   [4];
-		byte ymz280b_clock  [4];
-		byte rf5c164_clock  [4];
-		byte pwm_clock      [4];
-		byte ay8910_clock   [4];
-		byte ay8910_type;
-		byte ay8910_flags[3];
-		byte volume_modifier;
-		byte unused2;
-		byte loop_base;
-		byte loop_modifier;
+		byte unused2        [8];
 		
 		// True if header has valid file signature
 		bool valid_tag() const;
@@ -103,7 +82,7 @@ public:
 	
 	// True if any FM chips are used by file. Always false until init_fm()
 	// is called.
-	bool uses_fm() const                { return ym2612[0].enabled() || ym2413[0].enabled(); }
+	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled(); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	// Loading a file resets tempo to 1.0.
@@ -124,17 +103,17 @@ public:
 	
 	// PCM sound is always generated here
 	Stereo_Buffer stereo_buf;
-	Blip_Buffer * blip_buf[2];
+	Blip_Buffer * blip_buf;
 	
 	// PSG sound chip, for assigning to Blip_Buffer, and setting volume and EQ
-	Sms_Apu psg[2];
+	Sms_Apu psg;
 	
 	// PCM synth, for setting volume and EQ
 	Blip_Synth_Fast pcm;
 	
 	// FM sound chips
-	Ym_Emu<Ym2612_Emu> ym2612[2];
-	Ym_Emu<Ym2413_Emu> ym2413[2];
+	Ym_Emu<Ym2612_Emu> ym2612;
+	Ym_Emu<Ym2413_Emu> ym2413;
 
 // Implementation
 public:
@@ -168,19 +147,13 @@ private:
 	// PCM
 	byte const* pcm_data;   // location of PCM data in log
 	byte const* pcm_pos;    // current position in PCM data
-	int dac_amp[2];
-	int dac_disabled[2];       // -1 if disabled
-	void write_pcm( vgm_time_t, int chip, int amp );
-
-	// RF5C164
-	byte const* rf5c164_data; // location of Sega CD PCM data in log
-
-	// PWM
-	byte const* pwm_data; // location of PWM data in log
+	int dac_amp;
+	int dac_disabled;       // -1 if disabled
+	void write_pcm( vgm_time_t, int amp );
 	
 	blip_time_t run( vgm_time_t );
-	int run_ym2413( int chip, int time );
-	int run_ym2612( int chip, int time );
+	int run_ym2413( int time );
+	int run_ym2612( int time );
 	void update_fm_rates( int* ym2413_rate, int* ym2612_rate ) const;
 };
 
