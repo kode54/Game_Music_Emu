@@ -129,7 +129,7 @@ blargg_err_t Vgm_Emu::track_info_( track_info_t* out, int ) const
 	if ( gd3_offset < 0 )
 		return blargg_ok;
 	
-	byte const* gd3 = core.file_begin() + 0x40 + gd3_offset;
+	byte const* gd3 = core.file_begin() + header_t::size + gd3_offset;
 	int gd3_size = check_gd3_header( gd3, core.file_end() - gd3 );
 	if ( gd3_size )
 	{
@@ -149,7 +149,7 @@ blargg_err_t Vgm_Emu::gd3_data( const unsigned char ** data, int * size )
 	if ( gd3_offset < 0 )
 		return blargg_ok;
 
-	byte const* gd3 = core.file_begin() + 0x40 + gd3_offset;
+	byte const* gd3 = core.file_begin() + header_t::size + gd3_offset;
 	int gd3_size = check_gd3_header( gd3, core.file_end() - gd3 );
 	if ( gd3_size )
 	{
@@ -178,7 +178,7 @@ struct Vgm_File : Gme_Info_
 			return blargg_err_file_type;
 		
 		int gd3_offset = get_le32( h.gd3_offset ) - 0x2C;
-		int remain = file_size - 0x40 - gd3_offset;
+		int remain = file_size - h.size - gd3_offset;
 		byte gd3_h [gd3_header_size];
 		if ( gd3_offset > 0 && remain >= gd3_header_size )
 		{
@@ -225,18 +225,14 @@ blargg_err_t Vgm_Emu::set_sample_rate_( int sample_rate )
 
 void Vgm_Emu::update_eq( blip_eq_t const& eq )
 {
-	core.psg[ 0 ].treble_eq( eq );
-	core.psg[ 1 ].treble_eq( eq );
+	core.psg.treble_eq( eq );
 	core.pcm.treble_eq( eq );
 }
 
 void Vgm_Emu::set_voice( int i, Blip_Buffer* c, Blip_Buffer* l, Blip_Buffer* r )
 {
-	if ( i < core.psg[ 0 ].osc_count )
-	{
-		core.psg[ 0 ].set_output( i, c, l, r );
-		core.psg[ 1 ].set_output( i, c, l, r );
-	}
+	if ( i < core.psg.osc_count )
+		core.psg.set_output( i, c, l, r );
 }
 
 void Vgm_Emu::mute_voices_( int mask )
@@ -249,26 +245,21 @@ void Vgm_Emu::mute_voices_( int mask )
 	// TODO: silence PCM if FM isn't used?
 	if ( core.uses_fm() )
 	{
-		core.psg[ 0 ].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
-		core.psg[ 1 ].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
-		if ( core.ym2612[ 0 ].enabled() )
+		core.psg.set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
+		if ( core.ym2612.enabled() )
 		{
 			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * fm_gain * gain() );
-			core.ym2612[ 0 ].mute_voices( mask );
-			if ( core.ym2612[ 1 ].enabled() )
-				core.ym2612[ 1 ].mute_voices( mask );
+			core.ym2612.mute_voices( mask );
 		}
 		
-		if ( core.ym2413[ 0 ].enabled() )
+		if ( core.ym2413.enabled() )
 		{
 			int m = mask & 0x3F;
 			if ( mask & 0x20 )
 				m |= 0x01E0; // channels 5-8
 			if ( mask & 0x40 )
 				m |= 0x3E00;
-			core.ym2413[ 0 ].mute_voices( m );
-			if ( core.ym2413[ 1 ].enabled() )
-				core.ym2413[ 1 ].mute_voices( m );
+			core.ym2413.mute_voices( m );
 		}
 	}
 }
@@ -277,7 +268,7 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 {
 	RETURN_ERR( core.load_mem( data, size ) );
 
-	set_voice_count( core.psg[ 0 ].osc_count );
+	set_voice_count( core.psg.osc_count );
 	
 	double fm_rate = 0.0;
 	if ( !disable_oversampling_ )
@@ -289,13 +280,11 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 		set_voice_count( 8 );
 		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, fm_gain * gain() ) );
 		RETURN_ERR( resampler.reset( core.stereo_buf.length() * sample_rate() / 1000 ) );
-		core.psg[ 0 ].volume( 0.135 * fm_gain * gain() );
-		core.psg[ 1 ].volume( 0.135 * fm_gain * gain() );
+		core.psg.volume( 0.135 * fm_gain * gain() );
 	}
 	else
 	{
-		core.psg[ 0 ].volume( gain() );
-		core.psg[ 1 ].volume( gain() );
+		core.psg.volume( gain() );
 	}
 	
 	static const char* const fm_names [] = {
