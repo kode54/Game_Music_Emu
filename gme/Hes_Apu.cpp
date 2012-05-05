@@ -65,8 +65,8 @@ void Hes_Apu::set_output( int i, Blip_Buffer* center, Blip_Buffer* left, Blip_Bu
 	
 	Osc& o = oscs [i];
 	o.outputs [0] = center;
-	o.outputs [1] = right;
-	o.outputs [2] = left;
+	o.outputs [1] = left;
+	o.outputs [2] = right;
 	balance_changed( o );
 }
 
