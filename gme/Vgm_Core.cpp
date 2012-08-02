@@ -89,20 +89,75 @@ bool Vgm_Core::header_t::valid_tag() const
 	return !memcmp( tag, "Vgm ", 4 );
 }
 
+int Vgm_Core::header_t::size() const
+{
+	unsigned int version = get_le32( this->version );
+	return ( version > 0x150 ) ? size_max : size_min;
+}
+
+void Vgm_Core::header_t::cleanup()
+{
+	unsigned int version = get_le32( this->version );
+
+	if ( version < 0x160 )
+	{
+		volume_modifier = 0;
+		reserved = 0;
+		loop_base = 0;
+	}
+
+	if ( version < 0x150 )
+	{
+		set_le32( data_offset, 0x40 - offsetof(header_t, data_offset) );
+		sn76489_flags = 0;
+		set_le32( segapcm_rate, 0 );
+		set_le32( segapcm_reg, 0 );
+	}
+
+	if ( version < 0x110 )
+	{
+		set_le16( noise_feedback, 0 );
+		noise_width = 0;
+		unsigned int rate = get_le32( ym2413_rate );
+		set_le32( ym2612_rate, rate );
+		set_le32( ym2151_rate, rate );
+	}
+
+	if ( version < 0x101 )
+	{
+		set_le32( frame_rate, 0 );
+	}
+}
+
 blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 {
-	assert( offsetof (header_t,unused2 [8]) == header_t::size );
+	assert( offsetof (header_t, rf5c68_rate) == header_t::size_min );
+	assert( offsetof (header_t, loop_modifier) + 1 == header_t::size_max );
 	
-	if ( size <= header_t::size )
+	if ( size <= header_t::size_min )
 		return blargg_err_file_type;
+
+	memcpy( &_header, data, header_t::size_min );
 	
-	header_t const& h = *(header_t const*) data;
+	header_t const& h = header();
 	
 	if ( !h.valid_tag() )
 		return blargg_err_file_type;
+
+	int version = get_le32( h.version );
 	
-	check( get_le32( h.version ) <= 0x150 );
-	
+	check( version < 0x100 );
+
+	if ( version > 0x150 )
+	{
+		if ( size < header_t::size_max )
+			return "Invalid header";
+
+		memcpy( &_header.rf5c68_rate, data + offsetof (header_t, rf5c68_rate), header_t::size_max - header_t::size_min );
+	}
+
+	_header.cleanup();
+
 	// Get loop
 	loop_begin = file_end();
 	if ( get_le32( h.loop_offset ) )
@@ -127,7 +182,14 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 // Update pre-1.10 header FM rates by scanning commands
 void Vgm_Core::update_fm_rates( int* ym2413_rate, int* ym2612_rate ) const
 {
-	byte const* p = file_begin() + 0x40;
+	byte const* p = file_begin() + header().size();
+	if ( get_le32( header().version ) > 0x150 )
+	{
+		int data_offset = get_le32( header().data_offset );
+		check( data_offset );
+		if ( data_offset )
+			p += data_offset + offsetof( header_t, data_offset ) - header().size();
+	}
 	while ( p < file_end() )
 	{
 		switch ( *p )
@@ -206,18 +268,18 @@ void Vgm_Core::start_track()
 	blip_buf = stereo_buf.center();
 
 	dac_disabled = -1;
-	pos          = file_begin() + header_t::size;
-	pcm_data     = pos;
-	pcm_pos      = pos;
+	pos          = file_begin() + header().size();
 	dac_amp      = -1;
 	vgm_time     = 0;
-	if ( get_le32( header().version ) >= 0x150 )
+	if ( get_le32( header().version ) > 0x150 )
 	{
 		int data_offset = get_le32( header().data_offset );
 		check( data_offset );
 		if ( data_offset )
-			pos += data_offset + offsetof (header_t,data_offset) - 0x40;
+			pos += data_offset + offsetof (header_t,data_offset) - header().size();
 	}
+	pcm_data     = pos;
+	pcm_pos      = pos;
 	
 	if ( uses_fm() )
 	{
@@ -427,6 +489,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	else if ( ym2413.enabled() )
 	{
 		ym2413.begin_frame( out );
+		memset( out, 0, pairs * stereo * sizeof *out );
 	}
 	
 	run( vgm_time );

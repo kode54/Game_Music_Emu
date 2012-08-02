@@ -125,11 +125,11 @@ blargg_err_t Vgm_Emu::track_info_( track_info_t* out, int ) const
 {
 	get_vgm_length( header(), out );
 	
-	int gd3_offset = get_le32( header().gd3_offset ) - 0x2C;
-	if ( gd3_offset < 0 )
+	int gd3_offset = get_le32( header().gd3_offset );
+	if ( gd3_offset <= 0 )
 		return blargg_ok;
 	
-	byte const* gd3 = core.file_begin() + header_t::size + gd3_offset;
+	byte const* gd3 = core.file_begin() + gd3_offset + offsetof( header_t, gd3_offset );
 	int gd3_size = check_gd3_header( gd3, core.file_end() - gd3 );
 	if ( gd3_size )
 	{
@@ -145,11 +145,11 @@ blargg_err_t Vgm_Emu::gd3_data( const unsigned char ** data, int * size )
 	*data = 0;
 	*size = 0;
 
-	int gd3_offset = get_le32( header().gd3_offset ) - 0x2C;
-	if ( gd3_offset < 0 )
+	int gd3_offset = get_le32( header().gd3_offset );
+	if ( gd3_offset <= 0 )
 		return blargg_ok;
 
-	byte const* gd3 = core.file_begin() + header_t::size + gd3_offset;
+	byte const* gd3 = core.file_begin() + gd3_offset + offsetof( header_t, gd3_offset );
 	int gd3_size = check_gd3_header( gd3, core.file_end() - gd3 );
 	if ( gd3_size )
 	{
@@ -170,18 +170,22 @@ struct Vgm_File : Gme_Info_
 	blargg_err_t load_( Data_Reader& in )
 	{
 		int file_size = in.remain();
-		if ( file_size <= h.size )
+		if ( file_size <= h.size_min )
 			return blargg_err_file_type;
 		
-		RETURN_ERR( in.read( &h, h.size ) );
+		RETURN_ERR( in.read( &h, h.size_min ) );
 		if ( !h.valid_tag() )
 			return blargg_err_file_type;
+
+		if ( h.size() > h.size_min )
+			RETURN_ERR( in.read( &h.rf5c68_rate, h.size() - h.size_min ) );
 		
-		int gd3_offset = get_le32( h.gd3_offset ) - 0x2C;
-		int remain = file_size - h.size - gd3_offset;
+		int gd3_offset = get_le32( h.gd3_offset );
+		int remain = file_size - gd3_offset - offsetof( Vgm_Core::header_t, gd3_offset );
 		byte gd3_h [gd3_header_size];
 		if ( gd3_offset > 0 && remain >= gd3_header_size )
 		{
+			gd3_offset += offsetof( Vgm_Core::header_t, gd3_offset ) - h.size();
 			RETURN_ERR( in.skip( gd3_offset ) );
 			RETURN_ERR( in.read( gd3_h, sizeof gd3_h ) );
 			int gd3_size = check_gd3_header( gd3_h, remain );

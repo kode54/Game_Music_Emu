@@ -39,14 +39,15 @@ private:
 	int sample_buf_size;
 	int oversamples_per_frame;
 	int buf_pos;
+	int buffered;
 	int resampler_size;
 	int gain_;
 	
 	Dual_Resampler_Downsampler resampler;
-	void mix_samples( Stereo_Buffer&, dsample_t []);
-	void mix_mono( Stereo_Buffer&, dsample_t []);
-	void mix_stereo( Stereo_Buffer&, dsample_t []);
-	void play_frame_( Stereo_Buffer&, dsample_t []);
+	void mix_samples( Stereo_Buffer&, dsample_t [], int);
+	void mix_mono( Stereo_Buffer&, dsample_t [], int);
+	void mix_stereo( Stereo_Buffer&, dsample_t [], int);
+	int play_frame_( Stereo_Buffer&, dsample_t []);
 };
 
 inline blargg_err_t Dual_Resampler::setup( double oversample, double rolloff, double gain )

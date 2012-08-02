@@ -43,32 +43,58 @@ public:
 	// VGM file header
 	struct header_t
 	{
-		enum { size = 0x40 };
+		enum { size_min = 0x40 };
+		enum { size_max = 0x80 };
 		
-		char tag            [4];
-		byte data_size      [4];
-		byte version        [4];
-		byte psg_rate       [4];
-		byte ym2413_rate    [4];
-		byte gd3_offset     [4];
-		byte track_duration [4];
-		byte loop_offset    [4];
-		byte loop_duration  [4];
-		byte frame_rate     [4];
-		byte noise_feedback [2];
-		byte noise_width;
-		byte unused1;
-		byte ym2612_rate    [4];
-		byte ym2151_rate    [4];
-		byte data_offset    [4];
-		byte unused2        [8];
+		char tag            [4]; // 0x00
+		byte data_size      [4]; // 0x04
+		byte version        [4]; // 0x08
+		byte psg_rate       [4]; // 0x0C
+		byte ym2413_rate    [4]; // 0x10
+		byte gd3_offset     [4]; // 0x14
+		byte track_duration [4]; // 0x18
+		byte loop_offset    [4]; // 0x1C
+		byte loop_duration  [4]; // 0x20
+		byte frame_rate     [4]; // 0x24 v1.01 V
+		byte noise_feedback [2]; // 0x28 v1.10 V
+		byte noise_width;        // 0x2A
+		byte sn76489_flags;      // 0x2B v1.51 <
+		byte ym2612_rate    [4]; // 0x2C v1.10 V
+		byte ym2151_rate    [4]; // 0x30
+		byte data_offset    [4]; // 0x34 v1.50 V
+		byte segapcm_rate   [4]; // 0x38 v1.51 V
+		byte segapcm_reg    [4]; // 0x3C
+		byte rf5c68_rate    [4]; // 0x40
+		byte ym2203_rate    [4]; // 0x44
+		byte ym2608_rate    [4]; // 0x48
+		byte ym2610_rate    [4]; // 0x4C
+		byte ym3812_rate    [4]; // 0x50
+		byte ym3526_rate    [4]; // 0x54
+		byte y8950_rate     [4]; // 0x58
+		byte ymf262_rate    [4]; // 0x5C
+		byte ymf278b_rate   [4]; // 0x60
+		byte ymf271_rate    [4]; // 0x64
+		byte ymz280b_rate   [4]; // 0x68
+		byte rf5c164_rate   [4]; // 0x6C
+		byte pwm_rate       [4]; // 0x70
+		byte ay8910_rate    [4]; // 0x74
+		byte ay8910_type;        // 0x78
+		byte ay8910_flags;       // 0x79
+		byte ym2203_ay8910_flags;// 0x7A
+		byte ym2608_ay8910_flags;// 0x7B
+		byte volume_modifier;    // 0x7C v1.60 V
+		byte reserved;           // 0x7D
+		byte loop_base;          // 0x7E
+		byte loop_modifier;      // 0x7F v1.51 <
 		
 		// True if header has valid file signature
 		bool valid_tag() const;
+		int size() const;
+		void cleanup();
 	};
 	
 	// Header for currently loaded file
-	header_t const& header() const      { return *(header_t const*) file_begin(); }
+	header_t const& header() const      { return _header; }
 	
 	// Raw file data, for parsing GD3 tags
 	byte const* file_begin() const      { return Gme_Loader::file_begin(); }
@@ -129,6 +155,8 @@ private:
 	
 	int vgm_rate;   // rate of log, 44100 normally, adjusted by tempo
 	double fm_rate; // FM samples per second
+
+	header_t _header;
 	
 	// VGM to FM time
 	int fm_time_factor;     
