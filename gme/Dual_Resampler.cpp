@@ -102,18 +102,27 @@ void Dual_Resampler::dual_play( int count, dsample_t out [], Stereo_Buffer& ster
 	// entire frames
 	while ( count >= sample_buf_size )
 	{
-		buffered = play_frame_( stereo_buf, out );
+		buf_pos = buffered = play_frame_( stereo_buf, out );
 		out += buffered;
 		count -= buffered;
 	}
-	
-	// extra
-	if ( count > 0 )
+
+	while (count > 0)
 	{
 		buffered = play_frame_( stereo_buf, sample_buf.begin() );
-		buf_pos = count;
-		memcpy( out, sample_buf.begin(), count * sizeof *out );
-		out += count;
+		if ( buffered >= count )
+		{
+			buf_pos = count;
+			memcpy( out, sample_buf.begin(), count * sizeof *out );
+			out += count;
+			count = 0;
+		}
+		else
+		{
+			memcpy( out, sample_buf.begin(), buffered * sizeof *out );
+			out += buffered;
+			count -= buffered;
+		}
 	}
 }
 

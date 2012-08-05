@@ -106,6 +106,8 @@ void Vgm_Core::header_t::cleanup()
 		loop_base = 0;
 	}
 
+	if ( version < 0x151 ) memset( this->rf5c68_rate, 0, size_max - size_min );
+
 	if ( version < 0x150 )
 	{
 		set_le32( data_offset, 0x40 - offsetof(header_t, data_offset) );
