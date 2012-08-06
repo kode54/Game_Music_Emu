@@ -7,16 +7,22 @@
 #include "Gme_Loader.h"
 #include "Ym2612_Emu.h"
 #include "Ym2413_Emu.h"
+#include "Ym2151_Emu.h"
+#include "C140_Emu.h"
+#include "SegaPcm_Emu.h"
+#include "Rf5C68_Emu.h"
+#include "Rf5C164_Emu.h"
+#include "Pwm_Emu.h"
 #include "Sms_Apu.h"
 #include "Multi_Buffer.h"
 
 	template<class Emu>
-	class Ym_Emu : public Emu {
+	class Chip_Emu : public Emu {
 		int last_time;
 		short* out;
 		enum { disabled_time = -1 };
 	public:
-		Ym_Emu()                        { last_time = disabled_time; out = NULL; }
+		Chip_Emu()                      { last_time = disabled_time; out = NULL; }
 		void enable( bool b = true )    { last_time = b ? 0 : disabled_time; }
 		bool enabled() const            { return last_time != disabled_time; }
 		void begin_frame( short* buf )  { out = buf; last_time = 0; }
@@ -44,7 +50,8 @@ public:
 	struct header_t
 	{
 		enum { size_min = 0x40 };
-		enum { size_max = 0x80 };
+		enum { size_151 = 0x80 };
+		enum { size_max = 0xC0 };
 		
 		char tag            [4]; // 0x00
 		byte data_size      [4]; // 0x04
@@ -86,6 +93,25 @@ public:
 		byte reserved;           // 0x7D
 		byte loop_base;          // 0x7E
 		byte loop_modifier;      // 0x7F v1.51 <
+		byte gbdmg_rate     [4]; // 0x80 v1.61 V
+		byte nesapu_rate    [4]; // 0x84
+		byte multipcm_rate  [4]; // 0x88
+		byte upd7759_rate   [4]; // 0x8C
+		byte okim6258_rate  [4]; // 0x90
+		byte okim6258_flags;     // 0x94
+		byte k054539_flags;      // 0x95
+		byte c140_type;          // 0x96
+		byte reserved_flags;     // 0x97
+		byte okim6295_rate  [4]; // 0x98
+		byte k051649_rate   [4]; // 0x9C
+		byte k054539_rate   [4]; // 0xA0
+		byte huc6280_rate   [4]; // 0xA4
+		byte c140_rate      [4]; // 0xA8
+		byte k053260_rate   [4]; // 0xAC
+		byte pokey_rate     [4]; // 0xB0
+		byte qsound_rate    [4]; // 0xB4
+		byte reserved2      [4]; // 0xB8
+		byte extra_offset   [4]; // 0xBC
 		
 		// True if header has valid file signature
 		bool valid_tag() const;
@@ -104,15 +130,17 @@ public:
 	// *sample_rate is zero, sets *sample_rate to the proper accurate rate and
 	// uses that. The output of the FM sound emulator is resampled to the
 	// final sampling rate.
-	blargg_err_t init_fm( double* sample_rate );
+	blargg_err_t init_chips( double* fm_rate );
 	
 	// True if any FM chips are used by file. Always false until init_fm()
 	// is called.
-	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled(); }
+	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled(); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	// Loading a file resets tempo to 1.0.
 	void set_tempo( double );
+
+	void set_sample_rate( int r ) { sample_rate = r; }
 	
 	// Starts track
 	void start_track();
@@ -138,8 +166,16 @@ public:
 	Blip_Synth_Fast pcm;
 	
 	// FM sound chips
-	Ym_Emu<Ym2612_Emu> ym2612;
-	Ym_Emu<Ym2413_Emu> ym2413;
+	Chip_Emu<Ym2612_Emu> ym2612;
+	Chip_Emu<Ym2413_Emu> ym2413;
+	Chip_Emu<Ym2151_Emu> ym2151;
+
+	// PCM sound chips
+	Chip_Emu<C140_Emu> c140;
+	Chip_Emu<SegaPcm_Emu> segapcm;
+	Chip_Emu<Rf5C68_Emu> rf5c68;
+	Chip_Emu<Rf5C164_Emu> rf5c164;
+	Chip_Emu<Pwm_Emu> pwm;
 
 // Implementation
 public:
@@ -153,6 +189,7 @@ private:
 	typedef int vgm_time_t; // 44100 per second, REGARDLESS of sample rate
 	typedef int fm_time_t;  // FM sample count
 	
+	int sample_rate;
 	int vgm_rate;   // rate of log, 44100 normally, adjusted by tempo
 	double fm_rate; // FM samples per second
 
@@ -162,7 +199,7 @@ private:
 	int fm_time_factor;     
 	int fm_time_offset;
 	fm_time_t to_fm_time( vgm_time_t ) const;
-	
+
 	// VGM to PSG time
 	int blip_time_factor;
 	blip_time_t to_psg_time( vgm_time_t ) const;
@@ -173,16 +210,22 @@ private:
 	byte const* loop_begin;
 	
 	// PCM
-	byte const* pcm_data;   // location of PCM data in log
+	byte const* pcm_data[3];   // location of PCM data in log
 	byte const* pcm_pos;    // current position in PCM data
 	int dac_amp;
 	int dac_disabled;       // -1 if disabled
 	void write_pcm( vgm_time_t, int amp );
 	
 	blip_time_t run( vgm_time_t );
+	int run_ym2151( int time );
 	int run_ym2413( int time );
 	int run_ym2612( int time );
-	void update_fm_rates( int* ym2413_rate, int* ym2612_rate ) const;
+	int run_c140( int time );
+	int run_segapcm( int time );
+	int run_rf5c68( int time );
+	int run_rf5c164( int time );
+	int run_pwm( int time );
+	void update_fm_rates( int* ym2151_rate, int* ym2413_rate, int* ym2612_rate ) const;
 };
 
 #endif

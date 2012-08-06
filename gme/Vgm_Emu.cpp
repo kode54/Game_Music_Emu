@@ -19,6 +19,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 // FM emulators are internally quieter to avoid 16-bit overflow
 double const fm_gain           = 3.0;
+double const pcm_gain          = 0.333;
+double const scdpcm_gain       = 0.166;
 double const rolloff           = 0.990;
 double const oversample_factor = 1.5;
 
@@ -224,6 +226,7 @@ void Vgm_Emu::set_tempo_( double t )
 blargg_err_t Vgm_Emu::set_sample_rate_( int sample_rate )
 {
 	RETURN_ERR( core.stereo_buf.set_sample_rate( sample_rate, 1000 / 30 ) );
+	core.set_sample_rate( sample_rate );
 	return Classic_Emu::set_sample_rate_( sample_rate );
 }
 
@@ -265,6 +268,32 @@ void Vgm_Emu::mute_voices_( int mask )
 				m |= 0x3E00;
 			core.ym2413.mute_voices( m );
 		}
+
+		if ( core.ym2151.enabled() )
+		{
+			core.ym2151.mute_voices( mask );
+		}
+
+		if ( core.c140.enabled() )
+		{
+			int m = 0;
+			int m_add = 7;
+			for ( unsigned i = 0; i < 8; i++, m_add <<= 3 )
+			{
+				if ( mask & ( 1 << i ) ) m += m_add;
+			}
+			core.c140.mute_voices( m );
+		}
+
+		if ( core.rf5c68.enabled() )
+		{
+			core.rf5c68.mute_voices( mask );
+		}
+
+		if ( core.rf5c164.enabled() )
+		{
+			core.rf5c164.mute_voices( mask );
+		}
 	}
 }
 
@@ -277,12 +306,18 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 	double fm_rate = 0.0;
 	if ( !disable_oversampling_ )
 		fm_rate = sample_rate() * oversample_factor;
-	RETURN_ERR( core.init_fm( &fm_rate ) );
+	RETURN_ERR( core.init_chips( &fm_rate ) );
 	
 	if ( core.uses_fm() )
 	{
+		double gain_offset = 1.0;
+		if ( core.c140.enabled() ) gain_offset *= pcm_gain;
+		if ( core.segapcm.enabled() ) gain_offset *= pcm_gain;
+		if ( core.rf5c68.enabled() ) gain_offset *= scdpcm_gain;
+		if ( core.rf5c164.enabled() ) gain_offset *= scdpcm_gain;
+		if ( core.pwm.enabled() ) gain_offset *= pcm_gain;
 		set_voice_count( 8 );
-		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, fm_gain * gain() ) );
+		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, fm_gain * gain_offset * gain() ) );
 		RETURN_ERR( resampler.reset( core.stereo_buf.length() * sample_rate() / 1000 ) );
 		core.psg.volume( 0.135 * fm_gain * gain() );
 	}
