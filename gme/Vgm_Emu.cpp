@@ -19,8 +19,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 // FM emulators are internally quieter to avoid 16-bit overflow
 double const fm_gain           = 3.0;
-double const pcm_gain          = 0.333;
-double const scdpcm_gain       = 0.166;
 double const rolloff           = 0.990;
 double const oversample_factor = 1.5;
 
@@ -255,7 +253,7 @@ void Vgm_Emu::mute_voices_( int mask )
 		core.psg.set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
 		if ( core.ym2612.enabled() )
 		{
-			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * fm_gain * gain() );
+			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * gain() );
 			core.ym2612.mute_voices( mask );
 		}
 		
@@ -310,14 +308,8 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 	
 	if ( core.uses_fm() )
 	{
-		double gain_offset = 1.0;
-		if ( core.c140.enabled() ) gain_offset *= pcm_gain;
-		if ( core.segapcm.enabled() ) gain_offset *= pcm_gain;
-		if ( core.rf5c68.enabled() ) gain_offset *= scdpcm_gain;
-		if ( core.rf5c164.enabled() ) gain_offset *= scdpcm_gain;
-		if ( core.pwm.enabled() ) gain_offset *= pcm_gain;
 		set_voice_count( 8 );
-		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, fm_gain * gain_offset * gain() ) );
+		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, gain() ) );
 		RETURN_ERR( resampler.reset( core.stereo_buf.length() * sample_rate() / 1000 ) );
 		core.psg.volume( 0.135 * fm_gain * gain() );
 	}

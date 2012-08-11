@@ -2196,6 +2196,9 @@ void YM2612UpdateOne(YM2612 *F2612, short *buffer, int length)
 			lt += ((OPN->out_fm[5]>>0) & OPN->pan[10]);
 			rt += ((OPN->out_fm[5]>>0) & OPN->pan[11]);
 
+			lt *= 3;
+			rt *= 3;
+
 			lt >>= 1;
 			rt >>= 1;
 

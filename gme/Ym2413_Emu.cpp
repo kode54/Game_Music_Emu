@@ -60,6 +60,7 @@ void Ym2413_Emu::run( int pair_count, sample_t* out )
 			int output_l, output_r;
 			int output = bufMO [i];
 			output += bufRO [i];
+			output *= 3;
 			output_l = output + out [0];
 			output_r = output + out [1];
 			if ( (short)output_l != output_l ) output_l = 0x7FFF ^ ( output_l >> 31 );

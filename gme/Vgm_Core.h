@@ -177,9 +177,45 @@ public:
 	Chip_Emu<Rf5C164_Emu> rf5c164;
 	Chip_Emu<Pwm_Emu> pwm;
 
+	// DAC control
+	typedef struct daccontrol_data
+	{
+		bool Enable;
+		byte Bank;
+	} DACCTRL_DATA;
+
+	byte DacCtrlUsed;
+	byte DacCtrlUsg[0xFF];
+	DACCTRL_DATA DacCtrl[0xFF];
+	byte DacCtrlMap[0xFF];
+	void ** dac_control;
+
+	void dac_control_grow(byte chip_id);
+
+	typedef struct chip_reg_write_data
+	{
+		unsigned Sample;
+		byte ChipType;
+		byte ChipID;
+		byte Port;
+		byte Offset;
+		byte Data;
+	} REG_WRITE_DATA;
+
+	unsigned reg_data_count;
+	REG_WRITE_DATA * reg_data;
+
+	static int chip_reg_compare( const void * a, const void * b );
+	void chip_reg_write_play();
+	void chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data);
+
+public:
+	void chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data);
+
 // Implementation
 public:
 	Vgm_Core();
+	~Vgm_Core();
 
 protected:
 	virtual blargg_err_t load_mem_( byte const [], int );
@@ -208,9 +244,44 @@ private:
 	vgm_time_t vgm_time;
 	byte const* pos;
 	byte const* loop_begin;
+	bool has_looped;
 	
 	// PCM
-	byte const* pcm_data[3];   // location of PCM data in log
+	enum { PCM_BANK_COUNT = 0x40 };
+	typedef struct _vgm_pcm_bank_data
+	{
+		unsigned DataSize;
+		byte* Data;
+		unsigned DataStart;
+	} VGM_PCM_DATA;
+	typedef struct _vgm_pcm_bank
+	{
+		unsigned BankCount;
+		VGM_PCM_DATA* Bank;
+		unsigned DataSize;
+		byte* Data;
+		unsigned DataPos;
+		unsigned BnkPos;
+	} VGM_PCM_BANK;
+
+	typedef struct pcmbank_table
+	{
+		byte ComprType;
+		byte CmpSubType;
+		byte BitDec;
+		byte BitCmp;
+		unsigned EntryCount;
+		void* Entries;
+	} PCMBANK_TBL;
+
+	VGM_PCM_BANK PCMBank[PCM_BANK_COUNT];
+	PCMBANK_TBL PCMTbl;
+
+	void ReadPCMTable(unsigned DataSize, const byte* Data);
+	void AddPCMData(byte Type, unsigned DataSize, const byte* Data);
+	void DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const byte* Data);
+	const byte* GetPointerFromPCMBank(byte Type, unsigned DataPos);
+
 	byte const* pcm_pos;    // current position in PCM data
 	int dac_amp;
 	int dac_disabled;       // -1 if disabled

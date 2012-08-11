@@ -93,6 +93,7 @@
     <ClCompile Include="..\gme\c140.c" />
     <ClCompile Include="..\gme\C140_Emu.cpp" />
     <ClCompile Include="..\gme\Classic_Emu.cpp" />
+    <ClCompile Include="..\gme\dac_control.c" />
     <ClCompile Include="..\gme\Downsampler.cpp" />
     <ClCompile Include="..\gme\Dual_Resampler.cpp" />
     <ClCompile Include="..\gme\Effects_Buffer.cpp" />
@@ -186,6 +187,7 @@
     <ClInclude Include="..\gme\c140.h" />
     <ClInclude Include="..\gme\C140_Emu.h" />
     <ClInclude Include="..\gme\Classic_Emu.h" />
+    <ClInclude Include="..\gme\dac_control.h" />
     <ClInclude Include="..\gme\Downsampler.h" />
     <ClInclude Include="..\gme\Dual_Resampler.h" />
     <ClInclude Include="..\gme\Effects_Buffer.h" />

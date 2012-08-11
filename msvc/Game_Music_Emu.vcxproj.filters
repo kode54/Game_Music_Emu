@@ -272,6 +272,9 @@
     <ClCompile Include="..\gme\Pwm_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\gme\dac_control.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gme\Ay_Apu.h">
@@ -545,6 +548,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Pwm_Emu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\dac_control.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

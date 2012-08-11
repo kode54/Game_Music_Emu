@@ -2,6 +2,8 @@
 
 #include "Vgm_Core.h"
 
+#include "dac_control.h"
+
 #include "blargg_endian.h"
 #include <math.h>
 
@@ -38,6 +40,12 @@ enum {
 	cmd_ram_block       = 0x68,
 	cmd_short_delay     = 0x70,
 	cmd_pcm_delay       = 0x80,
+	cmd_dacctl_setup    = 0x90,
+	cmd_dacctl_data     = 0x91,
+	cmd_dacctl_freq     = 0x92,
+	cmd_dacctl_play     = 0x93,
+	cmd_dacctl_stop     = 0x94,
+	cmd_dacctl_playblock= 0x95,
 	cmd_rf5c68          = 0xB0,
 	cmd_rf5c164         = 0xB1,
 	cmd_pwm             = 0xB2,
@@ -51,6 +59,7 @@ enum {
 	rf5c164_ram_block   = 0x02,
 	
 	pcm_block_type      = 0x00,
+	pcm_aux_block_type  = 0x40,
 	rom_block_type      = 0x80,
 	ram_block_type      = 0xC0,
 
@@ -116,7 +125,354 @@ int Vgm_Core::run_pwm( int time )
 	return pwm.run_until( time );
 }
 
-Vgm_Core::Vgm_Core() { blip_buf = stereo_buf.center(); }
+Vgm_Core::Vgm_Core()
+{
+	blip_buf = stereo_buf.center();
+	has_looped = false;
+	DacCtrlUsed = 0;
+	dac_control = NULL;
+	reg_data_count = 0;
+	reg_data = NULL;
+	memset( PCMBank, 0, sizeof( PCMBank ) );
+	memset( &PCMTbl, 0, sizeof( PCMTbl ) );
+	memset( DacCtrl, 0, sizeof( DacCtrl ) );
+}
+
+Vgm_Core::~Vgm_Core()
+{
+	for (unsigned i = 0; i < DacCtrlUsed; i++) device_stop_daccontrol( dac_control [i] );
+	if ( dac_control ) free( dac_control );
+	for (unsigned i = 0; i < PCM_BANK_COUNT; i++)
+	{
+		if ( PCMBank [i].Bank ) free( PCMBank [i].Bank );
+		if ( PCMBank [i].Data ) free( PCMBank [i].Data );
+	}
+	if ( PCMTbl.Entries ) free( PCMTbl.Entries );
+	if ( reg_data ) free( reg_data );
+}
+
+typedef unsigned int FUINT8;
+typedef unsigned int FUINT16;
+
+void Vgm_Core::ReadPCMTable(unsigned DataSize, const byte* Data)
+{
+	byte ValSize;
+	unsigned TblSize;
+
+	PCMTbl.ComprType = Data[0x00];
+	PCMTbl.CmpSubType = Data[0x01];
+	PCMTbl.BitDec = Data[0x02];
+	PCMTbl.BitCmp = Data[0x03];
+	PCMTbl.EntryCount = get_le16( Data + 0x04 );
+
+	ValSize = (PCMTbl.BitDec + 7) / 8;
+	TblSize = PCMTbl.EntryCount * ValSize;
+
+	PCMTbl.Entries = realloc(PCMTbl.Entries, TblSize);
+	memcpy(PCMTbl.Entries, Data + 0x06, TblSize);
+}
+
+void Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const byte* Data)
+{
+	UINT8 ComprType;
+	UINT8 BitDec;
+	FUINT8 BitCmp;
+	UINT8 CmpSubType;
+	UINT16 AddVal;
+	//UINT32 InPos;
+	const UINT8* InPos;
+	const UINT8* DataEnd;
+	UINT32 OutPos;
+	FUINT16 InVal;
+	FUINT16 OutVal;
+	FUINT8 ValSize;
+	FUINT8 InShift;
+	FUINT8 OutShift;
+	UINT8* Ent1B;
+	UINT16* Ent2B;
+
+	// ReadBits Variables
+	FUINT8 BitsToRead;
+	FUINT8 BitReadVal;
+	FUINT8 InValB;
+	FUINT8 BitMask;
+	FUINT8 OutBit;
+
+	ComprType = Data[0x00];
+	Bank->DataSize = get_le32( Data + 0x01 );
+	BitDec = Data[0x05];
+	BitCmp = Data[0x06];
+	CmpSubType = Data[0x07];
+	AddVal = get_le16(  Data + 0x08 );
+
+	switch(ComprType)
+	{
+	case 0x00:	// n-Bit compression
+		if (CmpSubType == 0x02)
+		{
+			Ent1B = (UINT8*)PCMTbl.Entries;
+			Ent2B = (UINT16*)PCMTbl.Entries;
+			if (! PCMTbl.EntryCount)
+			{
+				return;
+			}
+			else if (BitDec != PCMTbl.BitDec || BitCmp != PCMTbl.BitCmp)
+			{
+				return;
+			}
+		}
+
+		ValSize = (BitDec + 7) / 8;
+		InPos = Data + 0x0A;
+		DataEnd = Data + DataSize;
+		InShift = 0;
+		OutShift = BitDec - BitCmp;
+
+		for (OutPos = 0x00; OutPos < Bank->DataSize && InPos < DataEnd; OutPos += ValSize)
+		{
+			//InVal = ReadBits(Data, InPos, &InShift, BitCmp);
+			// inlined - is 30% faster
+			OutBit = 0x00;
+			InVal = 0x0000;
+			BitsToRead = BitCmp;
+			while(BitsToRead)
+			{
+				BitReadVal = (BitsToRead >= 8) ? 8 : BitsToRead;
+				BitsToRead -= BitReadVal;
+				BitMask = (1 << BitReadVal) - 1;
+
+				InShift += BitReadVal;
+				InValB = (*InPos << InShift >> 8) & BitMask;
+				if (InShift >= 8)
+				{
+					InShift -= 8;
+					InPos ++;
+					if (InShift)
+						InValB |= (*InPos << InShift >> 8) & BitMask;
+				}
+
+				InVal |= InValB << OutBit;
+				OutBit += BitReadVal;
+			}
+
+			switch(CmpSubType)
+			{
+			case 0x00:	// Copy
+				OutVal = InVal + AddVal;
+				break;
+			case 0x01:	// Shift Left
+				OutVal = (InVal << OutShift) + AddVal;
+				break;
+			case 0x02:	// Table
+				switch(ValSize)
+				{
+				case 0x01:
+					OutVal = Ent1B[InVal];
+					break;
+				case 0x02:
+					OutVal = Ent2B[InVal];
+					break;
+				}
+				break;
+			}
+			memcpy(&Bank->Data[OutPos], &OutVal, ValSize);
+		}
+		break;
+	}
+}
+
+void Vgm_Core::AddPCMData(byte Type, unsigned DataSize, const byte* Data)
+{
+	unsigned CurBnk;
+	VGM_PCM_BANK* TempPCM;
+	VGM_PCM_DATA* TempBnk;
+	unsigned BankSize;
+
+	if ((Type & 0x3F) >= PCM_BANK_COUNT || has_looped)
+		return;
+
+	if (Type == 0x7F)
+	{
+		ReadPCMTable( DataSize, Data );
+		return;
+	}
+
+	TempPCM = &PCMBank[Type & 0x3F];
+	CurBnk = TempPCM->BankCount;
+	TempPCM->BankCount ++;
+	TempPCM->BnkPos ++;
+	if (TempPCM->BnkPos < TempPCM->BankCount)
+		return;	// Speed hack (for restarting playback)
+	TempPCM->Bank = (VGM_PCM_DATA*)realloc(TempPCM->Bank,
+		sizeof(VGM_PCM_DATA) * TempPCM->BankCount);
+
+	if (! (Type & 0x40))
+		BankSize = DataSize;
+	else
+		BankSize = get_le32( Data + 1 );
+	TempPCM->Data = ( byte * ) realloc(TempPCM->Data, TempPCM->DataSize + BankSize);
+	TempBnk = &TempPCM->Bank[CurBnk];
+	TempBnk->DataStart = TempPCM->DataSize;
+	if (! (Type & 0x40))
+	{
+		TempBnk->DataSize = DataSize;
+		TempBnk->Data = TempPCM->Data + TempBnk->DataStart;
+		memcpy(TempBnk->Data, Data, DataSize);
+	}
+	else
+	{
+		TempBnk->Data = TempPCM->Data + TempBnk->DataStart;
+		DecompressDataBlk(TempBnk, DataSize, Data);
+	}
+	TempPCM->DataSize += BankSize;
+}
+
+const byte* Vgm_Core::GetPointerFromPCMBank(byte Type, unsigned DataPos)
+{
+	if (Type >= PCM_BANK_COUNT)
+		return NULL;
+
+	if (DataPos >= PCMBank[Type].DataSize)
+		return NULL;
+
+	return &PCMBank[Type].Data[DataPos];
+}
+
+void Vgm_Core::dac_control_grow(byte chip_id)
+{
+	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
+	{
+		if ( DacCtrlUsg [i] == chip_id )
+		{
+			device_reset_daccontrol( dac_control [i] );
+			return;
+		}
+	}
+	unsigned chip_mapped = DacCtrlUsed;
+	DacCtrlUsg [DacCtrlUsed++] = chip_id;
+	DacCtrlMap [chip_id] = chip_mapped;
+	dac_control = (void**) realloc( dac_control, DacCtrlUsed * sizeof(void*) );
+	dac_control [chip_mapped] = device_start_daccontrol( vgm_rate, this );
+	device_reset_daccontrol( dac_control [chip_mapped] );
+}
+
+extern "C" void chip_reg_write(void * context, UINT32 Sample, UINT8 ChipType, UINT8 ChipID, UINT8 Port, UINT8 Offset, UINT8 Data)
+{
+	Vgm_Core * core = (Vgm_Core *) context;
+	core->chip_reg_write(Sample, ChipType, ChipID, Port, Offset, Data);
+}
+
+int Vgm_Core::chip_reg_compare( const void * _a, const void * _b )
+{
+	REG_WRITE_DATA * a = (REG_WRITE_DATA *) _a;
+	REG_WRITE_DATA * b = (REG_WRITE_DATA *) _b;
+	return (int)a->Sample - (int)b->Sample;
+}
+
+void Vgm_Core::chip_reg_write_play()
+{
+	qsort( reg_data, reg_data_count, sizeof(REG_WRITE_DATA), chip_reg_compare );
+
+	for ( unsigned i = 0; i < reg_data_count; i++ )
+	{
+		REG_WRITE_DATA * TempReg = &reg_data [i];
+		chip_reg_write_real( TempReg->Sample, TempReg->ChipType, TempReg->ChipID, TempReg->Port, TempReg->Offset, TempReg->Data );
+	}
+
+	if ( reg_data ) free( reg_data );
+
+	reg_data = NULL;
+	reg_data_count = 0;
+}
+
+void Vgm_Core::chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data)
+{
+	unsigned actual_reg_size = ( reg_data_count + 1023 ) & ~1023;
+	if ( reg_data_count + 1 > actual_reg_size )
+	{
+		reg_data = ( REG_WRITE_DATA * ) realloc( reg_data, ( actual_reg_size + 1024 ) * sizeof( *reg_data ) );
+	}
+
+	REG_WRITE_DATA * TempReg = &reg_data [reg_data_count++];
+	TempReg->Sample = Sample;
+	TempReg->ChipType = ChipType;
+	TempReg->ChipID = ChipID;
+	TempReg->Port = Port;
+	TempReg->Offset = Offset;
+	TempReg->Data = Data;
+}
+
+void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data)
+{
+	switch (ChipType)
+	{
+	case 0x02:
+		switch (Port)
+		{
+		case 0:
+			if ( Offset == ym2612_dac_port )
+			{
+				write_pcm( Sample, Data );
+			}
+			else if ( run_ym2612( to_fm_time( Sample ) ) )
+			{
+				if ( Offset == 0x2B )
+				{
+					dac_disabled = (Data >> 7 & 1) - 1;
+					dac_amp |= dac_disabled;
+				}
+				ym2612.write0( Offset, Data );
+			}
+			break;
+		
+		case 1:
+			if ( run_ym2612( to_fm_time( Sample ) ) )
+			{
+				if ( Offset == ym2612_dac_pan_port )
+				{
+					Blip_Buffer * blip_buf = NULL;
+					switch ( Data >> 6 )
+					{
+					case 0: blip_buf = NULL; break;
+					case 1: blip_buf = stereo_buf.right(); break;
+					case 2: blip_buf = stereo_buf.left(); break;
+					case 3: blip_buf = stereo_buf.center(); break;
+					}
+					/*if ( this->blip_buf != blip_buf )
+					{
+						blip_time_t blip_time = to_psg_time( vgm_time );
+						if ( this->blip_buf ) pcm.offset_inline( blip_time, -dac_amp, this->blip_buf );
+						if ( blip_buf )       pcm.offset_inline( blip_time,  dac_amp, blip_buf );
+					}*/
+					this->blip_buf = blip_buf;
+				}
+				ym2612.write1( Offset, Data );
+			}
+			break;
+		}
+		break;
+
+	case 0x11:
+		if ( get_le32( header().pwm_rate ) > 0 )
+			if ( run_pwm( to_fm_time( Sample ) ) )
+				pwm.write( Port, ( ( Offset ) << 8 ) + Data );
+		break;
+
+	case 0x00:
+		psg.write_data( to_psg_time( Sample ), Data );
+		break;
+
+	case 0x01:
+		if ( run_ym2413( to_fm_time( Sample ) ) )
+			ym2413.write( Offset, Data );
+		break;
+
+	case 0x03:
+		if ( run_ym2151( to_fm_time( Sample ) ) )
+			ym2151.write( Offset, Data );
+		break;
+	}
+}
 
 void Vgm_Core::set_tempo( double t )
 {
@@ -312,6 +668,43 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ym2413_rate && get_le32( header().version ) < 0x110 )
 		update_fm_rates( &ym2151_rate, &ym2413_rate, &ym2612_rate );
 	
+	/* All PCM chips except for the C140 and PWM must enforce the sample rate */
+	if ( c140_rate > 0 )
+	{
+		if ( !*rate )
+			*rate = c140_rate;
+		int result = c140.set_rate( header().c140_type, *rate, c140_rate );
+		CHECK_ALLOC( !result );
+		c140.enable();
+	}
+	else if ( segapcm_rate > 0 )
+	{
+		*rate = segapcm_rate / 128.0;
+		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
+		CHECK_ALLOC( !result );
+		segapcm.enable();
+	}
+	else if ( rf5c68_rate > 0 )
+	{
+		*rate = rf5c68_rate / 384.0;
+		int result = rf5c68.set_rate();
+		CHECK_ALLOC( !result );
+		rf5c68.enable();
+	}
+	else if ( rf5c164_rate > 0 )
+	{
+		*rate = rf5c164_rate / 384.0;
+		int result = rf5c164.set_rate( rf5c164_rate );
+		CHECK_ALLOC( !result );
+		rf5c164.enable();
+	}
+	else if ( pwm_rate > 0 )
+	{
+		int result = pwm.set_rate( pwm_rate );
+		CHECK_ALLOC( !result );
+		pwm.enable();
+	}
+
 	if ( ym2612_rate > 0 )
 	{
 		if ( !*rate )
@@ -338,47 +731,6 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		ym2151.enable();
 	}
 
-	if ( c140_rate > 0 )
-	{
-		if ( !*rate )
-			*rate = c140_rate;
-		int result = c140.set_rate( header().c140_type, *rate, c140_rate );
-		CHECK_ALLOC( !result );
-		c140.enable();
-	}
-	else if ( segapcm_rate > 0 )
-	{
-		if ( !*rate )
-			*rate = segapcm_rate / 128.0;
-		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
-		CHECK_ALLOC( !result );
-		segapcm.enable();
-	}
-	else if ( rf5c68_rate > 0 )
-	{
-		if ( !*rate )
-			*rate = rf5c68_rate / 384.0;
-		int result = rf5c68.set_rate();
-		CHECK_ALLOC( !result );
-		rf5c68.enable();
-	}
-	else if ( rf5c164_rate > 0 )
-	{
-		if ( !*rate )
-			*rate = rf5c164_rate / 384.0;
-		int result = rf5c164.set_rate( rf5c164_rate );
-		CHECK_ALLOC( !result );
-		rf5c164.enable();
-	}
-	else if ( pwm_rate > 0 )
-	{
-		if ( !*rate )
-			*rate = 22020;
-		int result = pwm.set_rate( pwm_rate );
-		CHECK_ALLOC( !result );
-		pwm.enable();
-	}
-	
 	fm_rate = *rate;
 	
 	return blargg_ok;
@@ -398,7 +750,6 @@ void Vgm_Core::start_track()
 	check( data_offset );
 	if ( data_offset )
 		pos += data_offset + offsetof (header_t,data_offset) - header().size();
-	pcm_data[0]  = pos;
 	pcm_pos      = pos;
 	
 	if ( uses_fm() )
@@ -429,7 +780,21 @@ void Vgm_Core::start_track()
 		
 		stereo_buf.clear();
 	}
+
+	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
+	{
+		device_reset_daccontrol( dac_control [i] );
+	}
 	
+	for ( unsigned i = 0; i < PCM_BANK_COUNT; i++)
+	{
+		// reset PCM Bank, but not the data
+		// (this way I don't need to decompress the data again when restarting)
+		PCMBank [i].DataPos = 0;
+		PCMBank [i].BnkPos = 0;
+	}
+	PCMTbl.EntryCount = 0;
+
 	fm_time_offset = 0;
 }
 
@@ -478,6 +843,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			if ( vgm_loop_time == ~0 ) vgm_loop_time = vgm_time;
 			else if ( vgm_loop_time == vgm_time ) loop_begin = file_end(); // XXX some files may loop forever on a region without any delay commands
 			pos = loop_begin; // if not looped, loop_begin == file_end()
+			if ( pos != file_end() ) has_looped = true;
 			break;
 		
 		case cmd_delay_735:
@@ -541,9 +907,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			break;
 
 		case cmd_pwm:
-			if ( get_le32( header().pwm_rate ) > 0 )
-				if ( run_pwm( to_fm_time( vgm_time ) ) )
-					pwm.write( pos [0] >> 4, ( ( pos [0] & 0x0F ) << 8 ) + pos [1] );
+			chip_reg_write( vgm_time, 0x11, 0x00, pos [0] >> 4, pos [0] & 0x0F, pos [1] );
 			pos += 2;
 			break;
 
@@ -609,6 +973,91 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			pos += 2;
 			break;
 			
+		case cmd_dacctl_setup:
+			{
+				unsigned chip = pos [0];
+				if ( chip < 0xFF )
+				{
+					if ( ! DacCtrl [chip].Enable )
+					{
+						dac_control_grow( chip );
+						DacCtrl [chip].Enable = true;
+					}
+					daccontrol_setup_chip( dac_control [DacCtrlMap [chip]], pos [1] & 0x7F, ( pos [1] & 0x80 ) >> 7, get_be16( pos + 2 ) );
+				}
+				pos += 4;
+			}
+			break;
+
+		case cmd_dacctl_data:
+			{
+				unsigned chip = pos [0];
+				if ( chip < 0xFF && DacCtrl [chip].Enable )
+				{
+					DacCtrl [chip].Bank = pos [1];
+					if ( DacCtrl [chip].Bank >= 0x40 )
+						DacCtrl [chip].Bank = 0x00;
+
+					VGM_PCM_BANK * TempPCM = &PCMBank [DacCtrl [chip].Bank];
+					daccontrol_set_data( dac_control [DacCtrlMap [chip]], TempPCM->Data, TempPCM->DataSize, pos [2], pos [3] );
+				}
+				pos += 4;
+			}
+			break;
+		case cmd_dacctl_freq:
+			{
+				unsigned chip = pos [0];
+				if ( chip < 0xFF && DacCtrl [chip].Enable )
+				{
+					daccontrol_set_frequency( dac_control [DacCtrlMap [chip]], get_le32( pos + 1 ) );
+				}
+				pos += 5;
+			}
+			break;
+		case cmd_dacctl_play:
+			{
+				unsigned chip = pos [0];
+				if ( chip < 0xFF && DacCtrl [chip].Enable && PCMBank [DacCtrl [chip].Bank].BankCount )
+				{
+					daccontrol_start( dac_control [DacCtrlMap [chip]], get_le32( pos + 1 ), pos [5], get_le32( pos + 6 ) );
+				}
+				pos += 10;
+			}
+			break;
+		case cmd_dacctl_stop:
+			{
+				unsigned chip = pos [0];
+				if ( chip < 0xFF && DacCtrl [chip].Enable )
+				{
+					daccontrol_stop( dac_control [DacCtrlMap [chip]] );
+				}
+				else if ( chip == 0xFF )
+				{
+					for ( unsigned i = 0; i < DacCtrlUsed; i++ )
+					{
+						daccontrol_stop( dac_control [i] );
+					}
+				}
+				pos++;
+			}
+			break;
+		case cmd_dacctl_playblock:
+			{
+				unsigned chip = pos [0];
+				if ( chip < 0xFF && DacCtrl [chip].Enable && PCMBank [DacCtrl [chip].Bank].BankCount )
+				{
+					VGM_PCM_BANK * TempPCM = &PCMBank [DacCtrl [chip].Bank];
+					unsigned block_number = get_le16( pos + 1 );
+					if ( block_number >= TempPCM->BankCount )
+						block_number = 0;
+					VGM_PCM_DATA * TempBnk = &TempPCM->Bank [block_number];
+					unsigned flags = DCTRL_LMODE_BYTES | ((pos [4] & 1) << 7);
+					daccontrol_start( dac_control [DacCtrlMap [chip]], TempBnk->DataStart, flags, TempBnk->DataSize );
+				}
+				pos += 4;
+			}
+			break;
+
 		case cmd_data_block: {
 			check( *pos == cmd_end );
 			int type = pos [1];
@@ -617,8 +1066,8 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			switch ( type & 0xC0 )
 			{
 			case pcm_block_type:
-				check( ( type & 0x3F ) <= 2 );
-				pcm_data[ type & 0x3F ] = pos;
+			case pcm_aux_block_type:
+				AddPCMData( type, size, pos );
 				break;
 
 			case rom_block_type:
@@ -677,14 +1126,15 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			int data_addr = get_le24( pos + 5 );
 			int data_size = get_le24( pos + 8 );
 			if ( !data_size ) data_size += 0x01000000;
+			void * data_ptr = (void *) GetPointerFromPCMBank( type, data_start );
 			switch ( type )
 			{
 			case rf5c68_ram_block:
-				rf5c68.write_ram( data_addr, data_size, ( void * ) ( pcm_data[ 1 ] + data_start ) );
+				rf5c68.write_ram( data_addr, data_size, data_ptr );
 				break;
 
 			case rf5c164_ram_block:
-				rf5c164.write_ram( data_addr, data_size, ( void * ) ( pcm_data[ 2 ] + data_start ) );
+				rf5c164.write_ram( data_addr, data_size, data_ptr );
 				break;
 			}
 			pos += 11;
@@ -692,8 +1142,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 		}
 		
 		case cmd_pcm_seek:
-			pcm_pos = pcm_data[0] + pos [3] * 0x1000000 + pos [2] * 0x10000 +
-					pos [1] * 0x100 + pos [0];
+			pcm_pos = GetPointerFromPCMBank( 0, get_be32( pos ) );
 			pos += 4;
 			break;
 		
@@ -783,8 +1232,15 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		pwm.begin_frame( out );
 	}
-	
+
 	run( vgm_time );
+
+	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
+	{
+		daccontrol_update( dac_control [i], vgm_time );
+	}
+	chip_reg_write_play();
+
 	run_ym2612( pairs );
 	run_ym2413( pairs );
 	run_ym2151( pairs );
