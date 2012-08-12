@@ -281,7 +281,7 @@ private:
 
 	void ReadPCMTable(unsigned DataSize, const byte* Data);
 	void AddPCMData(byte Type, unsigned DataSize, const byte* Data);
-	void DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const byte* Data);
+	bool DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const byte* Data);
 	const byte* GetPointerFromPCMBank(byte Type, unsigned DataPos);
 
 	byte const* pcm_pos;    // current position in PCM data

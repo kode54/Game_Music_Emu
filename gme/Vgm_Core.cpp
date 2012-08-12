@@ -173,17 +173,17 @@ void Vgm_Core::ReadPCMTable(unsigned DataSize, const byte* Data)
 	memcpy(PCMTbl.Entries, Data + 0x06, TblSize);
 }
 
-void Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const byte* Data)
+bool Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const byte* Data)
 {
 	UINT8 ComprType;
 	UINT8 BitDec;
 	FUINT8 BitCmp;
 	UINT8 CmpSubType;
 	UINT16 AddVal;
-	//UINT32 InPos;
 	const UINT8* InPos;
-	const UINT8* DataEnd;
-	UINT32 OutPos;
+	const UINT8* InDataEnd;
+	UINT8* OutPos;
+	const UINT8* OutDataEnd;
 	FUINT16 InVal;
 	FUINT16 OutVal;
 	FUINT8 ValSize;
@@ -199,42 +199,44 @@ void Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const by
 	FUINT8 BitMask;
 	FUINT8 OutBit;
 
+	// Variables for DPCM
+	UINT16 OutMask;
+
 	ComprType = Data[0x00];
 	Bank->DataSize = get_le32( Data + 0x01 );
-	BitDec = Data[0x05];
-	BitCmp = Data[0x06];
-	CmpSubType = Data[0x07];
-	AddVal = get_le16(  Data + 0x08 );
 
 	switch(ComprType)
 	{
-	default:
-		// not supported yet
-		memset( Bank->Data, 0, Bank->DataSize );
-		break;
-
 	case 0x00:	// n-Bit compression
+		BitDec = Data[0x05];
+		BitCmp = Data[0x06];
+		CmpSubType = Data[0x07];
+		AddVal = get_le16( Data + 0x08 );
+
 		if (CmpSubType == 0x02)
 		{
 			Ent1B = (UINT8*)PCMTbl.Entries;
 			Ent2B = (UINT16*)PCMTbl.Entries;
 			if (! PCMTbl.EntryCount)
 			{
-				return;
+				Bank->DataSize = 0x00;
+				return false;
 			}
 			else if (BitDec != PCMTbl.BitDec || BitCmp != PCMTbl.BitCmp)
 			{
-				return;
+				Bank->DataSize = 0x00;
+				return false;
 			}
 		}
 
 		ValSize = (BitDec + 7) / 8;
 		InPos = Data + 0x0A;
-		DataEnd = Data + DataSize;
+		InDataEnd = Data + DataSize;
 		InShift = 0;
 		OutShift = BitDec - BitCmp;
+		OutDataEnd = Bank->Data + Bank->DataSize;
 
-		for (OutPos = 0x00; OutPos < Bank->DataSize && InPos < DataEnd; OutPos += ValSize)
+		for (OutPos = Bank->Data; OutPos < OutDataEnd && InPos < InDataEnd; OutPos += ValSize)
 		{
 			//InVal = ReadBits(Data, InPos, &InShift, BitCmp);
 			// inlined - is 30% faster
@@ -281,10 +283,90 @@ void Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const by
 				}
 				break;
 			}
-			memcpy(&Bank->Data[OutPos], &OutVal, ValSize);
+
+			//memcpy(OutPos, &OutVal, ValSize);
+			if (ValSize == 0x01)
+				*((UINT8*)OutPos) = (UINT8)OutVal;
+			else //if (ValSize == 0x02)
+				*((UINT16*)OutPos) = (UINT16)OutVal;
 		}
 		break;
+	case 0x01:	// Delta-PCM
+		BitDec = Data[0x05];
+		BitCmp = Data[0x06];
+		OutVal = get_le16( Data + 0x08 );
+
+		Ent1B = (UINT8*)PCMTbl.Entries;
+		Ent2B = (UINT16*)PCMTbl.Entries;
+		if (! PCMTbl.EntryCount)
+		{
+			Bank->DataSize = 0x00;
+			return false;
+		}
+		else if (BitDec != PCMTbl.BitDec || BitCmp != PCMTbl.BitCmp)
+		{
+			Bank->DataSize = 0x00;
+			return false;
+		}
+
+		ValSize = (BitDec + 7) / 8;
+		OutMask = (1 << BitDec) - 1;
+		InPos = Data + 0x0A;
+		InDataEnd = Data + DataSize;
+		InShift = 0;
+		OutShift = BitDec - BitCmp;
+		OutDataEnd = Bank->Data + Bank->DataSize;
+		AddVal = 0x0000;
+
+		for (OutPos = Bank->Data; OutPos < OutDataEnd && InPos < InDataEnd; OutPos += ValSize)
+		{
+			//InVal = ReadBits(Data, InPos, &InShift, BitCmp);
+			// inlined - is 30% faster
+			OutBit = 0x00;
+			InVal = 0x0000;
+			BitsToRead = BitCmp;
+			while(BitsToRead)
+			{
+				BitReadVal = (BitsToRead >= 8) ? 8 : BitsToRead;
+				BitsToRead -= BitReadVal;
+				BitMask = (1 << BitReadVal) - 1;
+
+				InShift += BitReadVal;
+				InValB = (*InPos << InShift >> 8) & BitMask;
+				if (InShift >= 8)
+				{
+					InShift -= 8;
+					InPos ++;
+					if (InShift)
+						InValB |= (*InPos << InShift >> 8) & BitMask;
+				}
+
+				InVal |= InValB << OutBit;
+				OutBit += BitReadVal;
+			}
+
+			switch(ValSize)
+			{
+			case 0x01:
+				AddVal = Ent1B[InVal];
+				OutVal += AddVal;
+				OutVal &= OutMask;
+				*((UINT8*)OutPos) = (UINT8)OutVal;
+				break;
+			case 0x02:
+				AddVal = Ent2B[InVal];
+				OutVal += AddVal;
+				OutVal &= OutMask;
+				*((UINT16*)OutPos) = (UINT16)OutVal;
+				break;
+			}
+		}
+		break;
+	default:
+		return false;
 	}
+
+	return true;
 }
 
 void Vgm_Core::AddPCMData(byte Type, unsigned DataSize, const byte* Data)
@@ -293,6 +375,8 @@ void Vgm_Core::AddPCMData(byte Type, unsigned DataSize, const byte* Data)
 	VGM_PCM_BANK* TempPCM;
 	VGM_PCM_DATA* TempBnk;
 	unsigned BankSize;
+	bool RetVal;
+
 
 	if ((Type & 0x3F) >= PCM_BANK_COUNT || has_looped)
 		return;
@@ -328,7 +412,13 @@ void Vgm_Core::AddPCMData(byte Type, unsigned DataSize, const byte* Data)
 	else
 	{
 		TempBnk->Data = TempPCM->Data + TempBnk->DataStart;
-		DecompressDataBlk(TempBnk, DataSize, Data);
+		RetVal = DecompressDataBlk(TempBnk, DataSize, Data);
+		if (! RetVal)
+		{
+			TempBnk->Data = NULL;
+			TempBnk->DataSize = 0x00;
+			return;
+		}
 	}
 	TempPCM->DataSize += BankSize;
 }
