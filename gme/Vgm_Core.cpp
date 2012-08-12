@@ -132,6 +132,7 @@ Vgm_Core::Vgm_Core()
 	DacCtrlUsed = 0;
 	dac_control = NULL;
 	reg_data_count = 0;
+	reg_data_serial = 0;
 	reg_data = NULL;
 	memset( PCMBank, 0, sizeof( PCMBank ) );
 	memset( &PCMTbl, 0, sizeof( PCMTbl ) );
@@ -366,7 +367,8 @@ int Vgm_Core::chip_reg_compare( const void * _a, const void * _b )
 {
 	REG_WRITE_DATA * a = (REG_WRITE_DATA *) _a;
 	REG_WRITE_DATA * b = (REG_WRITE_DATA *) _b;
-	return (int)a->Sample - (int)b->Sample;
+	if (a->Sample == b->Sample) return (int)a->SerialNumber - (int)b->SerialNumber;
+	else return (int)a->Sample - (int)b->Sample;
 }
 
 void Vgm_Core::chip_reg_write_play()
@@ -383,6 +385,7 @@ void Vgm_Core::chip_reg_write_play()
 
 	reg_data = NULL;
 	reg_data_count = 0;
+	reg_data_serial = 0;
 }
 
 void Vgm_Core::chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data)
@@ -395,6 +398,7 @@ void Vgm_Core::chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte 
 
 	REG_WRITE_DATA * TempReg = &reg_data [reg_data_count++];
 	TempReg->Sample = Sample;
+	TempReg->SerialNumber = reg_data_serial++;
 	TempReg->ChipType = ChipType;
 	TempReg->ChipID = ChipID;
 	TempReg->Port = Port;
@@ -499,12 +503,23 @@ bool Vgm_Core::header_t::valid_tag() const
 int Vgm_Core::header_t::size() const
 {
 	unsigned int version = get_le32( this->version );
-	return ( version > 0x150 ) ? ( ( version > 0x160 ) ? size_max : size_151 ) : size_min;
+	unsigned int data_offset;
+	if ( version >= 0x150 )
+	{
+		data_offset = get_le32( this->data_offset );
+		if ( data_offset ) data_offset += offsetof( header_t, data_offset );
+	}
+	else data_offset = 0x40;
+	unsigned expected_size = ( version > 0x150 ) ? ( ( version > 0x160 ) ? size_max : size_151 ) : size_min;
+	if ( expected_size > data_offset ) expected_size = data_offset ? (data_offset > size_max ? size_max : data_offset) : size_min;
+	return expected_size;
 }
 
 void Vgm_Core::header_t::cleanup()
 {
 	unsigned int version = get_le32( this->version );
+
+	if ( size() < size_max ) memset( ((byte*)this) + size(), 0, size_max - size() );
 
 	if ( version < 0x161 )
 	{
@@ -919,57 +934,22 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			break;
 
 		case cmd_ym2151:
-			if ( run_ym2151( to_fm_time( vgm_time ) ) )
-				ym2151.write( pos [0], pos [1] );
+			chip_reg_write( vgm_time, 0x03, 0x00, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
 		
 		case cmd_ym2413:
-			if ( run_ym2413( to_fm_time( vgm_time ) ) )
-				ym2413.write( pos [0], pos [1] );
+			chip_reg_write( vgm_time, 0x01, 0x00, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
 		
 		case cmd_ym2612_port0:
-			if ( pos [0] == ym2612_dac_port )
-			{
-				write_pcm( vgm_time, pos [1] );
-			}
-			else if ( run_ym2612( to_fm_time( vgm_time ) ) )
-			{
-				if ( pos [0] == 0x2B )
-				{
-					dac_disabled = (pos [1] >> 7 & 1) - 1;
-					dac_amp |= dac_disabled;
-				}
-				ym2612.write0( pos [0], pos [1] );
-			}
+			chip_reg_write( vgm_time, 0x02, 0x00, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
 		
 		case cmd_ym2612_port1:
-			if ( run_ym2612( to_fm_time( vgm_time ) ) )
-			{
-				if ( pos [0] == ym2612_dac_pan_port )
-				{
-					Blip_Buffer * blip_buf = NULL;
-					switch ( pos [1] >> 6 )
-					{
-					case 0: blip_buf = NULL; break;
-					case 1: blip_buf = stereo_buf.right(); break;
-					case 2: blip_buf = stereo_buf.left(); break;
-					case 3: blip_buf = stereo_buf.center(); break;
-					}
-					/*if ( this->blip_buf != blip_buf )
-					{
-						blip_time_t blip_time = to_psg_time( vgm_time );
-						if ( this->blip_buf ) pcm.offset_inline( blip_time, -dac_amp, this->blip_buf );
-						if ( blip_buf )       pcm.offset_inline( blip_time,  dac_amp, blip_buf );
-					}*/
-					this->blip_buf = blip_buf;
-				}
-				ym2612.write1( pos [0], pos [1] );
-			}
+			chip_reg_write( vgm_time, 0x02, 0x00, 0x01, pos [0], pos [1] );
 			pos += 2;
 			break;
 			
