@@ -208,6 +208,11 @@ void Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const by
 
 	switch(ComprType)
 	{
+	default:
+		// not supported yet
+		memset( Bank->Data, 0, Bank->DataSize );
+		break;
+
 	case 0x00:	// n-Bit compression
 		if (CmpSubType == 0x02)
 		{
