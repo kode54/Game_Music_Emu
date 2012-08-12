@@ -253,7 +253,7 @@ void Vgm_Emu::mute_voices_( int mask )
 		core.psg.set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
 		if ( core.ym2612.enabled() )
 		{
-			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * gain() );
+			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * fm_gain * gain() );
 			core.ym2612.mute_voices( mask );
 		}
 		

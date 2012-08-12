@@ -1142,7 +1142,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 		}
 		
 		case cmd_pcm_seek:
-			pcm_pos = GetPointerFromPCMBank( 0, get_be32( pos ) );
+			pcm_pos = GetPointerFromPCMBank( 0, get_le32( pos ) );
 			pos += 4;
 			break;
 		
