@@ -98,6 +98,7 @@
     <ClCompile Include="..\gme\Dual_Resampler.cpp" />
     <ClCompile Include="..\gme\Effects_Buffer.cpp" />
     <ClCompile Include="..\gme\Fir_Resampler.cpp" />
+    <ClCompile Include="..\gme\fm2612.c" />
     <ClCompile Include="..\gme\fmopl.cpp" />
     <ClCompile Include="..\gme\Gb_Apu.cpp" />
     <ClCompile Include="..\gme\Gb_Cpu.cpp" />
@@ -169,6 +170,14 @@
     <ClCompile Include="..\gme\ym2413.c" />
     <ClCompile Include="..\gme\Ym2413_Emu.cpp" />
     <ClCompile Include="..\gme\Ym2612_Emu.cpp" />
+    <ClCompile Include="..\gme\Ym2612_Emu_Gens.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gme\Ym2612_Emu_MAME.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\gme\ymdeltat.cpp" />
     <ClCompile Include="..\gme\Z80_Cpu.cpp" />
   </ItemGroup>
@@ -192,6 +201,7 @@
     <ClInclude Include="..\gme\Dual_Resampler.h" />
     <ClInclude Include="..\gme\Effects_Buffer.h" />
     <ClInclude Include="..\gme\Fir_Resampler.h" />
+    <ClInclude Include="..\gme\fm.h" />
     <ClInclude Include="..\gme\fmopl.h" />
     <ClInclude Include="..\gme\Gb_Apu.h" />
     <ClInclude Include="..\gme\Gb_Cpu.h" />
