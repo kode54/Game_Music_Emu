@@ -135,7 +135,7 @@ INLINE UINT32 muldiv64round(UINT32 Multiplicand, UINT32 Multiplier, UINT32 Divis
 	return (UINT32)(((UINT64)Multiplicand * Multiplier + Multiplier / 2) / Divisor);
 }
 
-void daccontrol_update(void *_chip, UINT32 samples)
+void daccontrol_update(void *_chip, UINT32 base_clock, UINT32 samples)
 {
 	dac_control *chip = (dac_control *) _chip;
 	UINT32 NewPos;
@@ -162,11 +162,11 @@ void daccontrol_update(void *_chip, UINT32 samples)
 	chip->Step += samples;
 	// Formula: Step * Freq / SampleRate
 	NewPos = muldiv64round(chip->Step * chip->DataStep, chip->Frequency, chip->SampleRate);
-	daccontrol_SendCommand(chip, 0);
+	daccontrol_SendCommand(chip, base_clock);
 	
 	while(chip->RemainCmds && chip->Pos < NewPos)
 	{
-		daccontrol_SendCommand(chip, muldiv64round(Sample, chip->SampleRate, chip->Frequency));
+		daccontrol_SendCommand(chip, base_clock + muldiv64round(Sample, chip->SampleRate, chip->Frequency));
 		Sample++;
 		chip->Pos += chip->DataStep;
 		chip->Running &= ~0x10;

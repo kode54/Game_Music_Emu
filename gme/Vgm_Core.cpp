@@ -125,6 +125,16 @@ int Vgm_Core::run_pwm( int time )
 	return pwm.run_until( time );
 }
 
+int Vgm_Core::run_dac_control( int time )
+{
+	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
+	{
+		daccontrol_update( dac_control [i], DacCtrlTime[DacCtrlMap[i]], time - DacCtrlTime[DacCtrlMap[i]] );
+		DacCtrlTime[DacCtrlMap[i]] = time;
+	}
+	return 1;
+}
+
 Vgm_Core::Vgm_Core()
 {
 	blip_buf = stereo_buf.center();
@@ -137,6 +147,7 @@ Vgm_Core::Vgm_Core()
 	memset( PCMBank, 0, sizeof( PCMBank ) );
 	memset( &PCMTbl, 0, sizeof( PCMTbl ) );
 	memset( DacCtrl, 0, sizeof( DacCtrl ) );
+	memset( DacCtrlTime, 0, sizeof( DacCtrlTime ) );
 }
 
 Vgm_Core::~Vgm_Core()
@@ -894,6 +905,7 @@ void Vgm_Core::start_track()
 	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
 	{
 		device_reset_daccontrol( dac_control [i] );
+		DacCtrlTime[DacCtrlMap[i]] = 0;
 	}
 	
 	for ( unsigned i = 0; i < PCM_BANK_COUNT; i++)
@@ -1049,6 +1061,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			break;
 			
 		case cmd_dacctl_setup:
+			if ( run_dac_control( vgm_time ) )
 			{
 				unsigned chip = pos [0];
 				if ( chip < 0xFF )
@@ -1060,11 +1073,12 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 					}
 					daccontrol_setup_chip( dac_control [DacCtrlMap [chip]], pos [1] & 0x7F, ( pos [1] & 0x80 ) >> 7, get_be16( pos + 2 ) );
 				}
-				pos += 4;
 			}
+			pos += 4;
 			break;
 
 		case cmd_dacctl_data:
+			if ( run_dac_control( vgm_time ) )
 			{
 				unsigned chip = pos [0];
 				if ( chip < 0xFF && DacCtrl [chip].Enable )
@@ -1076,30 +1090,33 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 					VGM_PCM_BANK * TempPCM = &PCMBank [DacCtrl [chip].Bank];
 					daccontrol_set_data( dac_control [DacCtrlMap [chip]], TempPCM->Data, TempPCM->DataSize, pos [2], pos [3] );
 				}
-				pos += 4;
 			}
+			pos += 4;
 			break;
 		case cmd_dacctl_freq:
+			if ( run_dac_control( vgm_time ) )
 			{
 				unsigned chip = pos [0];
 				if ( chip < 0xFF && DacCtrl [chip].Enable )
 				{
 					daccontrol_set_frequency( dac_control [DacCtrlMap [chip]], get_le32( pos + 1 ) );
 				}
-				pos += 5;
 			}
+			pos += 5;
 			break;
 		case cmd_dacctl_play:
+			if ( run_dac_control( vgm_time ) )
 			{
 				unsigned chip = pos [0];
 				if ( chip < 0xFF && DacCtrl [chip].Enable && PCMBank [DacCtrl [chip].Bank].BankCount )
 				{
 					daccontrol_start( dac_control [DacCtrlMap [chip]], get_le32( pos + 1 ), pos [5], get_le32( pos + 6 ) );
 				}
-				pos += 10;
 			}
+			pos += 10;
 			break;
 		case cmd_dacctl_stop:
+			if ( run_dac_control( vgm_time ) )
 			{
 				unsigned chip = pos [0];
 				if ( chip < 0xFF && DacCtrl [chip].Enable )
@@ -1113,10 +1130,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 						daccontrol_stop( dac_control [i] );
 					}
 				}
-				pos++;
 			}
+			pos++;
 			break;
 		case cmd_dacctl_playblock:
+			if ( run_dac_control( vgm_time ) )
 			{
 				unsigned chip = pos [0];
 				if ( chip < 0xFF && DacCtrl [chip].Enable && PCMBank [DacCtrl [chip].Bank].BankCount )
@@ -1129,8 +1147,8 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 					unsigned flags = DCTRL_LMODE_BYTES | ((pos [4] & 1) << 7);
 					daccontrol_start( dac_control [DacCtrlMap [chip]], TempBnk->DataStart, flags, TempBnk->DataSize );
 				}
-				pos += 4;
 			}
+			pos += 4;
 			break;
 
 		case cmd_data_block: {
@@ -1226,7 +1244,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			switch ( cmd & 0xF0 )
 			{
 				case cmd_pcm_delay:
-					write_pcm( vgm_time, *pcm_pos++ );
+					chip_reg_write( vgm_time, 0x02, 0x00, 0x00, ym2612_dac_port, *pcm_pos++ );
 					vgm_time += cmd & 0x0F;
 					break;
 				
@@ -1310,10 +1328,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 
 	run( vgm_time );
 
-	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
-	{
-		daccontrol_update( dac_control [i], vgm_time );
-	}
+	run_dac_control( vgm_time );
 	chip_reg_write_play();
 
 	run_ym2612( pairs );
@@ -1328,6 +1343,8 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	fm_time_offset = (vgm_time * fm_time_factor + fm_time_offset) - (pairs << fm_time_bits);
 	
 	psg.end_frame( blip_time );
+
+	memset( DacCtrlTime, 0, sizeof(DacCtrlTime) );
 	
 	return pairs * stereo;
 }

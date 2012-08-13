@@ -23,7 +23,7 @@ extern "C" {
 void * device_start_daccontrol(UINT32 samplerate, void *context);
 void device_stop_daccontrol(void * chip);
 
-void daccontrol_update(void * chip, UINT32 samples);
+void daccontrol_update(void * chip, UINT32 base_clock, UINT32 samples);
 void device_reset_daccontrol(void * chip);
 void daccontrol_setup_chip(void * chip, UINT8 ChType, UINT8 ChNum, UINT16 Command);
 void daccontrol_set_data(void *chip, const UINT8* Data, UINT32 DataLen, UINT8 StepSize, UINT8 StepBase);

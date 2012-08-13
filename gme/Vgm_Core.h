@@ -188,9 +188,12 @@ public:
 	byte DacCtrlUsg[0xFF];
 	DACCTRL_DATA DacCtrl[0xFF];
 	byte DacCtrlMap[0xFF];
+	int DacCtrlTime[0xFF];
 	void ** dac_control;
 
 	void dac_control_grow(byte chip_id);
+
+	int run_dac_control( int time );
 
 	typedef struct chip_reg_write_data
 	{
