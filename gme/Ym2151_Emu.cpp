@@ -56,8 +56,8 @@ void Ym2151_Emu::run( int pair_count, sample_t* out )
 
 		for (int i = 0; i < todo; i++)
 		{
-			int output_l = bufL [i] * 3;
-			int output_r = bufR [i] * 3;
+			int output_l = bufL [i];
+			int output_r = bufR [i];
 			output_l += out [0];
 			output_r += out [1];
 			if ( (short)output_l != output_l ) output_l = 0x7FFF ^ ( output_l >> 31 );

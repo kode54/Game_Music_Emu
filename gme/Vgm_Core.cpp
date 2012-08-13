@@ -790,15 +790,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		update_fm_rates( &ym2151_rate, &ym2413_rate, &ym2612_rate );
 	
 	/* All PCM chips except for the C140 and PWM must enforce the sample rate */
-	if ( c140_rate > 0 )
-	{
-		if ( !*rate )
-			*rate = c140_rate;
-		int result = c140.set_rate( header().c140_type, *rate, c140_rate );
-		CHECK_ALLOC( !result );
-		c140.enable();
-	}
-	else if ( segapcm_rate > 0 )
+	if ( segapcm_rate > 0 )
 	{
 		*rate = segapcm_rate / 128.0;
 		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
@@ -850,6 +842,15 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		int result = ym2151.set_rate( *rate, ym2151_rate );
 		CHECK_ALLOC( !result );
 		ym2151.enable();
+	}
+
+	if ( c140_rate > 0 )
+	{
+		if ( !*rate )
+			*rate = c140_rate;
+		int result = c140.set_rate( header().c140_type, *rate, c140_rate );
+		CHECK_ALLOC( !result );
+		c140.enable();
 	}
 
 	fm_rate = *rate;
