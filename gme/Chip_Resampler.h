@@ -57,7 +57,10 @@ public:
 
 	blargg_err_t reset_resampler()
 	{
-		const unsigned int pairs = 64 / resampler.rate();
+		unsigned int pairs;
+		double rate = resampler.rate();
+		if ( rate >= 1.0 ) pairs = 64.0 * rate;
+		else pairs = 64.0 / rate;
 		RETURN_ERR( sample_buf.resize( (pairs + (pairs >> 2)) * 2 ) );
 		resize( pairs );
 		resampler_size = oversamples_per_frame + (oversamples_per_frame >> 2);
