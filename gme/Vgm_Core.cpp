@@ -938,91 +938,103 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 
 	if ( ymf262_rate )
 	{
+		bool dual_chip = !!(header().ymf262_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ymf262_rate / 288.0;
 		int result = ymf262[0].set_rate( fm_rate, ymf262_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ymf262[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ymf262[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ymf262[0].enable();
-		if ( header().ymf262_rate[3] & 0x40 )
+		if ( dual_chip )
 		{
 			result = ymf262[1].set_rate( fm_rate, ymf262_rate );
 			CHECK_ALLOC( !result );
-			RETURN_ERR( ymf262[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			RETURN_ERR( ymf262[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ymf262[1].enable();
 		}
 	}
 	if ( ym3812_rate )
 	{
+		bool dual_chip = !!(header().ym3812_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym3812_rate / 72.0;
 		int result = ym3812[0].set_rate( fm_rate, ym3812_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ym3812[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ym3812[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym3812[0].enable();
-		if ( header().ym3812_rate[3] & 0x40 )
+		if ( dual_chip )
 		{
 			result = ym3812[1].set_rate( fm_rate, ym3812_rate );
 			CHECK_ALLOC( !result );
-			RETURN_ERR( ym3812[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			RETURN_ERR( ym3812[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym3812[1].enable();
 		}
 	}
 	if ( ym2612_rate )
 	{
+		bool dual_chip = !!(header().ym2612_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2612_rate / 144.0;
 		RETURN_ERR( ym2612[0].set_rate( fm_rate, ym2612_rate ) );
-		RETURN_ERR( ym2612[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ym2612[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2612[0].enable();
-		if ( header().ym2612_rate[3] & 0x40 )
+		if ( dual_chip )
 		{
 			RETURN_ERR( ym2612[1].set_rate( fm_rate, ym2612_rate ) );
-			RETURN_ERR( ym2612[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			RETURN_ERR( ym2612[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2612[1].enable();
 		}
 	}
 	if ( ym2413_rate )
 	{
+		bool dual_chip = !!(header().ym2413_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2413_rate / 72.0;
 		int result = ym2413[0].set_rate( fm_rate, ym2413_rate );
 		if ( result == 2 )
 			return "YM2413 FM sound not supported";
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ym2413[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ym2413[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2413[0].enable();
-		if ( header().ym2413_rate[3] & 0x40 )
+		if ( dual_chip )
 		{
 			result = ym2413[1].set_rate( fm_rate, ym2413_rate );
 			CHECK_ALLOC( !result );
-			RETURN_ERR( ym2413[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			RETURN_ERR( ym2413[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2413[1].enable();
 		}
 	}
 	if ( ym2151_rate )
 	{
+		bool dual_chip = !!(header().ym2151_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2151_rate / 64.0;
 		int result = ym2151[0].set_rate( fm_rate, ym2151_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ym2151[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ym2151[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2151[0].enable();
-		if ( header().ym2151_rate[3] & 0x40 )
+		if ( dual_chip )
 		{
 			result = ym2151[1].set_rate( fm_rate, ym2151_rate );
 			CHECK_ALLOC( !result );
-			RETURN_ERR( ym2151[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			RETURN_ERR( ym2151[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2151[1].enable();
 		}
 	}
 	if ( ym2203_rate )
 	{
+		bool dual_chip = !!(header().ym2203_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2203_rate / 72.0;
 		int result = ym2203[0].set_rate( fm_rate, ym2203_rate );
 		CHECK_ALLOC ( !result );
-		RETURN_ERR( ym2203[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ym2203[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2203[0].enable();
-		if ( header().ym2203_rate[3] & 0x40 )
+		if ( dual_chip )
 		{
 			result = ym2203[1].set_rate( fm_rate, ym2203_rate );
 			CHECK_ALLOC ( !result );
-			RETURN_ERR( ym2203[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			RETURN_ERR( ym2203[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2203[1].enable();
 		}
 	}
