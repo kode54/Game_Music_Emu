@@ -41,12 +41,10 @@ to do:
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mamedef.h"
 #include "ym2413.h"
 
 #define INLINE __inline
-#ifndef NULL
-	#define NULL ((void *)0)
-#endif
 #define logerror (void)
 
 #ifndef M_PI

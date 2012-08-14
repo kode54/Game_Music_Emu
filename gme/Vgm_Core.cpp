@@ -31,6 +31,10 @@ enum {
 	cmd_ym2612_port0    = 0x52,
 	cmd_ym2612_port1    = 0x53,
 	cmd_ym2151          = 0x54,
+	cmd_ym2203          = 0x55,
+	cmd_ym3812          = 0x5A,
+	cmd_ymf262_port0    = 0x5E,
+	cmd_ymf262_port1    = 0x5F,
 	cmd_delay           = 0x61,
 	cmd_delay_735       = 0x62,
 	cmd_delay_882       = 0x63,
@@ -49,9 +53,14 @@ enum {
 	cmd_rf5c68          = 0xB0,
 	cmd_rf5c164         = 0xB1,
 	cmd_pwm             = 0xB2,
+	cmd_okim6258_write  = 0xB7,
+	cmd_okim6295_write  = 0xB8,
+	cmd_k053260_write   = 0xBA,
 	cmd_segapcm_write   = 0xC0,
 	cmd_rf5c68_mem      = 0xC1,
 	cmd_rf5c164_mem     = 0xC2,
+	cmd_k051649_write   = 0xD2,
+	cmd_k054539_write   = 0xD3,
 	cmd_c140            = 0xD4,
 	cmd_pcm_seek        = 0xE0,
 
@@ -64,7 +73,10 @@ enum {
 	ram_block_type      = 0xC0,
 
 	rom_segapcm         = 0x80,
+	rom_okim6295        = 0x8B,
+	rom_k054539         = 0x8C,
 	rom_c140            = 0x8D,
+	rom_k053260         = 0x8E,
 
 	ram_rf5c68          = 0xC0,
 	ram_rf5c164         = 0xC1,
@@ -90,6 +102,11 @@ int Vgm_Core::run_ym2151( int time )
 	return ym2151.run_until( time );
 }
 
+int Vgm_Core::run_ym2203( int time )
+{
+	return ym2203.run_until( time );
+}
+
 int Vgm_Core::run_ym2413( int time )
 {
 	return ym2413.run_until( time );
@@ -98,6 +115,16 @@ int Vgm_Core::run_ym2413( int time )
 int Vgm_Core::run_ym2612( int time )
 {
 	return ym2612.run_until( time );
+}
+
+int Vgm_Core::run_ym3812( int time )
+{
+	return ym3812.run_until( time );
+}
+
+int Vgm_Core::run_ymf262( int time )
+{
+	return ymf262.run_until( time );
 }
 
 int Vgm_Core::run_c140( int time )
@@ -123,6 +150,31 @@ int Vgm_Core::run_rf5c164( int time )
 int Vgm_Core::run_pwm( int time )
 {
 	return pwm.run_until( time );
+}
+
+int Vgm_Core::run_okim6258( int time )
+{
+	return okim6258.run_until( time );
+}
+
+int Vgm_Core::run_okim6295( int time )
+{
+	return okim6295.run_until( time );
+}
+
+int Vgm_Core::run_k051649( int time )
+{
+	return k051649.run_until( time );
+}
+
+int Vgm_Core::run_k053260( int time )
+{
+	return k053260.run_until( time );
+}
+
+int Vgm_Core::run_k054539( int time )
+{
+	return k054539.run_until( time );
 }
 
 int Vgm_Core::run_dac_control( int time )
@@ -563,9 +615,8 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		break;
 
 	case 0x11:
-		if ( get_le32( header().pwm_rate ) > 0 )
-			if ( run_pwm( to_fm_time( Sample ) ) )
-				pwm.write( Port, ( ( Offset ) << 8 ) + Data );
+		if ( run_pwm( to_fm_time( Sample ) ) )
+			pwm.write( Port, ( ( Offset ) << 8 ) + Data );
 		break;
 
 	case 0x00:
@@ -580,6 +631,52 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 	case 0x03:
 		if ( run_ym2151( to_fm_time( Sample ) ) )
 			ym2151.write( Offset, Data );
+		break;
+
+	case 0x06:
+		if ( run_ym2203( to_fm_time( Sample ) ) )
+			ym2203.write( Offset, Data );
+		break;
+
+	case 0x09:
+		if ( run_ym3812( to_fm_time( Sample ) ) )
+			ym3812.write( Offset, Data );
+		break;
+
+	case 0x0C:
+		if ( run_ymf262( to_fm_time( Sample ) ) )
+		{
+			switch (Port)
+			{
+			case 0: ymf262.write0( Offset, Data ); break;
+			case 1: ymf262.write1( Offset, Data ); break;
+			}
+		}
+		break;
+
+	case 0x17:
+		if ( run_okim6258( to_fm_time( Sample ) ) )
+			okim6258.write( Offset, Data );
+		break;
+
+	case 0x18:
+		if ( run_okim6295( to_fm_time( Sample ) ) )
+			okim6295.write( Offset, Data );
+		break;
+
+	case 0x19:
+		if ( run_k051649( to_fm_time( Sample ) ) )
+			k051649.write( Port, Offset, Data );
+		break;
+
+	case 0x1A:
+		if ( run_k054539( to_fm_time( Sample ) ) )
+			k054539.write( ( Port << 8 ) | Offset, Data );
+		break;
+
+	case 0x1D:
+		if ( run_k053260( to_fm_time( Sample ) ) )
+			k053260.write( Offset, Data );
 		break;
 	}
 }
@@ -706,14 +803,22 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	
 	// Disable FM
 	fm_rate = 0;
+	ymf262.enable( false );
+	ym3812.enable( false );
 	ym2612.enable( false );
 	ym2413.enable( false );
+	ym2203.enable( false );
 	ym2151.enable( false );
 	c140.enable( false );
 	segapcm.enable( false );
 	rf5c68.enable( false );
 	rf5c164.enable( false );
 	pwm.enable( false );
+	okim6258.enable( false );
+	okim6295.enable( false );
+	k051649.enable( false );
+	k053260.enable( false );
+	k054539.enable( false );
 	
 	set_tempo( 1 );
 	
@@ -778,79 +883,174 @@ void Vgm_Core::update_fm_rates( int* ym2151_rate, int* ym2413_rate, int* ym2612_
 
 blargg_err_t Vgm_Core::init_chips( double* rate )
 {
-	int ym2612_rate = get_le32( header().ym2612_rate );
-	int ym2413_rate = get_le32( header().ym2413_rate );
-	int ym2151_rate = get_le32( header().ym2151_rate );
-	int c140_rate = get_le32( header().c140_rate );
-	int segapcm_rate = get_le32( header().segapcm_rate );
-	int rf5c68_rate = get_le32( header().rf5c68_rate );
-	int rf5c164_rate = get_le32( header().rf5c164_rate );
-	int pwm_rate = get_le32( header().pwm_rate );
+	int ymf262_rate = get_le32( header().ymf262_rate ) & 0xBFFFFFFF;
+	int ym3812_rate = get_le32( header().ym3812_rate ) & 0xBFFFFFFF;
+	int ym2612_rate = get_le32( header().ym2612_rate ) & 0xBFFFFFFF;
+	int ym2413_rate = get_le32( header().ym2413_rate ) & 0xBFFFFFFF;
+	int ym2203_rate = get_le32( header().ym2203_rate ) & 0xBFFFFFFF;
+	int ym2151_rate = get_le32( header().ym2151_rate ) & 0xBFFFFFFF;
+	int c140_rate = get_le32( header().c140_rate ) & 0xBFFFFFFF;
+	int segapcm_rate = get_le32( header().segapcm_rate ) & 0xBFFFFFFF;
+	int rf5c68_rate = get_le32( header().rf5c68_rate ) & 0xBFFFFFFF;
+	int rf5c164_rate = get_le32( header().rf5c164_rate ) & 0xBFFFFFFF;
+	int pwm_rate = get_le32( header().pwm_rate ) & 0xBFFFFFFF;
+	int okim6258_rate = get_le32( header().okim6258_rate ) & 0xBFFFFFFF;
+	int okim6295_rate = get_le32( header().okim6295_rate ) & 0xBFFFFFFF;
+	int k051649_rate = get_le32( header().k051649_rate ) & 0xBFFFFFFF;
+	int k053260_rate = get_le32( header().k053260_rate ) & 0xBFFFFFFF;
+	int k054539_rate = get_le32( header().k054539_rate ) & 0xBFFFFFFF;
 	if ( ym2413_rate && get_le32( header().version ) < 0x110 )
 		update_fm_rates( &ym2151_rate, &ym2413_rate, &ym2612_rate );
 	
-	/* All PCM chips except for the C140 and PWM must enforce the sample rate */
-	if ( segapcm_rate > 0 )
-	{
-		*rate = segapcm_rate / 128.0;
-		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
-		CHECK_ALLOC( !result );
-		segapcm.enable();
-	}
-	else if ( rf5c68_rate > 0 )
-	{
-		*rate = rf5c68_rate / 384.0;
-		int result = rf5c68.set_rate();
-		CHECK_ALLOC( !result );
-		rf5c68.enable();
-	}
-	else if ( rf5c164_rate > 0 )
-	{
-		*rate = rf5c164_rate / 384.0;
-		int result = rf5c164.set_rate( rf5c164_rate );
-		CHECK_ALLOC( !result );
-		rf5c164.enable();
-	}
-	else if ( pwm_rate > 0 )
-	{
-		int result = pwm.set_rate( pwm_rate );
-		CHECK_ALLOC( !result );
-		pwm.enable();
-	}
+	*rate = vgm_rate;
 
-	if ( ym2612_rate > 0 )
+	if ( ymf262_rate )
 	{
-		if ( !*rate )
-			*rate = ym2612_rate / 144.0;
-		RETURN_ERR( ym2612.set_rate( *rate, ym2612_rate ) );
+		double fm_rate = ymf262_rate / 288.0;
+		int result = ymf262.set_rate( fm_rate, ymf262_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( ymf262.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ymf262.enable();
+	}
+	if ( ym3812_rate )
+	{
+		double fm_rate = ym3812_rate / 72.0;
+		int result = ym3812.set_rate( fm_rate, ym3812_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( ym3812.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ym3812.enable();
+	}
+	if ( ym2612_rate )
+	{
+		double fm_rate = ym2612_rate / 144.0;
+		RETURN_ERR( ym2612.set_rate( fm_rate, ym2612_rate ) );
+		RETURN_ERR( ym2612.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
 		ym2612.enable();
 	}
-	else if ( ym2413_rate > 0 )
+	if ( ym2413_rate )
 	{
-		if ( !*rate )
-			*rate = ym2413_rate / 72.0;
-		int result = ym2413.set_rate( *rate, ym2413_rate );
+		double fm_rate = ym2413_rate / 72.0;
+		int result = ym2413.set_rate( fm_rate, ym2413_rate );
 		if ( result == 2 )
 			return "YM2413 FM sound not supported";
 		CHECK_ALLOC( !result );
+		RETURN_ERR( ym2413.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
 		ym2413.enable();
 	}
-	else if ( ym2151_rate > 0 )
+	if ( ym2151_rate )
 	{
-		if ( !*rate )
-			*rate = ym2151_rate / 64.0;
-		int result = ym2151.set_rate( *rate, ym2151_rate );
+		double fm_rate = ym2151_rate / 64.0;
+		int result = ym2151.set_rate( fm_rate, ym2151_rate );
 		CHECK_ALLOC( !result );
+		RETURN_ERR( ym2151.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
 		ym2151.enable();
 	}
-
-	if ( c140_rate > 0 )
+	if ( ym2203_rate )
 	{
+		double fm_rate = ym2203_rate / 72.0;
+		int result = ym2203.set_rate( fm_rate, ym2203_rate );
+		CHECK_ALLOC ( !result );
+		RETURN_ERR( ym2203.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ym2203.enable();
+	}
+
+	if ( segapcm_rate )
+	{
+		double pcm_rate = segapcm_rate / 128.0;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( segapcm.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		segapcm.enable();
+	}
+	if ( rf5c68_rate )
+	{
+		double pcm_rate = rf5c68_rate / 384.0;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = rf5c68.set_rate();
+		CHECK_ALLOC( !result );
+		RETURN_ERR( rf5c68.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		rf5c68.enable();
+	}
+	if ( rf5c164_rate )
+	{
+		double pcm_rate = rf5c164_rate / 384.0;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = rf5c164.set_rate( rf5c164_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( rf5c164.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		rf5c164.enable();
+	}
+	if ( pwm_rate )
+	{
+		double pcm_rate = 22020.0;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = pwm.set_rate( pwm_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( pwm.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		pwm.enable();
+	}
+	if ( okim6258_rate )
+	{
+		int result = okim6258.set_rate( okim6258_rate, header().okim6258_flags & 0x03, ( header().okim6258_flags & 0x04 ) >> 2, ( header().okim6258_flags & 0x08 ) >> 3 );
+		CHECK_ALLOC( result );
+		if ( !*rate )
+			*rate = result;
+		RETURN_ERR( okim6258.setup( (double)result / *rate, 0.85, 1.0 ) );
+		okim6258.enable();
+	}
+	if ( okim6295_rate )
+	{
+		int result = okim6295.set_rate( okim6295_rate );
+		CHECK_ALLOC( result );
+		if ( !*rate )
+			*rate = result;
+		RETURN_ERR( okim6295.setup( (double)result / *rate, 0.85, 1.0 ) );
+		okim6295.enable();
+	}
+	if ( c140_rate )
+	{
+		double pcm_rate = c140_rate;
 		if ( !*rate )
 			*rate = c140_rate;
-		int result = c140.set_rate( header().c140_type, *rate, c140_rate );
+		int result = c140.set_rate( header().c140_type, c140_rate, c140_rate );
 		CHECK_ALLOC( !result );
+		RETURN_ERR( c140.setup( pcm_rate / *rate, 0.85, 1.0 ) );
 		c140.enable();
+	}
+	if ( k051649_rate )
+	{
+		double pcm_rate = k051649_rate / 16.0;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = k051649.set_rate( k051649_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( k051649.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		k051649.enable();
+	}
+	if ( k053260_rate )
+	{
+		double pcm_rate = k053260_rate / 32.0;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = k053260.set_rate( k053260_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( k053260.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		k053260.enable();
+	}
+	if ( k054539_rate )
+	{
+		double pcm_rate = k054539_rate;
+		if ( !*rate )
+			*rate = pcm_rate;
+		int result = k054539.set_rate( k054539_rate, header().k054539_flags );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( k054539.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		k054539.enable();
 	}
 
 	fm_rate = *rate;
@@ -888,17 +1088,41 @@ void Vgm_Core::start_track()
 		if ( pwm.enabled() )
 			pwm.reset();
 
+		if ( okim6258.enabled() )
+			okim6258.reset();
+
+		if ( okim6295.enabled() )
+			okim6295.reset();
+
+		if ( k051649.enabled() )
+			k051649.reset();
+
+		if ( k053260.enabled() )
+			k053260.reset();
+
+		if ( k054539.enabled() )
+			k054539.reset();
+
 		if ( c140.enabled() )
 			c140.reset();
 
 		if ( ym2151.enabled() )
 			ym2151.reset();
 
+		if ( ym2203.enabled() )
+			ym2203.reset();
+
 		if ( ym2413.enabled() )
 			ym2413.reset();
 		
 		if ( ym2612.enabled() )
 			ym2612.reset();
+
+		if ( ym3812.enabled() )
+			ym3812.reset();
+
+		if ( ymf262.enabled() )
+			ymf262.reset();
 		
 		stereo_buf.clear();
 	}
@@ -1045,9 +1269,29 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			chip_reg_write( vgm_time, 0x03, 0x00, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
+
+		case cmd_ym2203:
+			chip_reg_write( vgm_time, 0x06, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
 		
 		case cmd_ym2413:
 			chip_reg_write( vgm_time, 0x01, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym3812:
+			chip_reg_write( vgm_time, 0x09, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ymf262_port0:
+			chip_reg_write( vgm_time, 0x0C, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ymf262_port1:
+			chip_reg_write( vgm_time, 0x0C, 0x00, 0x01, pos [0], pos [1] );
 			pos += 2;
 			break;
 		
@@ -1059,6 +1303,31 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 		case cmd_ym2612_port1:
 			chip_reg_write( vgm_time, 0x02, 0x00, 0x01, pos [0], pos [1] );
 			pos += 2;
+			break;
+
+		case cmd_okim6258_write:
+			chip_reg_write( vgm_time, 0x17, 0x00, 0x00, pos [0] & 0x7F, pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_okim6295_write:
+			chip_reg_write( vgm_time, 0x18, 0x00, 0x00, pos [0] & 0x7F, pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_k051649_write:
+			chip_reg_write( vgm_time, 0x19, 0x00, pos [0] & 0x7F, pos [1], pos [2] );
+			pos += 3;
+			break;
+
+		case cmd_k053260_write:
+			chip_reg_write( vgm_time, 0x1D, 0x00, 0x00, pos [0] & 0x7F, pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_k054539_write:
+			chip_reg_write( vgm_time, 0x1A, 0x00, pos [0] & 0x7F, pos [1], pos [2] );
+			pos += 3;
 			break;
 			
 		case cmd_dacctl_setup:
@@ -1175,13 +1444,28 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 					switch ( type )
 					{
 					case rom_segapcm:
-						if ( get_le32( header().segapcm_rate ) )
+						if ( segapcm.enabled() )
 							segapcm.write_rom( rom_size, data_start, data_size, rom_data );
 						break;
 
+					case rom_okim6295:
+						if ( okim6295.enabled() )
+							okim6295.write_rom( rom_size, data_start, data_size, rom_data );
+						break;
+
+					case rom_k054539:
+						if ( k054539.enabled() )
+							k054539.write_rom( rom_size, data_start, data_size, rom_data );
+						break;
+
 					case rom_c140:
-						if ( get_le32( header().c140_rate ) )
+						if ( c140.enabled() )
 							c140.write_rom( rom_size, data_start, data_size, rom_data );
+						break;
+
+					case rom_k053260:
+						if ( k053260.enabled() )
+							k053260.write_rom( rom_size, data_start, data_size, rom_data );
 						break;
 					}
 				}
@@ -1288,20 +1572,35 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		vgm_time++;
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
-	if ( ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() )
+	if ( ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
+		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
+		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() ||
+		ymf262.enabled() )
 	{
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
 
+	if ( ymf262.enabled() )
+	{
+		ymf262.begin_frame( out );
+	}
+	if ( ym3812.enabled() )
+	{
+		ym3812.begin_frame( out );
+	}
 	if ( ym2612.enabled() )
 	{
 		ym2612.begin_frame( out );
 	}
-	else if ( ym2413.enabled() )
+	if ( ym2413.enabled() )
 	{
 		ym2413.begin_frame( out );
 	}
-	else if ( ym2151.enabled() )
+	if ( ym2203.enabled() )
+	{
+		ym2203.begin_frame( out );
+	}
+	if ( ym2151.enabled() )
 	{
 		ym2151.begin_frame( out );
 	}
@@ -1310,21 +1609,41 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		c140.begin_frame( out );
 	}
-	else if ( segapcm.enabled() )
+	if ( segapcm.enabled() )
 	{
 		segapcm.begin_frame( out );
 	}
-	else if ( rf5c68.enabled() )
+	if ( rf5c68.enabled() )
 	{
 		rf5c68.begin_frame( out );
 	}
-	else if ( rf5c164.enabled() )
+	if ( rf5c164.enabled() )
 	{
 		rf5c164.begin_frame( out );
 	}
-	else if ( pwm.enabled() )
+	if ( pwm.enabled() )
 	{
 		pwm.begin_frame( out );
+	}
+	if ( okim6258.enabled() )
+	{
+		okim6258.begin_frame( out );
+	}
+	if ( okim6295.enabled() )
+	{
+		okim6295.begin_frame( out );
+	}
+	if ( k051649.enabled() )
+	{
+		k051649.begin_frame( out );
+	}
+	if ( k053260.enabled() )
+	{
+		k053260.begin_frame( out );
+	}
+	if ( k054539.enabled() )
+	{
+		k054539.begin_frame( out );
 	}
 
 	run( vgm_time );
@@ -1332,14 +1651,22 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_dac_control( vgm_time );
 	chip_reg_write_play();
 
+	run_ymf262( pairs );
+	run_ym3812( pairs );
 	run_ym2612( pairs );
 	run_ym2413( pairs );
+	run_ym2203( pairs );
 	run_ym2151( pairs );
 	run_c140( pairs );
 	run_segapcm( pairs );
 	run_rf5c68( pairs );
 	run_rf5c164( pairs );
 	run_pwm( pairs );
+	run_okim6258( pairs );
+	run_okim6295( pairs );
+	run_k051649( pairs );
+	run_k053260( pairs );
+	run_k054539( pairs );
 	
 	fm_time_offset = (vgm_time * fm_time_factor + fm_time_offset) - (pairs << fm_time_bits);
 	

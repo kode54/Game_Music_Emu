@@ -16,7 +16,7 @@ public:
 	
 	// Sets output sample rate and chip clock rates, in Hz. Returns non-zero
 	// if error.
-	int set_rate( double sample_rate, double clock_rate );
+	int set_rate( int sample_rate, int clock_rate );
 	
 	// Resets to power-up state
 	void reset();

@@ -32,8 +32,11 @@ void Ym2151_Emu::reset()
 	ym2151_set_mask( PSG, 0 );
 }
 
+static stream_sample_t* DUMMYBUF[0x02] = {(stream_sample_t*)NULL, (stream_sample_t*)NULL};
+
 void Ym2151_Emu::write( int addr, int data )
 {
+	ym2151_update_one( PSG, DUMMYBUF, 0 );
 	ym2151_write_reg( PSG, addr, data );
 }
 

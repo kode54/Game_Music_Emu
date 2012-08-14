@@ -5,10 +5,13 @@
 
 #pragma once
 
+#include "mamedef.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define BUILD_YM2203  1
 #define BUILD_YM2612  1
 
 /* select bit size of output : 8 or 16 */
@@ -20,19 +23,6 @@ extern "C" {
 /* --- speedup optimize --- */
 /* busy flag enulation , The definition of FM_GET_TIME_NOW() is necessary. */
 //#define FM_BUSY_FLAG_SUPPORT 1
-
-/* compiler dependence */
-#ifndef __OSDCOMM_H__
-#define __OSDCOMM_H__
-typedef unsigned char	UINT8;   /* unsigned  8bit */
-typedef unsigned short	UINT16;  /* unsigned 16bit */
-typedef unsigned int	UINT32;  /* unsigned 32bit */
-typedef signed char		INT8;    /* signed  8bit   */
-typedef signed short	INT16;   /* signed 16bit   */
-typedef signed int		INT32;   /* signed 32bit   */
-
-typedef INT32           stream_sample_t;
-#endif
 
 
 
@@ -55,6 +45,72 @@ typedef unsigned char  FMSAMPLE;
 /* FM_IRQHHANDLER : IRQ level changing sense     */
 /* int n       = chip number                     */
 /* int irq     = IRQ level 0=OFF,1=ON            */
+
+typedef struct _ssg_callbacks ssg_callbacks;
+struct _ssg_callbacks
+{
+	void (*set_clock)(void *param, int clock);
+	void (*write)(void *param, int address, int data);
+	int (*read)(void *param);
+	void (*reset)(void *param);
+};
+
+#if BUILD_YM2203
+/* -------------------- YM2203(OPN) Interface -------------------- */
+
+/*
+** Initialize YM2203 emulator(s).
+**
+** 'num'           is the number of virtual YM2203's to allocate
+** 'baseclock'
+** 'rate'          is sampling rate
+** 'TimerHandler'  timer callback handler when timer start and clear
+** 'IRQHandler'    IRQ callback handler when changed IRQ level
+** return      0 = success
+*/
+//void * ym2203_init(void *param, const device_config *device, int baseclock, int rate,
+//               FM_TIMERHANDLER TimerHandler,FM_IRQHANDLER IRQHandler, const ssg_callbacks *ssg);
+void * ym2203_init(void *param, int baseclock, int rate, const ssg_callbacks *ssg);
+
+/*
+** shutdown the YM2203 emulators
+*/
+void ym2203_shutdown(void *chip);
+
+/*
+** reset all chip registers for YM2203 number 'num'
+*/
+void ym2203_reset_chip(void *chip);
+
+/*
+** update one of chip
+*/
+void ym2203_update_one(void *chip, FMSAMPLE **buffer, int length);
+
+/*
+** Write
+** return : InterruptLevel
+*/
+int ym2203_write(void *chip,int a,unsigned char v);
+
+/*
+** Read
+** return : InterruptLevel
+*/
+unsigned char ym2203_read(void *chip,int a);
+
+/*
+**  Timer OverFlow
+*/
+int ym2203_timer_over(void *chip, int c);
+
+/*
+**  State Save
+*/
+void ym2203_postload(void *chip);
+
+void ym2203_set_mutemask(void *chip, UINT32 MuteMask);
+#endif /* BUILD_YM2203 */
 
 #if (BUILD_YM2612||BUILD_YM3438)
 //void * ym2612_init(void *param, const device_config *device, int baseclock, int rate,

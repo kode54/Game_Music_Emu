@@ -4,19 +4,7 @@
 
 #pragma once
 
-/* compiler dependence */
-#ifndef __OSDCOMM_H__
-#define __OSDCOMM_H__
-typedef unsigned char	UINT8;   /* unsigned  8bit */
-typedef unsigned short	UINT16;  /* unsigned 16bit */
-typedef unsigned int	UINT32;  /* unsigned 32bit */
-typedef signed char		INT8;    /* signed  8bit   */
-typedef signed short	INT16;   /* signed 16bit   */
-typedef signed int		INT32;   /* signed 32bit   */
-
-typedef INT32           stream_sample_t;
-typedef INT32           offs_t;
-#endif
+#include "mamedef.h"
 
 /******************************************/
 /*WRITE8_DEVICE_HANDLER( rf5c68_w );

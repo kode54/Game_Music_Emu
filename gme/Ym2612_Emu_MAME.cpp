@@ -1,9 +1,4 @@
-// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
-
-// File: fm.c -- software implementation of Yamaha FM sound generator
-// Copyright (C) 2001, 2002, 2003 Jarek Burczynski (bujar at mame dot net)
-// Copyright (C) 1998 Tatsuyuki Satoh , MultiArcadeMachineEmulator development
-// Version 1.4 (final beta)
+// Game_Music_Emu $vers. http://www.slack.net/~ant/
 
 #include "Ym2612_Emu.h"
 #include "fm.h"
@@ -41,7 +36,7 @@ void Ym2612_Emu::reset()
 	ym2612_reset_chip( impl );
 }
 
-stream_sample_t* DUMMYBUF[0x02] = {NULL, NULL};
+static stream_sample_t* DUMMYBUF[0x02] = {(stream_sample_t*)NULL, (stream_sample_t*)NULL};
 
 void Ym2612_Emu::write0( int addr, int data )
 {

@@ -5,7 +5,9 @@
 #define VGM_CORE_H
 
 #include "Gme_Loader.h"
+#include "Ymf262_Emu.h"
 #include "Ym2612_Emu.h"
+#include "Ym3812_Emu.h"
 #include "Ym2413_Emu.h"
 #include "Ym2151_Emu.h"
 #include "C140_Emu.h"
@@ -13,8 +15,15 @@
 #include "Rf5C68_Emu.h"
 #include "Rf5C164_Emu.h"
 #include "Pwm_Emu.h"
+#include "Okim6258_Emu.h"
+#include "Okim6295_Emu.h"
+#include "K051649_Emu.h"
+#include "K053260_Emu.h"
+#include "K054539_Emu.h"
+#include "Ym2203_Emu.h"
 #include "Sms_Apu.h"
 #include "Multi_Buffer.h"
+#include "Chip_Resampler.h"
 
 	template<class Emu>
 	class Chip_Emu : public Emu {
@@ -134,7 +143,9 @@ public:
 	
 	// True if any FM chips are used by file. Always false until init_fm()
 	// is called.
-	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled(); }
+	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() ||
+		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
+		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() || ymf262.enabled(); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	// Loading a file resets tempo to 1.0.
@@ -166,16 +177,24 @@ public:
 	Blip_Synth_Fast pcm;
 	
 	// FM sound chips
-	Chip_Emu<Ym2612_Emu> ym2612;
-	Chip_Emu<Ym2413_Emu> ym2413;
-	Chip_Emu<Ym2151_Emu> ym2151;
+	Chip_Resampler_Emu<Ymf262_Emu> ymf262;
+	Chip_Resampler_Emu<Ym3812_Emu> ym3812;
+	Chip_Resampler_Emu<Ym2612_Emu> ym2612;
+	Chip_Resampler_Emu<Ym2413_Emu> ym2413;
+	Chip_Resampler_Emu<Ym2151_Emu> ym2151;
+	Chip_Resampler_Emu<Ym2203_Emu> ym2203;
 
 	// PCM sound chips
-	Chip_Emu<C140_Emu> c140;
-	Chip_Emu<SegaPcm_Emu> segapcm;
-	Chip_Emu<Rf5C68_Emu> rf5c68;
-	Chip_Emu<Rf5C164_Emu> rf5c164;
-	Chip_Emu<Pwm_Emu> pwm;
+	Chip_Resampler_Emu<C140_Emu> c140;
+	Chip_Resampler_Emu<SegaPcm_Emu> segapcm;
+	Chip_Resampler_Emu<Rf5C68_Emu> rf5c68;
+	Chip_Resampler_Emu<Rf5C164_Emu> rf5c164;
+	Chip_Resampler_Emu<Pwm_Emu> pwm;
+	Chip_Resampler_Emu<Okim6258_Emu> okim6258;
+	Chip_Resampler_Emu<Okim6295_Emu> okim6295;
+	Chip_Resampler_Emu<K051649_Emu> k051649;
+	Chip_Resampler_Emu<K053260_Emu> k053260;
+	Chip_Resampler_Emu<K054539_Emu> k054539;
 
 	// DAC control
 	typedef struct daccontrol_data
@@ -294,13 +313,21 @@ private:
 	
 	blip_time_t run( vgm_time_t );
 	int run_ym2151( int time );
+	int run_ym2203( int time );
 	int run_ym2413( int time );
 	int run_ym2612( int time );
+	int run_ym3812( int time );
+	int run_ymf262( int time );
 	int run_c140( int time );
 	int run_segapcm( int time );
 	int run_rf5c68( int time );
 	int run_rf5c164( int time );
 	int run_pwm( int time );
+	int run_okim6258( int time );
+	int run_okim6295( int time );
+	int run_k051649( int time );
+	int run_k053260( int time );
+	int run_k054539( int time );
 	void update_fm_rates( int* ym2151_rate, int* ym2413_rate, int* ym2612_rate ) const;
 };
 
