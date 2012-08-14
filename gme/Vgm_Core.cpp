@@ -36,6 +36,7 @@ enum {
 	cmd_ym2612_port1    = 0x53,
 	cmd_ym2612_2_port1  = 0xA3,
 	cmd_ym2151          = 0x54,
+	cmd_ym2151_2        = 0xA4,
 	cmd_ym2203          = 0x55,
 	cmd_ym3812          = 0x5A,
 	cmd_ymz280b         = 0x5D,
@@ -104,9 +105,9 @@ inline int command_len( int command )
 	return len;
 }
 
-int Vgm_Core::run_ym2151( int time )
+int Vgm_Core::run_ym2151( int chip, int time )
 {
-	return ym2151.run_until( time );
+	return ym2151[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_ym2203( int time )
@@ -643,8 +644,8 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		break;
 
 	case 0x03:
-		if ( run_ym2151( to_fm_time( Sample ) ) )
-			ym2151.write( Offset, Data );
+		if ( run_ym2151( ChipID, to_fm_time( Sample ) ) )
+			ym2151[ChipID].write( Offset, Data );
 		break;
 
 	case 0x06:
@@ -830,7 +831,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	ym2413[0].enable( false );
 	ym2413[1].enable( false );
 	ym2203.enable( false );
-	ym2151.enable( false );
+	ym2151[0].enable( false );
+	ym2151[1].enable( false );
 	c140.enable( false );
 	segapcm.enable( false );
 	rf5c68.enable( false );
@@ -976,10 +978,17 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ym2151_rate )
 	{
 		double fm_rate = ym2151_rate / 64.0;
-		int result = ym2151.set_rate( fm_rate, ym2151_rate );
+		int result = ym2151[0].set_rate( fm_rate, ym2151_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ym2151.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
-		ym2151.enable();
+		RETURN_ERR( ym2151[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ym2151[0].enable();
+		if ( header().ym2151_rate[3] & 0x40 )
+		{
+			result = ym2151[1].set_rate( fm_rate, ym2151_rate );
+			CHECK_ALLOC( !result );
+			RETURN_ERR( ym2151[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			ym2151[1].enable();
+		}
 	}
 	if ( ym2203_rate )
 	{
@@ -1133,8 +1142,11 @@ void Vgm_Core::start_track()
 		if ( c140.enabled() )
 			c140.reset();
 
-		if ( ym2151.enabled() )
-			ym2151.reset();
+		if ( ym2151[0].enabled() )
+			ym2151[0].reset();
+
+		if ( ym2151[1].enabled() )
+			ym2151[1].reset();
 
 		if ( ym2203.enabled() )
 			ym2203.reset();
@@ -1312,6 +1324,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 
 		case cmd_ym2151:
 			chip_reg_write( vgm_time, 0x03, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2151_2:
+			chip_reg_write( vgm_time, 0x03, 0x01, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
 
@@ -1643,7 +1660,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		vgm_time++;
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
-	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
+	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() ||
 		ymf262.enabled() || ymz280b.enabled() )
@@ -1679,9 +1696,13 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		ym2203.begin_frame( out );
 	}
-	if ( ym2151.enabled() )
+	if ( ym2151[0].enabled() )
 	{
-		ym2151.begin_frame( out );
+		ym2151[0].begin_frame( out );
+	}
+	if ( ym2151[1].enabled() )
+	{
+		ym2151[1].begin_frame( out );
 	}
 
 	if ( c140.enabled() )
@@ -1739,7 +1760,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_ym2612( 0, pairs ); run_ym2612( 1, pairs );
 	run_ym2413( 0, pairs ); run_ym2413( 1, pairs );
 	run_ym2203( pairs );
-	run_ym2151( pairs );
+	run_ym2151( 0, pairs ); run_ym2151( 1, pairs );
 	run_c140( pairs );
 	run_segapcm( pairs );
 	run_rf5c68( pairs );

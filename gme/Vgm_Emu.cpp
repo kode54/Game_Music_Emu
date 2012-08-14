@@ -276,9 +276,11 @@ void Vgm_Emu::mute_voices_( int mask )
 				core.ym2413[1].mute_voices( m );
 		}
 
-		if ( core.ym2151.enabled() )
+		if ( core.ym2151[0].enabled() )
 		{
-			core.ym2151.mute_voices( mask );
+			core.ym2151[0].mute_voices( mask );
+			if ( core.ym2151[1].enabled() )
+				core.ym2151[1].mute_voices( mask );
 		}
 
 		if ( core.c140.enabled() )
