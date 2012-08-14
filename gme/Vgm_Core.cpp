@@ -26,8 +26,11 @@ int const blip_time_bits = 12;
 
 enum {
 	cmd_gg_stereo       = 0x4F,
+	cmd_gg_stereo_2     = 0x3F,
 	cmd_psg             = 0x50,
+	cmd_psg_2           = 0x30,
 	cmd_ym2413          = 0x51,
+	cmd_ym2413_2        = 0xA1,
 	cmd_ym2612_port0    = 0x52,
 	cmd_ym2612_port1    = 0x53,
 	cmd_ym2151          = 0x54,
@@ -109,9 +112,9 @@ int Vgm_Core::run_ym2203( int time )
 	return ym2203.run_until( time );
 }
 
-int Vgm_Core::run_ym2413( int time )
+int Vgm_Core::run_ym2413( int chip, int time )
 {
-	return ym2413.run_until( time );
+	return ym2413[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_ym2612( int time )
@@ -627,12 +630,12 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		break;
 
 	case 0x00:
-		psg.write_data( to_psg_time( Sample ), Data );
+		psg[!!ChipID].write_data( to_psg_time( Sample ), Data );
 		break;
 
 	case 0x01:
-		if ( run_ym2413( to_fm_time( Sample ) ) )
-			ym2413.write( Offset, Data );
+		if ( run_ym2413( ChipID, to_fm_time( Sample ) ) )
+			ym2413[!!ChipID].write( Offset, Data );
 		break;
 
 	case 0x03:
@@ -808,7 +811,7 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 		loop_begin = &data [get_le32( h.loop_offset ) + offsetof (header_t,loop_offset)];
 	
 	// PSG rate
-	int psg_rate = get_le32( h.psg_rate );
+	int psg_rate = get_le32( h.psg_rate ) & 0xBFFFFFFF;
 	if ( !psg_rate )
 		psg_rate = 3579545;
 	stereo_buf.clock_rate( psg_rate );
@@ -819,7 +822,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	ymf262.enable( false );
 	ym3812.enable( false );
 	ym2612.enable( false );
-	ym2413.enable( false );
+	ym2413[0].enable( false );
+	ym2413[1].enable( false );
 	ym2203.enable( false );
 	ym2151.enable( false );
 	c140.enable( false );
@@ -944,12 +948,19 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ym2413_rate )
 	{
 		double fm_rate = ym2413_rate / 72.0;
-		int result = ym2413.set_rate( fm_rate, ym2413_rate );
+		int result = ym2413[0].set_rate( fm_rate, ym2413_rate );
 		if ( result == 2 )
 			return "YM2413 FM sound not supported";
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ym2413.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
-		ym2413.enable();
+		RETURN_ERR( ym2413[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ym2413[0].enable();
+		if ( header().ym2413_rate[3] & 0x40 )
+		{
+			result = ym2413[1].set_rate( fm_rate, ym2413_rate );
+			CHECK_ALLOC( !result );
+			RETURN_ERR( ym2413[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			ym2413[1].enable();
+		}
 	}
 	if ( ym2151_rate )
 	{
@@ -1061,7 +1072,8 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 
 void Vgm_Core::start_track()
 {
-	psg.reset( get_le16( header().noise_feedback ), header().noise_width );
+	psg[0].reset( get_le16( header().noise_feedback ), header().noise_width );
+	psg[1].reset( get_le16( header().noise_feedback ), header().noise_width );
 	
 	blip_buf = stereo_buf.center();
 
@@ -1113,8 +1125,11 @@ void Vgm_Core::start_track()
 		if ( ym2203.enabled() )
 			ym2203.reset();
 
-		if ( ym2413.enabled() )
-			ym2413.reset();
+		if ( ym2413[0].enabled() )
+			ym2413[0].reset();
+
+		if ( ym2413[1].enabled() )
+			ym2413[1].reset();
 		
 		if ( ym2612.enabled() )
 			ym2612.reset();
@@ -1206,11 +1221,19 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			break;
 		
 		case cmd_gg_stereo:
-			psg.write_ggstereo( to_psg_time( vgm_time ), *pos++ );
+			psg[0].write_ggstereo( to_psg_time( vgm_time ), *pos++ );
+			break;
+
+		case cmd_gg_stereo_2:
+			psg[1].write_ggstereo( to_psg_time( vgm_time ), *pos++ );
 			break;
 		
 		case cmd_psg:
-			psg.write_data( to_psg_time( vgm_time ), *pos++ );
+			psg[0].write_data( to_psg_time( vgm_time ), *pos++ );
+			break;
+
+		case cmd_psg_2:
+			psg[1].write_data( to_psg_time( vgm_time ), *pos++ );
 			break;
 		
 		case cmd_delay:
@@ -1281,6 +1304,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 		
 		case cmd_ym2413:
 			chip_reg_write( vgm_time, 0x01, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2413_2:
+			chip_reg_write( vgm_time, 0x01, 0x01, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
 
@@ -1571,7 +1599,8 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 blip_time_t Vgm_Core::run_psg( int msec )
 {
 	blip_time_t t = run( msec * vgm_rate / 1000 );
-	psg.end_frame( t );
+	psg[0].end_frame( t );
+	psg[1].end_frame( t );
 	return t;
 }
 
@@ -1586,7 +1615,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		vgm_time++;
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
-	if ( ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
+	if ( ym2612.enabled() || ym2413[0].enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() ||
 		ymf262.enabled() || ymz280b.enabled() )
@@ -1606,9 +1635,13 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		ym2612.begin_frame( out );
 	}
-	if ( ym2413.enabled() )
+	if ( ym2413[0].enabled() )
 	{
-		ym2413.begin_frame( out );
+		ym2413[0].begin_frame( out );
+	}
+	if ( ym2413[1].enabled() )
+	{
+		ym2413[1].begin_frame( out );
 	}
 	if ( ym2203.enabled() )
 	{
@@ -1672,7 +1705,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_ymf262( pairs );
 	run_ym3812( pairs );
 	run_ym2612( pairs );
-	run_ym2413( pairs );
+	run_ym2413( 0, pairs ); run_ym2413( 1, pairs );
 	run_ym2203( pairs );
 	run_ym2151( pairs );
 	run_c140( pairs );
@@ -1689,7 +1722,8 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	
 	fm_time_offset = (vgm_time * fm_time_factor + fm_time_offset) - (pairs << fm_time_bits);
 	
-	psg.end_frame( blip_time );
+	psg[0].end_frame( blip_time );
+	psg[1].end_frame( blip_time );
 
 	memset( DacCtrlTime, 0, sizeof(DacCtrlTime) );
 	

@@ -144,7 +144,7 @@ public:
 	
 	// True if any FM chips are used by file. Always false until init_fm()
 	// is called.
-	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() ||
+	bool uses_fm() const                { return ym2612.enabled() || ym2413[0].enabled() || ym2151.enabled() || c140.enabled() ||
 		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() || ymf262.enabled() ||
 		ymz280b.enabled(); }
@@ -173,7 +173,7 @@ public:
 	Blip_Buffer * blip_buf;
 	
 	// PSG sound chip, for assigning to Blip_Buffer, and setting volume and EQ
-	Sms_Apu psg;
+	Sms_Apu psg[2];
 	
 	// PCM synth, for setting volume and EQ
 	Blip_Synth_Fast pcm;
@@ -182,7 +182,7 @@ public:
 	Chip_Resampler_Emu<Ymf262_Emu> ymf262;
 	Chip_Resampler_Emu<Ym3812_Emu> ym3812;
 	Chip_Resampler_Emu<Ym2612_Emu> ym2612;
-	Chip_Resampler_Emu<Ym2413_Emu> ym2413;
+	Chip_Resampler_Emu<Ym2413_Emu> ym2413[2];
 	Chip_Resampler_Emu<Ym2151_Emu> ym2151;
 	Chip_Resampler_Emu<Ym2203_Emu> ym2203;
 
@@ -317,7 +317,7 @@ private:
 	blip_time_t run( vgm_time_t );
 	int run_ym2151( int time );
 	int run_ym2203( int time );
-	int run_ym2413( int time );
+	int run_ym2413( int chip, int time );
 	int run_ym2612( int time );
 	int run_ym3812( int time );
 	int run_ymf262( int time );
