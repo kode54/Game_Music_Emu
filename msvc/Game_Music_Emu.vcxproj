@@ -194,6 +194,8 @@
     <ClCompile Include="..\gme\Ym3812_Emu.cpp" />
     <ClCompile Include="..\gme\ymdeltat.cpp" />
     <ClCompile Include="..\gme\Ymf262_Emu.cpp" />
+    <ClCompile Include="..\gme\ymz280b.c" />
+    <ClCompile Include="..\gme\Ymz280b_Emu.cpp" />
     <ClCompile Include="..\gme\Z80_Cpu.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -305,6 +307,8 @@
     <ClInclude Include="..\gme\Ym3812_Emu.h" />
     <ClInclude Include="..\gme\ymdeltat.h" />
     <ClInclude Include="..\gme\Ymf262_Emu.h" />
+    <ClInclude Include="..\gme\ymz280b.h" />
+    <ClInclude Include="..\gme\Ymz280b_Emu.h" />
     <ClInclude Include="..\gme\Z80_Cpu.h" />
     <ClInclude Include="..\gme\Z80_Cpu_run.h" />
   </ItemGroup>

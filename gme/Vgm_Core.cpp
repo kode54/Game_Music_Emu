@@ -33,6 +33,7 @@ enum {
 	cmd_ym2151          = 0x54,
 	cmd_ym2203          = 0x55,
 	cmd_ym3812          = 0x5A,
+	cmd_ymz280b         = 0x5D,
 	cmd_ymf262_port0    = 0x5E,
 	cmd_ymf262_port1    = 0x5F,
 	cmd_delay           = 0x61,
@@ -73,6 +74,7 @@ enum {
 	ram_block_type      = 0xC0,
 
 	rom_segapcm         = 0x80,
+	rom_ymz280b         = 0x86,
 	rom_okim6295        = 0x8B,
 	rom_k054539         = 0x8C,
 	rom_c140            = 0x8D,
@@ -125,6 +127,11 @@ int Vgm_Core::run_ym3812( int time )
 int Vgm_Core::run_ymf262( int time )
 {
 	return ymf262.run_until( time );
+}
+
+int Vgm_Core::run_ymz280b( int time )
+{
+	return ymz280b.run_until( time );
 }
 
 int Vgm_Core::run_c140( int time )
@@ -654,6 +661,11 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		}
 		break;
 
+	case 0x0F:
+		if ( run_ymz280b( to_fm_time( Sample ) ) )
+			ymz280b.write( Offset, Data );
+		break;
+
 	case 0x17:
 		if ( run_okim6258( to_fm_time( Sample ) ) )
 			okim6258.write( Offset, Data );
@@ -803,6 +815,7 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	
 	// Disable FM
 	fm_rate = 0;
+	ymz280b.enable( false );
 	ymf262.enable( false );
 	ym3812.enable( false );
 	ym2612.enable( false );
@@ -883,6 +896,7 @@ void Vgm_Core::update_fm_rates( int* ym2151_rate, int* ym2413_rate, int* ym2612_
 
 blargg_err_t Vgm_Core::init_chips( double* rate )
 {
+	int ymz280b_rate = get_le32( header().ymz280b_rate ) & 0xBFFFFFFF;
 	int ymf262_rate = get_le32( header().ymf262_rate ) & 0xBFFFFFFF;
 	int ym3812_rate = get_le32( header().ym3812_rate ) & 0xBFFFFFFF;
 	int ym2612_rate = get_le32( header().ym2612_rate ) & 0xBFFFFFFF;
@@ -957,100 +971,87 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( segapcm_rate )
 	{
 		double pcm_rate = segapcm_rate / 128.0;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( segapcm.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( segapcm.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		segapcm.enable();
 	}
 	if ( rf5c68_rate )
 	{
 		double pcm_rate = rf5c68_rate / 384.0;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = rf5c68.set_rate();
 		CHECK_ALLOC( !result );
-		RETURN_ERR( rf5c68.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( rf5c68.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		rf5c68.enable();
 	}
 	if ( rf5c164_rate )
 	{
 		double pcm_rate = rf5c164_rate / 384.0;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = rf5c164.set_rate( rf5c164_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( rf5c164.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( rf5c164.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		rf5c164.enable();
 	}
 	if ( pwm_rate )
 	{
 		double pcm_rate = 22020.0;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = pwm.set_rate( pwm_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( pwm.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( pwm.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		pwm.enable();
 	}
 	if ( okim6258_rate )
 	{
 		int result = okim6258.set_rate( okim6258_rate, header().okim6258_flags & 0x03, ( header().okim6258_flags & 0x04 ) >> 2, ( header().okim6258_flags & 0x08 ) >> 3 );
 		CHECK_ALLOC( result );
-		if ( !*rate )
-			*rate = result;
-		RETURN_ERR( okim6258.setup( (double)result / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( okim6258.setup( (double)result / vgm_rate, 0.85, 1.0 ) );
 		okim6258.enable();
 	}
 	if ( okim6295_rate )
 	{
 		int result = okim6295.set_rate( okim6295_rate );
 		CHECK_ALLOC( result );
-		if ( !*rate )
-			*rate = result;
-		RETURN_ERR( okim6295.setup( (double)result / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( okim6295.setup( (double)result / vgm_rate, 0.85, 1.0 ) );
 		okim6295.enable();
 	}
 	if ( c140_rate )
 	{
 		double pcm_rate = c140_rate;
-		if ( !*rate )
-			*rate = c140_rate;
 		int result = c140.set_rate( header().c140_type, c140_rate, c140_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( c140.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( c140.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		c140.enable();
 	}
 	if ( k051649_rate )
 	{
 		double pcm_rate = k051649_rate / 16.0;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = k051649.set_rate( k051649_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( k051649.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( k051649.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		k051649.enable();
 	}
 	if ( k053260_rate )
 	{
 		double pcm_rate = k053260_rate / 32.0;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = k053260.set_rate( k053260_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( k053260.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( k053260.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		k053260.enable();
 	}
 	if ( k054539_rate )
 	{
 		double pcm_rate = k054539_rate;
-		if ( !*rate )
-			*rate = pcm_rate;
 		int result = k054539.set_rate( k054539_rate, header().k054539_flags );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( k054539.setup( pcm_rate / *rate, 0.85, 1.0 ) );
+		RETURN_ERR( k054539.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		k054539.enable();
+	}
+	if ( ymz280b_rate )
+	{
+		int result = ymz280b.set_rate( ymz280b_rate );
+		CHECK_ALLOC( result );
+		RETURN_ERR( ymz280b.setup( (double)result / vgm_rate, 0.85, 1.0 ) );
+		ymz280b.enable();
 	}
 
 	fm_rate = *rate;
@@ -1123,6 +1124,9 @@ void Vgm_Core::start_track()
 
 		if ( ymf262.enabled() )
 			ymf262.reset();
+
+		if ( ymz280b.enabled() )
+			ymz280b.reset();
 		
 		stereo_buf.clear();
 	}
@@ -1294,6 +1298,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			chip_reg_write( vgm_time, 0x0C, 0x00, 0x01, pos [0], pos [1] );
 			pos += 2;
 			break;
+
+		case cmd_ymz280b:
+			chip_reg_write( vgm_time, 0x0F, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
 		
 		case cmd_ym2612_port0:
 			chip_reg_write( vgm_time, 0x02, 0x00, 0x00, pos [0], pos [1] );
@@ -1448,6 +1457,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 							segapcm.write_rom( rom_size, data_start, data_size, rom_data );
 						break;
 
+					case rom_ymz280b:
+						if ( ymz280b.enabled() )
+							ymz280b.write_rom( rom_size, data_start, data_size, rom_data );
+						break;
+
 					case rom_okim6295:
 						if ( okim6295.enabled() )
 							okim6295.write_rom( rom_size, data_start, data_size, rom_data );
@@ -1575,7 +1589,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	if ( ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() ||
-		ymf262.enabled() )
+		ymf262.enabled() || ymz280b.enabled() )
 	{
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
@@ -1645,6 +1659,10 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		k054539.begin_frame( out );
 	}
+	if ( ymz280b.enabled() )
+	{
+		ymz280b.begin_frame( out );
+	}
 
 	run( vgm_time );
 
@@ -1667,6 +1685,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_k051649( pairs );
 	run_k053260( pairs );
 	run_k054539( pairs );
+	run_ymz280b( pairs );
 	
 	fm_time_offset = (vgm_time * fm_time_factor + fm_time_offset) - (pairs << fm_time_bits);
 	

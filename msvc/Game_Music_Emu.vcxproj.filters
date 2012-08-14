@@ -9,6 +9,18 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Header Files\MAME">
+      <UniqueIdentifier>{3226e8e5-3c53-4012-86d6-699b1b3122aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Dosbox">
+      <UniqueIdentifier>{7bc00f19-47ff-4328-82e1-fee0a5c97391}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MAME">
+      <UniqueIdentifier>{881bf2b8-e18d-48bb-b30f-036175a1eefa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dosbox">
+      <UniqueIdentifier>{b6535167-399f-4bc9-9b39-645d33866191}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\gme\Ay_Apu.cpp">
@@ -45,9 +57,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Fir_Resampler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\fmopl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Gbs_Core.cpp">
@@ -221,37 +230,19 @@
     <ClCompile Include="..\gme\Vgm_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\ym2413.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gme\Ym2413_Emu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\ymdeltat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Z80_Cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\ym2151.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gme\Ym2151_Emu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\c140.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\C140_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\segapcm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gme\SegaPcm_Emu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\rf5c68.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Rf5C68_Emu.cpp">
@@ -260,19 +251,10 @@
     <ClCompile Include="..\gme\Rf5C164_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\scd_pcm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\pwm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gme\Pwm_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\dac_control.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\fm2612.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Ym2612_Emu_MAME.cpp">
@@ -282,21 +264,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Ym2612_Emu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\k051649.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\k053260.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\k054539.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\okim6258.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\okim6295.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Okim6295_Emu.cpp">
@@ -314,19 +281,70 @@
     <ClCompile Include="..\gme\K054539_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\fm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gme\Ym2203_Emu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\dbopl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Ym3812_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\Ymf262_Emu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\dbopl.cpp">
+      <Filter>Source Files\Dosbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\c140.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\fm.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\fm2612.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\fmopl.cpp">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\k051649.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\k053260.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\k054539.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\okim6258.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\okim6295.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\pwm.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\rf5c68.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\scd_pcm.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\segapcm.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\ym2151.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\ym2413.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\ymdeltat.cpp">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\ymz280b.c">
+      <Filter>Source Files\MAME</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\Ymz280b_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -377,9 +395,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Fir_Resampler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\fmopl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Gbs_Core.h">
@@ -550,16 +565,10 @@
     <ClInclude Include="..\gme\Vgm_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\gme\ym2413.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\gme\Ym2413_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Ym2612_Emu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\ymdeltat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Z80_Cpu.h">
@@ -568,25 +577,13 @@
     <ClInclude Include="..\gme\Z80_Cpu_run.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\gme\ym2151.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\gme\Ym2151_Emu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\c140.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\C140_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\gme\segapcm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\gme\SegaPcm_Emu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\rf5c68.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Rf5C68_Emu.h">
@@ -595,37 +592,10 @@
     <ClInclude Include="..\gme\Rf5C164_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\gme\scd_pcm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\pwm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\gme\Pwm_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\dac_control.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\fm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\k051649.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\k053260.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\k054539.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\mamedef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\okim6258.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\okim6295.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Okim6295_Emu.h">
@@ -649,16 +619,70 @@
     <ClInclude Include="..\gme\Ym2203_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\gme\adlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\dbopl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\gme\Ym3812_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Ymf262_Emu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\adlib.h">
+      <Filter>Header Files\Dosbox</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\c140.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\dbopl.h">
+      <Filter>Header Files\Dosbox</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\fm.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\fmopl.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\k051649.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\k053260.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\k054539.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\mamedef.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\okim6258.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\okim6295.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\pwm.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\rf5c68.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\scd_pcm.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\segapcm.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\ym2151.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\ym2413.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\ymdeltat.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\ymz280b.h">
+      <Filter>Header Files\MAME</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\Ymz280b_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

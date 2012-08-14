@@ -5,6 +5,7 @@
 #define VGM_CORE_H
 
 #include "Gme_Loader.h"
+#include "Ymz280b_Emu.h"
 #include "Ymf262_Emu.h"
 #include "Ym2612_Emu.h"
 #include "Ym3812_Emu.h"
@@ -145,7 +146,8 @@ public:
 	// is called.
 	bool uses_fm() const                { return ym2612.enabled() || ym2413.enabled() || ym2151.enabled() || c140.enabled() ||
 		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
-		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() || ymf262.enabled(); }
+		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() || ymf262.enabled() ||
+		ymz280b.enabled(); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	// Loading a file resets tempo to 1.0.
@@ -195,6 +197,7 @@ public:
 	Chip_Resampler_Emu<K051649_Emu> k051649;
 	Chip_Resampler_Emu<K053260_Emu> k053260;
 	Chip_Resampler_Emu<K054539_Emu> k054539;
+	Chip_Resampler_Emu<Ymz280b_Emu> ymz280b;
 
 	// DAC control
 	typedef struct daccontrol_data
@@ -318,6 +321,7 @@ private:
 	int run_ym2612( int time );
 	int run_ym3812( int time );
 	int run_ymf262( int time );
+	int run_ymz280b( int time );
 	int run_c140( int time );
 	int run_segapcm( int time );
 	int run_rf5c68( int time );
