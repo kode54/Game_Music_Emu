@@ -146,7 +146,7 @@ public:
 	// is called.
 	bool uses_fm() const                { return ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() ||
 		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
-		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812.enabled() || ymf262.enabled() ||
+		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() || ymf262.enabled() ||
 		ymz280b.enabled(); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
@@ -180,7 +180,7 @@ public:
 	
 	// FM sound chips
 	Chip_Resampler_Emu<Ymf262_Emu> ymf262;
-	Chip_Resampler_Emu<Ym3812_Emu> ym3812;
+	Chip_Resampler_Emu<Ym3812_Emu> ym3812[2];
 	Chip_Resampler_Emu<Ym2612_Emu> ym2612[2];
 	Chip_Resampler_Emu<Ym2413_Emu> ym2413[2];
 	Chip_Resampler_Emu<Ym2151_Emu> ym2151[2];
@@ -319,7 +319,7 @@ private:
 	int run_ym2203( int chip, int time );
 	int run_ym2413( int chip, int time );
 	int run_ym2612( int chip, int time );
-	int run_ym3812( int time );
+	int run_ym3812( int chip, int time );
 	int run_ymf262( int time );
 	int run_ymz280b( int time );
 	int run_c140( int time );
