@@ -33,7 +33,8 @@ class Chip_Resampler_Emu : public Emu {
 		sample_t * inptr = sample_buf.begin();
 		for ( unsigned i = 0; i < count * 2; i++ )
 		{
-			int sample = inptr[i] + buf[i];
+			int sample = (inptr[i] * gain_) >> gain_bits;
+			sample += buf[i];
 			if ((short)sample != sample) sample = 0x7FFF ^ (sample >> 31);
 			buf[i] = sample;
 		}
