@@ -43,7 +43,9 @@ enum {
 	cmd_ym3812_2        = 0xAA,
 	cmd_ymz280b         = 0x5D,
 	cmd_ymf262_port0    = 0x5E,
+	cmd_ymf262_2_port0  = 0xAE,
 	cmd_ymf262_port1    = 0x5F,
+	cmd_ymf262_2_port1  = 0xAF,
 	cmd_delay           = 0x61,
 	cmd_delay_735       = 0x62,
 	cmd_delay_882       = 0x63,
@@ -132,9 +134,9 @@ int Vgm_Core::run_ym3812( int chip, int time )
 	return ym3812[!!chip].run_until( time );
 }
 
-int Vgm_Core::run_ymf262( int time )
+int Vgm_Core::run_ymf262( int chip, int time )
 {
-	return ymf262.run_until( time );
+	return ymf262[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_ymz280b( int time )
@@ -661,12 +663,12 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		break;
 
 	case 0x0C:
-		if ( run_ymf262( to_fm_time( Sample ) ) )
+		if ( run_ymf262( ChipID, to_fm_time( Sample ) ) )
 		{
 			switch (Port)
 			{
-			case 0: ymf262.write0( Offset, Data ); break;
-			case 1: ymf262.write1( Offset, Data ); break;
+			case 0: ymf262[ChipID].write0( Offset, Data ); break;
+			case 1: ymf262[ChipID].write1( Offset, Data ); break;
 			}
 		}
 		break;
@@ -826,7 +828,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	// Disable FM
 	fm_rate = 0;
 	ymz280b.enable( false );
-	ymf262.enable( false );
+	ymf262[0].enable( false );
+	ymf262[1].enable( false );
 	ym3812[0].enable( false );
 	ym3812[1].enable( false );
 	ym2612[0].enable( false );
@@ -936,10 +939,17 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ymf262_rate )
 	{
 		double fm_rate = ymf262_rate / 288.0;
-		int result = ymf262.set_rate( fm_rate, ymf262_rate );
+		int result = ymf262[0].set_rate( fm_rate, ymf262_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( ymf262.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
-		ymf262.enable();
+		RETURN_ERR( ymf262[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ymf262[0].enable();
+		if ( header().ymf262_rate[3] & 0x40 )
+		{
+			result = ymf262[1].set_rate( fm_rate, ymf262_rate );
+			CHECK_ALLOC( !result );
+			RETURN_ERR( ymf262[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			ymf262[1].enable();
+		}
 	}
 	if ( ym3812_rate )
 	{
@@ -1190,8 +1200,11 @@ void Vgm_Core::start_track()
 		if ( ym3812[1].enabled() )
 			ym3812[1].reset();
 
-		if ( ymf262.enabled() )
-			ymf262.reset();
+		if ( ymf262[0].enabled() )
+			ymf262[0].reset();
+
+		if ( ymf262[1].enabled() )
+			ymf262[1].reset();
 
 		if ( ymz280b.enabled() )
 			ymz280b.reset();
@@ -1391,8 +1404,18 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			pos += 2;
 			break;
 
+		case cmd_ymf262_2_port0:
+			chip_reg_write( vgm_time, 0x0C, 0x01, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
 		case cmd_ymf262_port1:
 			chip_reg_write( vgm_time, 0x0C, 0x00, 0x01, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ymf262_2_port1:
+			chip_reg_write( vgm_time, 0x0C, 0x01, 0x01, pos [0], pos [1] );
 			pos += 2;
 			break;
 
@@ -1697,14 +1720,18 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() ||
-		ymf262.enabled() || ymz280b.enabled() )
+		ymf262[0].enabled() || ymz280b.enabled() )
 	{
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
 
-	if ( ymf262.enabled() )
+	if ( ymf262[0].enabled() )
 	{
-		ymf262.begin_frame( out );
+		ymf262[0].begin_frame( out );
+		if ( ymf262[1].enabled() )
+		{
+			ymf262[1].begin_frame( out );
+		}
 	}
 	if ( ym3812[0].enabled() )
 	{
@@ -1797,7 +1824,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_dac_control( vgm_time );
 	chip_reg_write_play();
 
-	run_ymf262( pairs );
+	run_ymf262( 0, pairs ); run_ymf262( 1, pairs );
 	run_ym3812( 0, pairs ); run_ym3812( 1, pairs );
 	run_ym2612( 0, pairs ); run_ym2612( 1, pairs );
 	run_ym2413( 0, pairs ); run_ym2413( 1, pairs );
