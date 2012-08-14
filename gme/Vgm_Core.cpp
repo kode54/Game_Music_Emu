@@ -32,7 +32,9 @@ enum {
 	cmd_ym2413          = 0x51,
 	cmd_ym2413_2        = 0xA1,
 	cmd_ym2612_port0    = 0x52,
+	cmd_ym2612_2_port0  = 0xA2,
 	cmd_ym2612_port1    = 0x53,
+	cmd_ym2612_2_port1  = 0xA3,
 	cmd_ym2151          = 0x54,
 	cmd_ym2203          = 0x55,
 	cmd_ym3812          = 0x5A,
@@ -117,9 +119,9 @@ int Vgm_Core::run_ym2413( int chip, int time )
 	return ym2413[!!chip].run_until( time );
 }
 
-int Vgm_Core::run_ym2612( int time )
+int Vgm_Core::run_ym2612( int chip, int time )
 {
-	return ym2612.run_until( time );
+	return ym2612[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_ym3812( int time )
@@ -199,7 +201,8 @@ int Vgm_Core::run_dac_control( int time )
 
 Vgm_Core::Vgm_Core()
 {
-	blip_buf = stereo_buf.center();
+	blip_buf[0] = stereo_buf.center();
+	blip_buf[1] = blip_buf[0];
 	has_looped = false;
 	DacCtrlUsed = 0;
 	dac_control = NULL;
@@ -576,6 +579,7 @@ void Vgm_Core::chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte 
 
 void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data)
 {
+	ChipID = !!ChipID;
 	switch (ChipType)
 	{
 	case 0x02:
@@ -584,21 +588,21 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		case 0:
 			if ( Offset == ym2612_dac_port )
 			{
-				write_pcm( Sample, Data );
+				write_pcm( Sample, ChipID, Data );
 			}
-			else if ( run_ym2612( to_fm_time( Sample ) ) )
+			else if ( run_ym2612( ChipID, to_fm_time( Sample ) ) )
 			{
 				if ( Offset == 0x2B )
 				{
-					dac_disabled = (Data >> 7 & 1) - 1;
-					dac_amp |= dac_disabled;
+					dac_disabled[ChipID] = (Data >> 7 & 1) - 1;
+					dac_amp[ChipID] |= dac_disabled[ChipID];
 				}
-				ym2612.write0( Offset, Data );
+				ym2612[ChipID].write0( Offset, Data );
 			}
 			break;
 		
 		case 1:
-			if ( run_ym2612( to_fm_time( Sample ) ) )
+			if ( run_ym2612( ChipID, to_fm_time( Sample ) ) )
 			{
 				if ( Offset == ym2612_dac_pan_port )
 				{
@@ -616,9 +620,9 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 						if ( this->blip_buf ) pcm.offset_inline( blip_time, -dac_amp, this->blip_buf );
 						if ( blip_buf )       pcm.offset_inline( blip_time,  dac_amp, blip_buf );
 					}*/
-					this->blip_buf = blip_buf;
+					this->blip_buf[ChipID] = blip_buf;
 				}
-				ym2612.write1( Offset, Data );
+				ym2612[ChipID].write1( Offset, Data );
 			}
 			break;
 		}
@@ -630,12 +634,12 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		break;
 
 	case 0x00:
-		psg[!!ChipID].write_data( to_psg_time( Sample ), Data );
+		psg[ChipID].write_data( to_psg_time( Sample ), Data );
 		break;
 
 	case 0x01:
 		if ( run_ym2413( ChipID, to_fm_time( Sample ) ) )
-			ym2413[!!ChipID].write( Offset, Data );
+			ym2413[ChipID].write( Offset, Data );
 		break;
 
 	case 0x03:
@@ -821,7 +825,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	ymz280b.enable( false );
 	ymf262.enable( false );
 	ym3812.enable( false );
-	ym2612.enable( false );
+	ym2612[0].enable( false );
+	ym2612[1].enable( false );
 	ym2413[0].enable( false );
 	ym2413[1].enable( false );
 	ym2203.enable( false );
@@ -941,9 +946,15 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ym2612_rate )
 	{
 		double fm_rate = ym2612_rate / 144.0;
-		RETURN_ERR( ym2612.set_rate( fm_rate, ym2612_rate ) );
-		RETURN_ERR( ym2612.setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
-		ym2612.enable();
+		RETURN_ERR( ym2612[0].set_rate( fm_rate, ym2612_rate ) );
+		RETURN_ERR( ym2612[0].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+		ym2612[0].enable();
+		if ( header().ym2612_rate[3] & 0x40 )
+		{
+			RETURN_ERR( ym2612[1].set_rate( fm_rate, ym2612_rate ) );
+			RETURN_ERR( ym2612[1].setup( fm_rate / vgm_rate, 0.85, 1.0 ) );
+			ym2612[1].enable();
+		}
 	}
 	if ( ym2413_rate )
 	{
@@ -1075,12 +1086,15 @@ void Vgm_Core::start_track()
 	psg[0].reset( get_le16( header().noise_feedback ), header().noise_width );
 	psg[1].reset( get_le16( header().noise_feedback ), header().noise_width );
 	
-	blip_buf = stereo_buf.center();
+	blip_buf[0] = stereo_buf.center();
+	blip_buf[1] = blip_buf[0];
 
-	dac_disabled = -1;
-	pos          = file_begin() + header().size();
-	dac_amp      = -1;
-	vgm_time     = 0;
+	dac_disabled[0] = -1;
+	dac_disabled[1] = -1;
+	pos             = file_begin() + header().size();
+	dac_amp[0]      = -1;
+	dac_amp[1]      = -1;
+	vgm_time        = 0;
 	int data_offset = get_le32( header().data_offset );
 	check( data_offset );
 	if ( data_offset )
@@ -1131,8 +1145,11 @@ void Vgm_Core::start_track()
 		if ( ym2413[1].enabled() )
 			ym2413[1].reset();
 		
-		if ( ym2612.enabled() )
-			ym2612.reset();
+		if ( ym2612[0].enabled() )
+			ym2612[0].reset();
+
+		if ( ym2612[1].enabled() )
+			ym2612[1].reset();
 
 		if ( ym3812.enabled() )
 			ym3812.reset();
@@ -1174,20 +1191,21 @@ inline blip_time_t Vgm_Core::to_psg_time( vgm_time_t t ) const
 	return (t * blip_time_factor) >> blip_time_bits;
 }
 
-void Vgm_Core::write_pcm( vgm_time_t vgm_time, int amp )
+void Vgm_Core::write_pcm( vgm_time_t vgm_time, int chip, int amp )
 {
-	if ( blip_buf )
+	chip = !!chip;
+	if ( blip_buf[chip] )
 	{
 		check( amp >= 0 );
 		blip_time_t blip_time = to_psg_time( vgm_time );
-		int old = dac_amp;
+		int old = dac_amp[chip];
 		int delta = amp - old;
-		dac_amp = amp;
-		blip_buf->set_modified();
+		dac_amp[chip] = amp;
+		blip_buf[chip]->set_modified();
 		if ( old >= 0 ) // first write is ignored, to avoid click
-			pcm.offset_inline( blip_time, delta, blip_buf );
+			pcm.offset_inline( blip_time, delta, blip_buf[chip] );
 		else
-			dac_amp |= dac_disabled;
+			dac_amp[chip] |= dac_disabled[chip];
 	}
 }
 
@@ -1336,9 +1354,19 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			chip_reg_write( vgm_time, 0x02, 0x00, 0x00, pos [0], pos [1] );
 			pos += 2;
 			break;
+
+		case cmd_ym2612_2_port0:
+			chip_reg_write( vgm_time, 0x02, 0x01, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
 		
 		case cmd_ym2612_port1:
 			chip_reg_write( vgm_time, 0x02, 0x00, 0x01, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2612_2_port1:
+			chip_reg_write( vgm_time, 0x02, 0x01, 0x01, pos [0], pos [1] );
 			pos += 2;
 			break;
 
@@ -1615,7 +1643,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		vgm_time++;
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
-	if ( ym2612.enabled() || ym2413[0].enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
+	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151.enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203.enabled() || ym3812.enabled() ||
 		ymf262.enabled() || ymz280b.enabled() )
@@ -1631,9 +1659,13 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		ym3812.begin_frame( out );
 	}
-	if ( ym2612.enabled() )
+	if ( ym2612[0].enabled() )
 	{
-		ym2612.begin_frame( out );
+		ym2612[0].begin_frame( out );
+	}
+	if ( ym2612[1].enabled() )
+	{
+		ym2612[1].begin_frame( out );
 	}
 	if ( ym2413[0].enabled() )
 	{
@@ -1704,7 +1736,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 
 	run_ymf262( pairs );
 	run_ym3812( pairs );
-	run_ym2612( pairs );
+	run_ym2612( 0, pairs ); run_ym2612( 1, pairs );
 	run_ym2413( 0, pairs ); run_ym2413( 1, pairs );
 	run_ym2203( pairs );
 	run_ym2151( pairs );

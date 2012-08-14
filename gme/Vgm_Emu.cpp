@@ -256,10 +256,12 @@ void Vgm_Emu::mute_voices_( int mask )
 	{
 		core.psg[0].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
 		core.psg[1].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
-		if ( core.ym2612.enabled() )
+		if ( core.ym2612[0].enabled() )
 		{
 			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * fm_gain * gain() );
-			core.ym2612.mute_voices( mask );
+			core.ym2612[0].mute_voices( mask );
+			if ( core.ym2612[1].enabled() )
+				core.ym2612[1].mute_voices( mask );
 		}
 		
 		if ( core.ym2413[0].enabled() )
