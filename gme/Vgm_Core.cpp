@@ -1380,30 +1380,26 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			break;
 
 		case cmd_rf5c68:
-			if ( get_le32( header().rf5c68_rate ) > 0 )
-				if ( run_rf5c68( to_fm_time( vgm_time ) ) )
-					rf5c68.write( pos [0], pos [1] );
+			if ( run_rf5c68( to_fm_time( vgm_time ) ) )
+				rf5c68.write( pos [0], pos [1] );
 			pos += 2;
 			break;
 
 		case cmd_rf5c68_mem:
-			if ( get_le32( header().rf5c68_rate ) > 0 )
-				if ( run_rf5c68( to_fm_time( vgm_time ) ) )
-					rf5c68.write_mem( get_le16( pos ), pos [2] );
+			if ( run_rf5c68( to_fm_time( vgm_time ) ) )
+				rf5c68.write_mem( get_le16( pos ), pos [2] );
 			pos += 3;
 			break;
 
 		case cmd_rf5c164:
-			if ( get_le32( header().rf5c164_rate ) > 0 )
-				if ( run_rf5c164( to_fm_time( vgm_time ) ) )
-					rf5c164.write( pos [0], pos [1] );
+			if ( run_rf5c164( to_fm_time( vgm_time ) ) )
+				rf5c164.write( pos [0], pos [1] );
 			pos += 2;
 			break;
 
 		case cmd_rf5c164_mem:
-			if ( get_le32( header().rf5c164_rate ) > 0 )
-				if ( run_rf5c164( to_fm_time( vgm_time ) ) )
-					rf5c164.write_mem( get_le16( pos ), pos [2] );
+			if ( run_rf5c164( to_fm_time( vgm_time ) ) )
+				rf5c164.write_mem( get_le16( pos ), pos [2] );
 			pos += 3;
 			break;
 
@@ -1720,12 +1716,12 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 					switch ( type )
 					{
 					case ram_rf5c68:
-						if ( get_le32( header().rf5c68_rate ) > 0 )
+						if ( rf5c68.enabled() )
 							rf5c68.write_ram( data_start, data_size, ram_data );
 						break;
 
 					case ram_rf5c164:
-						if ( get_le32( header().rf5c164_rate ) > 0 )
+						if ( rf5c164.enabled() )
 							rf5c164.write_ram( data_start, data_size, ram_data );
 						break;
 					}
@@ -1747,11 +1743,13 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			switch ( type )
 			{
 			case rf5c68_ram_block:
-				rf5c68.write_ram( data_addr, data_size, data_ptr );
+				if ( rf5c68.enabled() )
+					rf5c68.write_ram( data_addr, data_size, data_ptr );
 				break;
 
 			case rf5c164_ram_block:
-				rf5c164.write_ram( data_addr, data_size, data_ptr );
+				if ( rf5c164.enabled() )
+					rf5c164.write_ram( data_addr, data_size, data_ptr );
 				break;
 			}
 			pos += 11;
