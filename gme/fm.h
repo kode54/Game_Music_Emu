@@ -12,6 +12,8 @@ extern "C" {
 #endif
 
 #define BUILD_YM2203  1
+#define BUILD_YM2610  1
+#define BUILD_YM2610B 1
 #define BUILD_YM2612  1
 
 /* select bit size of output : 8 or 16 */
@@ -111,6 +113,30 @@ void ym2203_postload(void *chip);
 
 void ym2203_set_mutemask(void *chip, UINT32 MuteMask);
 #endif /* BUILD_YM2203 */
+
+#if (BUILD_YM2610||BUILD_YM2610B)
+/* -------------------- YM2610(OPNB) Interface -------------------- */
+//void * ym2610_init(void *param, const device_config *device, int baseclock, int rate,
+//               void *pcmroma,int pcmasize,void *pcmromb,int pcmbsize,
+//               FM_TIMERHANDLER TimerHandler,FM_IRQHANDLER IRQHandler, const ssg_callbacks *ssg);
+void * ym2610_init(void *param, int baseclock, int rate, const ssg_callbacks *ssg);
+void ym2610_shutdown(void *chip);
+void ym2610_reset_chip(void *chip);
+void ym2610_update_one(void *chip, FMSAMPLE **buffer, int length);
+
+#if BUILD_YM2610B
+void ym2610b_update_one(void *chip, FMSAMPLE **buffer, int length);
+#endif /* BUILD_YM2610B */
+
+int ym2610_write(void *chip, int a,unsigned char v);
+unsigned char ym2610_read(void *chip,int a);
+int ym2610_timer_over(void *chip, int c );
+void ym2610_postload(void *chip);
+void ym2610_write_pcmrom(void *chip, UINT8 rom_id, offs_t ROMSize, offs_t DataStart,
+	offs_t DataLength, const UINT8* ROMData);
+
+void ym2610_set_mutemask(void *chip, UINT32 MuteMask);
+#endif /* (BUILD_YM2610||BUILD_YM2610B) */
 
 #if (BUILD_YM2612||BUILD_YM3438)
 //void * ym2612_init(void *param, const device_config *device, int baseclock, int rate,

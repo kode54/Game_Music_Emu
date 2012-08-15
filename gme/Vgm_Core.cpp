@@ -39,6 +39,10 @@ enum {
 	cmd_ym2151_2        = 0xA4,
 	cmd_ym2203          = 0x55,
 	cmd_ym2203_2        = 0xA5,
+	cmd_ym2610_port0    = 0x58,
+	cmd_ym2610_2_port0  = 0xA8,
+	cmd_ym2610_port1    = 0x59,
+	cmd_ym2610_2_port1  = 0xA9,
 	cmd_ym3812          = 0x5A,
 	cmd_ym3812_2        = 0xAA,
 	cmd_ymz280b         = 0x5D,
@@ -84,6 +88,8 @@ enum {
 	ram_block_type      = 0xC0,
 
 	rom_segapcm         = 0x80,
+	rom_ym2610_adpcm    = 0x82,
+	rom_ym2610_deltat   = 0x83,
 	rom_ymz280b         = 0x86,
 	rom_okim6295        = 0x8B,
 	rom_k054539         = 0x8C,
@@ -127,6 +133,11 @@ int Vgm_Core::run_ym2413( int chip, int time )
 int Vgm_Core::run_ym2612( int chip, int time )
 {
 	return ym2612[!!chip].run_until( time );
+}
+
+int Vgm_Core::run_ym2610( int chip, int time )
+{
+	return ym2610[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_ym3812( int chip, int time )
@@ -657,6 +668,17 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 			ym2203[ChipID].write( Offset, Data );
 		break;
 
+	case 0x08:
+		if ( run_ym2610( ChipID, to_fm_time( Sample ) ) )
+		{
+			switch (Port)
+			{
+			case 0: ym2610[ChipID].write0( Offset, Data ); break;
+			case 1: ym2610[ChipID].write1( Offset, Data ); break;
+			}
+		}
+		break;
+
 	case 0x09:
 		if ( run_ym3812( ChipID, to_fm_time( Sample ) ) )
 			ym3812[ChipID].write( Offset, Data );
@@ -834,6 +856,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	ym3812[1].enable( false );
 	ym2612[0].enable( false );
 	ym2612[1].enable( false );
+	ym2610[0].enable( false );
+	ym2610[1].enable( false );
 	ym2413[0].enable( false );
 	ym2413[1].enable( false );
 	ym2203[0].enable( false );
@@ -918,6 +942,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	int ymf262_rate = get_le32( header().ymf262_rate ) & 0xBFFFFFFF;
 	int ym3812_rate = get_le32( header().ym3812_rate ) & 0xBFFFFFFF;
 	int ym2612_rate = get_le32( header().ym2612_rate ) & 0xBFFFFFFF;
+	int ym2610_rate = get_le32( header().ym2610_rate ) & 0x3FFFFFFF;
 	int ym2413_rate = get_le32( header().ym2413_rate ) & 0xBFFFFFFF;
 	int ym2203_rate = get_le32( header().ym2203_rate ) & 0xBFFFFFFF;
 	int ym2151_rate = get_le32( header().ym2151_rate ) & 0xBFFFFFFF;
@@ -983,6 +1008,23 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 			RETURN_ERR( ym2612[1].set_rate( fm_rate, ym2612_rate ) );
 			RETURN_ERR( ym2612[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2612[1].enable();
+		}
+	}
+	if ( ym2610_rate )
+	{
+		bool dual_chip = !!(header().ym2610_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
+		double fm_rate = ym2610_rate / 72.0;
+		int result = ym2610[0].set_rate( fm_rate, ym2610_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( ym2610[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
+		ym2610[0].enable();
+		if ( dual_chip )
+		{
+			result = ym2610[1].set_rate( fm_rate, ym2612_rate );
+			CHECK_ALLOC( !result );
+			RETURN_ERR( ym2610[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
+			ym2610[1].enable();
 		}
 	}
 	if ( ym2413_rate )
@@ -1082,7 +1124,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	{
 		int result = okim6295.set_rate( okim6295_rate );
 		CHECK_ALLOC( result );
-		RETURN_ERR( okim6295.setup( (double)result / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( okim6295.setup( (double)result / vgm_rate, 0.85, 0.4296875 ) );
 		okim6295.enable();
 	}
 	if ( c140_rate )
@@ -1205,6 +1247,12 @@ void Vgm_Core::start_track()
 
 		if ( ym2612[1].enabled() )
 			ym2612[1].reset();
+
+		if ( ym2610[0].enabled() )
+			ym2610[0].reset();
+
+		if ( ym2610[1].enabled() )
+			ym2610[1].reset();
 
 		if ( ym3812[0].enabled() )
 			ym3812[0].reset();
@@ -1456,6 +1504,26 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			pos += 2;
 			break;
 
+		case cmd_ym2610_port0:
+			chip_reg_write( vgm_time, 0x08, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2610_2_port0:
+			chip_reg_write( vgm_time, 0x08, 0x01, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2610_port1:
+			chip_reg_write( vgm_time, 0x08, 0x00, 0x01, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2610_2_port1:
+			chip_reg_write( vgm_time, 0x08, 0x01, 0x01, pos [0], pos [1] );
+			pos += 2;
+			break;
+
 		case cmd_okim6258_write:
 			chip_reg_write( vgm_time, 0x17, 0x00, 0x00, pos [0] & 0x7F, pos [1] );
 			pos += 2;
@@ -1576,6 +1644,12 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			check( *pos == cmd_end );
 			int type = pos [1];
 			int size = get_le32( pos + 2 );
+			int chipid = 0;
+			if ( size & 0x80000000 )
+			{
+				size &= 0x7FFFFFFF;
+				chipid = 1;
+			}
 			pos += 6;
 			switch ( type & 0xC0 )
 			{
@@ -1597,6 +1671,15 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 					case rom_segapcm:
 						if ( segapcm.enabled() )
 							segapcm.write_rom( rom_size, data_start, data_size, rom_data );
+						break;
+
+					case rom_ym2610_adpcm:
+					case rom_ym2610_deltat:
+						if ( ym2610[chipid].enabled() )
+						{
+							int rom_id = 0x01 + ( type - rom_ym2610_adpcm );
+							ym2610[chipid].write_rom( rom_id, rom_size, data_start, data_size, rom_data );
+						}
 						break;
 
 					case rom_ymz280b:
@@ -1732,7 +1815,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() ||
-		ymf262[0].enabled() || ymz280b.enabled() )
+		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() )
 	{
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
@@ -1759,6 +1842,14 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		if ( ym2612[1].enabled() )
 		{
 			ym2612[1].begin_frame( out );
+		}
+	}
+	if ( ym2610[0].enabled() )
+	{
+		ym2610[0].begin_frame( out );
+		if ( ym2610[1].enabled() )
+		{
+			ym2610[1].begin_frame( out );
 		}
 	}
 	if ( ym2413[0].enabled() )
@@ -1839,6 +1930,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_ymf262( 0, pairs ); run_ymf262( 1, pairs );
 	run_ym3812( 0, pairs ); run_ym3812( 1, pairs );
 	run_ym2612( 0, pairs ); run_ym2612( 1, pairs );
+	run_ym2610( 0, pairs ); run_ym2610( 1, pairs );
 	run_ym2413( 0, pairs ); run_ym2413( 1, pairs );
 	run_ym2203( 0, pairs ); run_ym2203( 1, pairs );
 	run_ym2151( 0, pairs ); run_ym2151( 1, pairs );

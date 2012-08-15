@@ -2225,39 +2225,6 @@ void ym2203_reset_chip(void *chip)
 	for(i = 0x26 ; i >= 0x20 ; i-- ) OPNWriteReg(OPN,i,0);
 }
 
-//#ifdef __STATE_H__
-void ym2203_postload(void *chip)
-{
-	if (chip)
-	{
-		YM2203 *F2203 = (YM2203 *)chip;
-		int r;
-
-		/* prescaler */
-		OPNPrescaler_w(&F2203->OPN,1,1);
-
-		/* SSG registers */
-		for(r=0;r<16;r++)
-		{
-			(*F2203->OPN.ST.SSG->write)(F2203->OPN.ST.param,0,r);
-			(*F2203->OPN.ST.SSG->write)(F2203->OPN.ST.param,1,F2203->REGS[r]);
-		}
-
-		/* OPN registers */
-		/* DT / MULTI , TL , KS / AR , AMON / DR , SR , SL / RR , SSG-EG */
-		for(r=0x30;r<0x9e;r++)
-			if((r&3) != 3)
-				OPNWriteReg(&F2203->OPN,r,F2203->REGS[r]);
-		/* FB / CONNECT , L / R / AMS / PMS */
-		for(r=0xb0;r<0xb6;r++)
-			if((r&3) != 3)
-				OPNWriteReg(&F2203->OPN,r,F2203->REGS[r]);
-
-		/* channels */
-		/*FM_channel_postload(F2203->CH,3);*/
-	}
-}
-
 #ifdef __STATE_H__
 static void YM2203_save_state(YM2203 *F2203, const device_config *device)
 {
@@ -3465,71 +3432,6 @@ void ym2608_update_one(void *chip, FMSAMPLE **buffer, int length)
 
 }
 
-//#ifdef __STATE_H__
-void ym2608_postload(void *chip)
-{
-	if (chip)
-	{
-		YM2608 *F2608 = (YM2608 *)chip;
-		int r;
-
-		/* prescaler */
-		OPNPrescaler_w(&F2608->OPN,1,2);
-		F2608->deltaT.freqbase = F2608->OPN.ST.freqbase;
-		/* IRQ mask / mode */
-		YM2608IRQMaskWrite(&F2608->OPN, F2608, F2608->REGS[0x29]);
-		/* SSG registers */
-		for(r=0;r<16;r++)
-		{
-			(*F2608->OPN.ST.SSG->write)(F2608->OPN.ST.param,0,r);
-			(*F2608->OPN.ST.SSG->write)(F2608->OPN.ST.param,1,F2608->REGS[r]);
-		}
-
-		/* OPN registers */
-		/* DT / MULTI , TL , KS / AR , AMON / DR , SR , SL / RR , SSG-EG */
-		for(r=0x30;r<0x9e;r++)
-			if((r&3) != 3)
-			{
-				OPNWriteReg(&F2608->OPN,r,F2608->REGS[r]);
-				OPNWriteReg(&F2608->OPN,r|0x100,F2608->REGS[r|0x100]);
-			}
-		/* FB / CONNECT , L / R / AMS / PMS */
-		for(r=0xb0;r<0xb6;r++)
-			if((r&3) != 3)
-			{
-				OPNWriteReg(&F2608->OPN,r,F2608->REGS[r]);
-				OPNWriteReg(&F2608->OPN,r|0x100,F2608->REGS[r|0x100]);
-			}
-		/* FM channels */
-		/*FM_channel_postload(F2608->CH,6);*/
-		/* rhythm(ADPCMA) */
-		FM_ADPCMAWrite(F2608,1,F2608->REGS[0x111]);
-		for( r=0x08 ; r<0x0c ; r++)
-			FM_ADPCMAWrite(F2608,r,F2608->REGS[r+0x110]);
-		/* Delta-T ADPCM unit */
-		YM_DELTAT_postload(&F2608->deltaT , &F2608->REGS[0x100] );
-	}
-}
-
-#ifdef __STATE_H__
-static void YM2608_save_state(YM2608 *F2608, const device_config *device)
-{
-	state_save_register_device_item_array(device, 0, F2608->REGS);
-	FMsave_state_st(device,&F2608->OPN.ST);
-	FMsave_state_channel(device,F2608->CH,6);
-	/* 3slots */
-	state_save_register_device_item_array(device, 0, F2608->OPN.SL3.fc);
-	state_save_register_device_item(device, 0, F2608->OPN.SL3.fn_h);
-	state_save_register_device_item_array(device, 0, F2608->OPN.SL3.kcode);
-	/* address register1 */
-	state_save_register_device_item(device, 0, F2608->addr_A1);
-	/* rythm(ADPCMA) */
-	FMsave_state_adpcma(device,F2608->adpcm);
-	/* Delta-T ADPCM unit */
-	YM_DELTAT_savestate(device,&F2608->deltaT);
-}
-#endif /* _STATE_H */
-
 static void YM2608_deltat_status_set(void *chip, UINT8 changebits)
 {
 	YM2608 *F2608 = (YM2608 *)chip;
@@ -4235,75 +4137,6 @@ void ym2610b_update_one(void *chip, FMSAMPLE **buffer, int length)
 #endif /* BUILD_YM2610B */
 
 
-//#ifdef __STATE_H__
-void ym2610_postload(void *chip)
-{
-	if (chip)
-	{
-		YM2610 *F2610 = (YM2610 *)chip;
-		int r;
-
-		/* SSG registers */
-		for(r=0;r<16;r++)
-		{
-			(*F2610->OPN.ST.SSG->write)(F2610->OPN.ST.param,0,r);
-			(*F2610->OPN.ST.SSG->write)(F2610->OPN.ST.param,1,F2610->REGS[r]);
-		}
-
-		/* OPN registers */
-		/* DT / MULTI , TL , KS / AR , AMON / DR , SR , SL / RR , SSG-EG */
-		for(r=0x30;r<0x9e;r++)
-			if((r&3) != 3)
-			{
-				OPNWriteReg(&F2610->OPN,r,F2610->REGS[r]);
-				OPNWriteReg(&F2610->OPN,r|0x100,F2610->REGS[r|0x100]);
-			}
-		/* FB / CONNECT , L / R / AMS / PMS */
-		for(r=0xb0;r<0xb6;r++)
-			if((r&3) != 3)
-			{
-				OPNWriteReg(&F2610->OPN,r,F2610->REGS[r]);
-				OPNWriteReg(&F2610->OPN,r|0x100,F2610->REGS[r|0x100]);
-			}
-		/* FM channels */
-		/*FM_channel_postload(F2610->CH,6);*/
-
-		/* rhythm(ADPCMA) */
-		FM_ADPCMAWrite(F2610,1,F2610->REGS[0x101]);
-		for( r=0 ; r<6 ; r++)
-		{
-			FM_ADPCMAWrite(F2610,r+0x08,F2610->REGS[r+0x108]);
-			FM_ADPCMAWrite(F2610,r+0x10,F2610->REGS[r+0x110]);
-			FM_ADPCMAWrite(F2610,r+0x18,F2610->REGS[r+0x118]);
-			FM_ADPCMAWrite(F2610,r+0x20,F2610->REGS[r+0x120]);
-			FM_ADPCMAWrite(F2610,r+0x28,F2610->REGS[r+0x128]);
-		}
-		/* Delta-T ADPCM unit */
-		YM_DELTAT_postload(&F2610->deltaT , &F2610->REGS[0x010] );
-	}
-}
-
-#ifdef __STATE_H__
-static void YM2610_save_state(YM2610 *F2610, const device_config *device)
-{
-	state_save_register_device_item_array(device, 0, F2610->REGS);
-	FMsave_state_st(device,&F2610->OPN.ST);
-	FMsave_state_channel(device,F2610->CH,6);
-	/* 3slots */
-	state_save_register_device_item_array(device, 0, F2610->OPN.SL3.fc);
-	state_save_register_device_item(device, 0, F2610->OPN.SL3.fn_h);
-	state_save_register_device_item_array(device, 0, F2610->OPN.SL3.kcode);
-	/* address register1 */
-	state_save_register_device_item(device, 0, F2610->addr_A1);
-
-	state_save_register_device_item(device, 0, F2610->adpcm_arrivedEndAddress);
-	/* rythm(ADPCMA) */
-	FMsave_state_adpcma(device,F2610->adpcm);
-	/* Delta-T ADPCM unit */
-	YM_DELTAT_savestate(device,&F2610->deltaT);
-}
-#endif /* _STATE_H */
-
 static void YM2610_deltat_status_set(void *chip, UINT8 changebits)
 {
 	YM2610 *F2610 = (YM2610 *)chip;
@@ -4499,8 +4332,6 @@ int ym2610_write(void *chip, int a, UINT8 v)
 			(*OPN->ST.SSG->write)(OPN->ST.param,a,v);
 			break;
 		case 0x10: /* DeltaT ADPCM */
-			ym2610_update_req(OPN->ST.param);
-
 			switch(addr)
 			{
 			case 0x10:	/* control 1 */
@@ -4541,11 +4372,9 @@ int ym2610_write(void *chip, int a, UINT8 v)
 
 			break;
 		case 0x20:	/* Mode Register */
-			ym2610_update_req(OPN->ST.param);
 			OPNWriteMode(OPN,addr,v);
 			break;
 		default:	/* OPN section */
-			ym2610_update_req(OPN->ST.param);
 			/* write register */
 			OPNWriteReg(OPN,addr,v);
 		}
@@ -4560,7 +4389,6 @@ int ym2610_write(void *chip, int a, UINT8 v)
 		if (F2610->addr_A1 != 1)
 			break;	/* verified on real YM2608 */
 
-		ym2610_update_req(OPN->ST.param);
 		addr = OPN->ST.address;
 		F2610->REGS[addr | 0x100] = v;
 		if( addr < 0x30 )
@@ -4611,7 +4439,6 @@ int ym2610_timer_over(void *chip,int c)
 	}
 	else
 	{	/* Timer A */
-		ym2610_update_req(F2610->OPN.ST.param);
 		/* timer update */
 		TimerAOver( &(F2610->OPN.ST) );
 		/* CSM mode key,TL controll */
