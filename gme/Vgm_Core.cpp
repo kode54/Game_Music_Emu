@@ -39,6 +39,10 @@ enum {
 	cmd_ym2151_2        = 0xA4,
 	cmd_ym2203          = 0x55,
 	cmd_ym2203_2        = 0xA5,
+	cmd_ym2608_port0    = 0x56,
+	cmd_ym2608_2_port0  = 0xA6,
+	cmd_ym2608_port1    = 0x57,
+	cmd_ym2608_2_port1  = 0xA7,
 	cmd_ym2610_port0    = 0x58,
 	cmd_ym2610_2_port0  = 0xA8,
 	cmd_ym2610_port1    = 0x59,
@@ -88,6 +92,7 @@ enum {
 	ram_block_type      = 0xC0,
 
 	rom_segapcm         = 0x80,
+	rom_ym2608_deltat   = 0x81,
 	rom_ym2610_adpcm    = 0x82,
 	rom_ym2610_deltat   = 0x83,
 	rom_ymz280b         = 0x86,
@@ -138,6 +143,11 @@ int Vgm_Core::run_ym2612( int chip, int time )
 int Vgm_Core::run_ym2610( int chip, int time )
 {
 	return ym2610[!!chip].run_until( time );
+}
+
+int Vgm_Core::run_ym2608( int chip, int time )
+{
+	return ym2608[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_ym3812( int chip, int time )
@@ -668,6 +678,17 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 			ym2203[ChipID].write( Offset, Data );
 		break;
 
+	case 0x07:
+		if ( run_ym2608( ChipID, to_fm_time( Sample ) ) )
+		{
+			switch (Port)
+			{
+			case 0: ym2608[ChipID].write0( Offset, Data ); break;
+			case 1: ym2608[ChipID].write1( Offset, Data ); break;
+			}
+		}
+		break;
+
 	case 0x08:
 		if ( run_ym2610( ChipID, to_fm_time( Sample ) ) )
 		{
@@ -858,6 +879,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	ym2612[1].enable( false );
 	ym2610[0].enable( false );
 	ym2610[1].enable( false );
+	ym2608[0].enable( false );
+	ym2608[1].enable( false );
 	ym2413[0].enable( false );
 	ym2413[1].enable( false );
 	ym2203[0].enable( false );
@@ -944,6 +967,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	int ym3812_rate = get_le32( header().ym3812_rate ) & 0xBFFFFFFF;
 	int ym2612_rate = get_le32( header().ym2612_rate ) & 0xBFFFFFFF;
 	int ym2610_rate = get_le32( header().ym2610_rate ) & 0x3FFFFFFF;
+	int ym2608_rate = get_le32( header().ym2608_rate ) & 0x3FFFFFFF;
 	int ym2413_rate = get_le32( header().ym2413_rate ) & 0xBFFFFFFF;
 	int ym2203_rate = get_le32( header().ym2203_rate ) & 0xBFFFFFFF;
 	int ym2151_rate = get_le32( header().ym2151_rate ) & 0xBFFFFFFF;
@@ -1014,18 +1038,36 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ym2610_rate )
 	{
 		bool dual_chip = !!(header().ym2610_rate[3] & 0x40);
+		bool is_2610b = !!(header().ym2610_rate[3] & 0x80);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2610_rate / 72.0;
-		int result = ym2610[0].set_rate( fm_rate, ym2610_rate );
+		int result = ym2610[0].set_rate( fm_rate, ym2610_rate, is_2610b );
 		CHECK_ALLOC( !result );
 		RETURN_ERR( ym2610[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2610[0].enable();
 		if ( dual_chip )
 		{
-			result = ym2610[1].set_rate( fm_rate, ym2612_rate );
+			result = ym2610[1].set_rate( fm_rate, ym2610_rate, is_2610b );
 			CHECK_ALLOC( !result );
 			RETURN_ERR( ym2610[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2610[1].enable();
+		}
+	}
+	if ( ym2608_rate )
+	{
+		bool dual_chip = !!(header().ym2610_rate[3] & 0x40);
+		double gain = dual_chip ? 0.5 : 1.0;
+		double fm_rate = ym2608_rate / 72.0;
+		int result = ym2608[0].set_rate( fm_rate, ym2608_rate );
+		CHECK_ALLOC( !result );
+		RETURN_ERR( ym2608[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
+		ym2608[0].enable();
+		if ( dual_chip )
+		{
+			result = ym2608[1].set_rate( fm_rate, ym2608_rate );
+			CHECK_ALLOC( !result );
+			RETURN_ERR( ym2608[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
+			ym2608[1].enable();
 		}
 	}
 	if ( ym2413_rate )
@@ -1265,6 +1307,12 @@ void Vgm_Core::start_track()
 
 		if ( ym2610[1].enabled() )
 			ym2610[1].reset();
+
+		if ( ym2608[0].enabled() )
+			ym2608[0].reset();
+
+		if ( ym2608[1].enabled() )
+			ym2608[0].reset();
 
 		if ( ym3812[0].enabled() )
 			ym3812[0].reset();
@@ -1533,6 +1581,26 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			pos += 2;
 			break;
 
+		case cmd_ym2608_port0:
+			chip_reg_write( vgm_time, 0x07, 0x00, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2608_2_port0:
+			chip_reg_write( vgm_time, 0x07, 0x01, 0x00, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2608_port1:
+			chip_reg_write( vgm_time, 0x07, 0x00, 0x01, pos [0], pos [1] );
+			pos += 2;
+			break;
+
+		case cmd_ym2608_2_port1:
+			chip_reg_write( vgm_time, 0x07, 0x01, 0x01, pos [0], pos [1] );
+			pos += 2;
+			break;
+
 		case cmd_okim6258_write:
 			chip_reg_write( vgm_time, 0x17, 0x00, 0x00, pos [0] & 0x7F, pos [1] );
 			pos += 2;
@@ -1683,6 +1751,13 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 							segapcm.write_rom( rom_size, data_start, data_size, rom_data );
 						break;
 
+					case rom_ym2608_deltat:
+						if ( ym2608[chipid].enabled() )
+						{
+							ym2608[chipid].write_rom( 0x02, rom_size, data_start, data_size, rom_data );
+						}
+						break;
+
 					case rom_ym2610_adpcm:
 					case rom_ym2610_deltat:
 						if ( ym2610[chipid].enabled() )
@@ -1827,7 +1902,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() ||
-		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() )
+		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() )
 	{
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
@@ -1862,6 +1937,14 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		if ( ym2610[1].enabled() )
 		{
 			ym2610[1].begin_frame( out );
+		}
+	}
+	if ( ym2608[0].enabled() )
+	{
+		ym2608[0].begin_frame( out );
+		if ( ym2608[1].enabled() )
+		{
+			ym2608[1].begin_frame( out );
 		}
 	}
 	if ( ym2413[0].enabled() )
@@ -1947,6 +2030,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_ym3812( 0, pairs ); run_ym3812( 1, pairs );
 	run_ym2612( 0, pairs ); run_ym2612( 1, pairs );
 	run_ym2610( 0, pairs ); run_ym2610( 1, pairs );
+	run_ym2608( 0, pairs ); run_ym2608( 1, pairs );
 	run_ym2413( 0, pairs ); run_ym2413( 1, pairs );
 	run_ym2203( 0, pairs ); run_ym2203( 1, pairs );
 	run_ym2151( 0, pairs ); run_ym2151( 1, pairs );

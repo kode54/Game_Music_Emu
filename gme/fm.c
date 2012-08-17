@@ -3632,7 +3632,6 @@ int ym2608_write(void *chip, int a,UINT8 v)
 			(*OPN->ST.SSG->write)(OPN->ST.param,a,v);
 			break;
 		case 0x10:	/* 0x10-0x1f : Rhythm section */
-			ym2608_update_req(OPN->ST.param);
 			FM_ADPCMAWrite(F2608,addr-0x10,v);
 			break;
 		case 0x20:	/* Mode Register */
@@ -3642,12 +3641,10 @@ int ym2608_write(void *chip, int a,UINT8 v)
 				YM2608IRQMaskWrite(OPN, F2608, v);
 				break;
 			default:
-				ym2608_update_req(OPN->ST.param);
 				OPNWriteMode(OPN,addr,v);
 			}
 			break;
 		default:	/* OPN section */
-			ym2608_update_req(OPN->ST.param);
 			OPNWriteReg(OPN,addr,v);
 		}
 		break;
@@ -3663,7 +3660,6 @@ int ym2608_write(void *chip, int a,UINT8 v)
 
 		addr = OPN->ST.address;
 		F2608->REGS[addr | 0x100] = v;
-		ym2608_update_req(OPN->ST.param);
 		switch( addr & 0xf0 )
 		{
 		case 0x00:	/* DELTAT PORT */
@@ -3755,7 +3751,6 @@ int ym2608_timer_over(void *chip,int c)
 		break;
 	case 0:
 		{	/* Timer A */
-			ym2608_update_req(F2608->OPN.ST.param);
 			/* timer update */
 			TimerAOver( &(F2608->OPN.ST) );
 			/* CSM mode key,TL controll */

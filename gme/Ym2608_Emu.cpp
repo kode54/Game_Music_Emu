@@ -1,30 +1,30 @@
 // Game_Music_Emu $vers. http://www.slack.net/~ant/
 
-#include "Ym2610b_Emu.h"
+#include "Ym2608_Emu.h"
 #include "fm.h"
 #include <string.h>
 
 static void psg_set_clock(void *param, int clock)
 {
-	Ym2610b_Emu *info = (Ym2610b_Emu *)param;
+	Ym2608_Emu *info = (Ym2608_Emu *)param;
 	info->psg_set_clock( clock );
 }
 
 static void psg_write(void *param, int address, int data)
 {
-	Ym2610b_Emu *info = (Ym2610b_Emu *)param;
+	Ym2608_Emu *info = (Ym2608_Emu *)param;
 	info->psg_write( address, data );
 }
 
 static int psg_read(void *param)
 {
-	Ym2610b_Emu *info = (Ym2610b_Emu *)param;
+	Ym2608_Emu *info = (Ym2608_Emu *)param;
 	return info->psg_read();
 }
 
 static void psg_reset(void *param)
 {
-	Ym2610b_Emu *info = (Ym2610b_Emu *)param;
+	Ym2608_Emu *info = (Ym2608_Emu *)param;
 	info->psg_reset();
 }
 
@@ -36,28 +36,27 @@ static const ssg_callbacks psgintf =
 	psg_reset
 };
 
-Ym2610b_Emu::Ym2610b_Emu() { opn = 0; }
+Ym2608_Emu::Ym2608_Emu() { opn = 0; }
 
-Ym2610b_Emu::~Ym2610b_Emu()
+Ym2608_Emu::~Ym2608_Emu()
 {
-	if ( opn ) ym2610_shutdown( opn );
+	if ( opn ) ym2608_shutdown( opn );
 }
 
-int Ym2610b_Emu::set_rate( int sample_rate, int clock_rate, bool is_2610b )
+int Ym2608_Emu::set_rate( int sample_rate, int clock_rate )
 {
 	if ( opn )
 	{
-		ym2610_shutdown( opn );
+		ym2608_shutdown( opn );
 		opn = 0;
 	}
 	
-	opn = ym2610_init( this, clock_rate, sample_rate, &psgintf );
+	opn = ym2608_init( this, clock_rate, sample_rate, &psgintf );
 	if ( !opn )
 		return 1;
 
 	this->sample_rate = sample_rate;
 	psg_clock = clock_rate;
-	this->is_2610b = is_2610b;
 
 	buffer.set_sample_rate( sample_rate );
 	buffer.clock_rate( psg_clock );
@@ -68,38 +67,36 @@ int Ym2610b_Emu::set_rate( int sample_rate, int clock_rate, bool is_2610b )
 	return 0;
 }
 
-void Ym2610b_Emu::reset()
+void Ym2608_Emu::reset()
 {
-	ym2610_reset_chip( opn );
+	ym2608_reset_chip( opn );
 	mute_voices( 0 );
 }
 
 static stream_sample_t* DUMMYBUF[0x02] = {(stream_sample_t*)NULL, (stream_sample_t*)NULL};
 
-void Ym2610b_Emu::write0( int addr, int data )
+void Ym2608_Emu::write0( int addr, int data )
 {
-	if ( is_2610b ) ym2610b_update_one( opn, DUMMYBUF, 0 );
-	else ym2610_update_one( opn, DUMMYBUF, 0 );
-	ym2610_write( opn, 0, addr );
-	ym2610_write( opn, 1, data );
+	ym2608_update_one( opn, DUMMYBUF, 0 );
+	ym2608_write( opn, 0, addr );
+	ym2608_write( opn, 1, data );
 }
 
-void Ym2610b_Emu::write1( int addr, int data )
+void Ym2608_Emu::write1( int addr, int data )
 {
-	if ( is_2610b ) ym2610b_update_one( opn, DUMMYBUF, 0 );
-	else ym2610_update_one( opn, DUMMYBUF, 0 );
-	ym2610_write( opn, 2, addr );
-	ym2610_write( opn, 3, data );
+	ym2608_update_one( opn, DUMMYBUF, 0 );
+	ym2608_write( opn, 2, addr );
+	ym2608_write( opn, 3, data );
 }
 
-void Ym2610b_Emu::write_rom( int rom_id, int size, int start, int length, void * data )
+void Ym2608_Emu::write_rom( int rom_id, int size, int start, int length, void * data )
 {
-	ym2610_write_pcmrom( opn, rom_id, size, start, length, (const UINT8 *) data );
+	ym2608_write_pcmrom( opn, rom_id, size, start, length, (const UINT8 *) data );
 }
 
-void Ym2610b_Emu::mute_voices( int mask )
+void Ym2608_Emu::mute_voices( int mask )
 {
-	ym2610_set_mutemask( opn, mask );
+	ym2608_set_mutemask( opn, mask );
 	for ( unsigned i = 0, j = 1 << 6; i < 3; i++, j <<= 1)
 	{
 		Blip_Buffer * buf = ( mask & j ) ? NULL : &buffer;
@@ -107,7 +104,7 @@ void Ym2610b_Emu::mute_voices( int mask )
 	}
 }
 
-void Ym2610b_Emu::run( int pair_count, sample_t* out )
+void Ym2608_Emu::run( int pair_count, sample_t* out )
 {
 	blip_sample_t buf[ 1024 ];
 	FMSAMPLE bufL[ 1024 ];
@@ -122,8 +119,7 @@ void Ym2610b_Emu::run( int pair_count, sample_t* out )
 	{
 		int todo = pair_count;
 		if (todo > 1024) todo = 1024;
-		if ( is_2610b ) ym2610b_update_one( opn, buffers, todo );
-		else ym2610_update_one( opn, buffers, todo );
+		ym2608_update_one( opn, buffers, todo );
 
 		int sample_count = buffer.read_samples( buf, todo );
 		memset( buf + sample_count, 0, ( todo - sample_count ) * sizeof( blip_sample_t ) );
@@ -147,24 +143,24 @@ void Ym2610b_Emu::run( int pair_count, sample_t* out )
 	}
 }
 
-void Ym2610b_Emu::psg_set_clock( int clock )
+void Ym2608_Emu::psg_set_clock( int clock )
 {
 	psg_clock = clock;
 	buffer.clock_rate( clock );
 }
 
-void Ym2610b_Emu::psg_write( int addr, int data )
+void Ym2608_Emu::psg_write( int addr, int data )
 {
 	psg.write_addr( addr );
 	psg.write_data( 0, data );
 }
 
-int Ym2610b_Emu::psg_read()
+int Ym2608_Emu::psg_read()
 {
 	return psg.read();
 }
 
-void Ym2610b_Emu::psg_reset()
+void Ym2608_Emu::psg_reset()
 {
 	psg.reset();
 }

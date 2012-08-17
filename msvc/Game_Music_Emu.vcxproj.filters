@@ -350,6 +350,9 @@
     <ClCompile Include="..\gme\Ym2610b_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\gme\Ym2608_Emu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gme\Ay_Apu.h">
@@ -689,6 +692,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Ym2610b_Emu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\Ym2608_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

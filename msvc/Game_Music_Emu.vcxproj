@@ -182,6 +182,7 @@
     <ClCompile Include="..\gme\Ym2203_Emu.cpp" />
     <ClCompile Include="..\gme\ym2413.c" />
     <ClCompile Include="..\gme\Ym2413_Emu.cpp" />
+    <ClCompile Include="..\gme\Ym2608_Emu.cpp" />
     <ClCompile Include="..\gme\Ym2610b_Emu.cpp" />
     <ClCompile Include="..\gme\Ym2612_Emu.cpp" />
     <ClCompile Include="..\gme\Ym2612_Emu_Gens.cpp">
@@ -304,6 +305,7 @@
     <ClInclude Include="..\gme\Ym2203_Emu.h" />
     <ClInclude Include="..\gme\ym2413.h" />
     <ClInclude Include="..\gme\Ym2413_Emu.h" />
+    <ClInclude Include="..\gme\Ym2608_Emu.h" />
     <ClInclude Include="..\gme\Ym2610b_Emu.h" />
     <ClInclude Include="..\gme\Ym2612_Emu.h" />
     <ClInclude Include="..\gme\Ym3812_Emu.h" />

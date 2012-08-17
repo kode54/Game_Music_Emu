@@ -9,6 +9,7 @@
 #include "Ymf262_Emu.h"
 #include "Ym2612_Emu.h"
 #include "Ym2610b_Emu.h"
+#include "Ym2608_Emu.h"
 #include "Ym3812_Emu.h"
 #include "Ym2413_Emu.h"
 #include "Ym2151_Emu.h"
@@ -148,7 +149,7 @@ public:
 	bool uses_fm() const                { return ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() ||
 		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() || ymf262[0].enabled() ||
-		ymz280b.enabled() || ym2610[0].enabled(); }
+		ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled(); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	// Loading a file resets tempo to 1.0.
@@ -184,6 +185,7 @@ public:
 	Chip_Resampler_Emu<Ym3812_Emu> ym3812[2];
 	Chip_Resampler_Emu<Ym2612_Emu> ym2612[2];
 	Chip_Resampler_Emu<Ym2610b_Emu> ym2610[2];
+	Chip_Resampler_Emu<Ym2608_Emu> ym2608[2];
 	Chip_Resampler_Emu<Ym2413_Emu> ym2413[2];
 	Chip_Resampler_Emu<Ym2151_Emu> ym2151[2];
 	Chip_Resampler_Emu<Ym2203_Emu> ym2203[2];
@@ -324,6 +326,7 @@ private:
 	int run_ym3812( int chip, int time );
 	int run_ymf262( int chip, int time );
 	int run_ym2610( int chip, int time );
+	int run_ym2608( int chip, int time );
 	int run_ymz280b( int time );
 	int run_c140( int time );
 	int run_segapcm( int time );

@@ -1,25 +1,24 @@
-// YM2610B FM sound chip emulator interface
+// YM2608 FM sound chip emulator interface
 
 // Game_Music_Emu $vers
-#ifndef YM2610B_EMU_H
-#define YM2610B_EMU_H
+#ifndef YM2608_EMU_H
+#define YM2608_EMU_H
 
 #include "Ay_Apu.h"
 
-class Ym2610b_Emu  {
+class Ym2608_Emu  {
 	void* opn;
 	Ay_Apu psg;
 	Blip_Buffer buffer;
 	unsigned sample_rate;
 	unsigned psg_clock;
-	bool is_2610b;
 public:
-	Ym2610b_Emu();
-	~Ym2610b_Emu();
+	Ym2608_Emu();
+	~Ym2608_Emu();
 	
 	// Sets output chip clock rate, in Hz. Returns non-zero
 	// if error.
-	int set_rate( int sample_rate, int clock_rate, bool is_2610b );
+	int set_rate( int sample_rate, int clock_rate );
 	
 	// Resets to power-up state
 	void reset();
