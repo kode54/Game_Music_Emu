@@ -7,6 +7,9 @@
 #include "blargg_endian.h"
 #include <math.h>
 
+// Needed for OKIM6295 system detection
+#include "Vgm_Emu.h"
+
 /* Copyright (C) 2003-2008 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
 General Public License as published by the Free Software Foundation; either
@@ -1129,7 +1132,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		double pcm_rate = segapcm_rate / 128.0;
 		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( segapcm.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( segapcm.setup( pcm_rate / vgm_rate, 0.85, 1.5 ) );
 		segapcm.enable();
 	}
 	if ( rf5c68_rate )
@@ -1137,7 +1140,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		double pcm_rate = rf5c68_rate / 384.0;
 		int result = rf5c68.set_rate();
 		CHECK_ALLOC( !result );
-		RETURN_ERR( rf5c68.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( rf5c68.setup( pcm_rate / vgm_rate, 0.85, 0.6875 ) );
 		rf5c68.enable();
 	}
 	if ( rf5c164_rate )
@@ -1145,7 +1148,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		double pcm_rate = rf5c164_rate / 384.0;
 		int result = rf5c164.set_rate( rf5c164_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( rf5c164.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( rf5c164.setup( pcm_rate / vgm_rate, 0.85, 0.5 ) );
 		rf5c164.enable();
 	}
 	if ( pwm_rate )
@@ -1153,7 +1156,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		double pcm_rate = 22020.0;
 		int result = pwm.set_rate( pwm_rate );
 		CHECK_ALLOC( !result );
-		RETURN_ERR( pwm.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( pwm.setup( pcm_rate / vgm_rate, 0.85, 0.875 ) );
 		pwm.enable();
 	}
 	if ( okim6258_rate )
@@ -1165,16 +1168,27 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	}
 	if ( okim6295_rate )
 	{
+		// moo
+		Mem_File_Reader rdr( file_begin(), file_size() );
+		Music_Emu * vgm = gme_vgm_type->new_info();
+		track_info_t info;
+		vgm->load( rdr );
+		vgm->track_info( &info, 0 );
+		delete vgm;
+
+		bool is_cp_system = strncmp( info.system, "CP", 2 ) == 0;
 		bool dual_chip = !!( header().okim6295_rate[3] & 0x40 );
+		double gain = is_cp_system ? 0.4296875 : 1.0;
+		if ( dual_chip ) gain *= 0.5;
 		int result = okim6295[0].set_rate( okim6295_rate );
 		CHECK_ALLOC( result );
-		RETURN_ERR( okim6295[0].setup( (double)result / vgm_rate, 0.85, 0.4296875 ) );
+		RETURN_ERR( okim6295[0].setup( (double)result / vgm_rate, 0.85, gain ) );
 		okim6295[0].enable();
 		if ( dual_chip )
 		{
 			result = okim6295[1].set_rate( okim6295_rate );
 			CHECK_ALLOC( result );
-			RETURN_ERR( okim6295[1].setup( (double)result / vgm_rate, 0.85, 0.4296875 ) );
+			RETURN_ERR( okim6295[1].setup( (double)result / vgm_rate, 0.85, gain ) );
 			okim6295[1].enable();
 		}
 	}
@@ -1214,7 +1228,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	{
 		int result = ymz280b.set_rate( ymz280b_rate );
 		CHECK_ALLOC( result );
-		RETURN_ERR( ymz280b.setup( (double)result / vgm_rate, 0.85, 1.0 ) );
+		RETURN_ERR( ymz280b.setup( (double)result / vgm_rate, 0.85, 0.59375 ) );
 		ymz280b.enable();
 	}
 
