@@ -185,9 +185,9 @@ int Vgm_Core::run_okim6258( int time )
 	return okim6258.run_until( time );
 }
 
-int Vgm_Core::run_okim6295( int time )
+int Vgm_Core::run_okim6295( int chip, int time )
 {
-	return okim6295.run_until( time );
+	return okim6295[!!chip].run_until( time );
 }
 
 int Vgm_Core::run_k051649( int time )
@@ -706,8 +706,8 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 		break;
 
 	case 0x18:
-		if ( run_okim6295( to_fm_time( Sample ) ) )
-			okim6295.write( Offset, Data );
+		if ( run_okim6295( ChipID, to_fm_time( Sample ) ) )
+			okim6295[ChipID].write( Offset, Data );
 		break;
 
 	case 0x19:
@@ -870,7 +870,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	rf5c164.enable( false );
 	pwm.enable( false );
 	okim6258.enable( false );
-	okim6295.enable( false );
+	okim6295[0].enable( false );
+	okim6295[1].enable( false );
 	k051649.enable( false );
 	k053260.enable( false );
 	k054539.enable( false );
@@ -1122,10 +1123,18 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	}
 	if ( okim6295_rate )
 	{
-		int result = okim6295.set_rate( okim6295_rate );
+		bool dual_chip = !!( header().okim6295_rate[3] & 0x40 );
+		int result = okim6295[0].set_rate( okim6295_rate );
 		CHECK_ALLOC( result );
-		RETURN_ERR( okim6295.setup( (double)result / vgm_rate, 0.85, 0.4296875 ) );
-		okim6295.enable();
+		RETURN_ERR( okim6295[0].setup( (double)result / vgm_rate, 0.85, 0.4296875 ) );
+		okim6295[0].enable();
+		if ( dual_chip )
+		{
+			result = okim6295[1].set_rate( okim6295_rate );
+			CHECK_ALLOC( result );
+			RETURN_ERR( okim6295[1].setup( (double)result / vgm_rate, 0.85, 0.4296875 ) );
+			okim6295[1].enable();
+		}
 	}
 	if ( c140_rate )
 	{
@@ -1209,8 +1218,11 @@ void Vgm_Core::start_track()
 		if ( okim6258.enabled() )
 			okim6258.reset();
 
-		if ( okim6295.enabled() )
-			okim6295.reset();
+		if ( okim6295[0].enabled() )
+			okim6295[0].reset();
+
+		if ( okim6295[1].enabled() )
+			okim6295[1].reset();
 
 		if ( k051649.enabled() )
 			k051649.reset();
@@ -1322,6 +1334,7 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 {
 	vgm_time_t vgm_time = this->vgm_time; 
 	vgm_time_t vgm_loop_time = ~0;
+	int ChipID;
 	byte const* pos = this->pos;
 	if ( pos > file_end() )
 		set_warning( "Stream lacked end event" );
@@ -1526,7 +1539,8 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			break;
 
 		case cmd_okim6295_write:
-			chip_reg_write( vgm_time, 0x18, 0x00, 0x00, pos [0] & 0x7F, pos [1] );
+			ChipID = (pos [0] & 0x80) ? 1 : 0;
+			chip_reg_write( vgm_time, 0x18, ChipID, 0x00, pos [0] & 0x7F, pos [1] );
 			pos += 2;
 			break;
 
@@ -1684,8 +1698,8 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 						break;
 
 					case rom_okim6295:
-						if ( okim6295.enabled() )
-							okim6295.write_rom( rom_size, data_start, data_size, rom_data );
+						if ( okim6295[chipid].enabled() )
+							okim6295[chipid].write_rom( rom_size, data_start, data_size, rom_data );
 						break;
 
 					case rom_k054539:
@@ -1811,7 +1825,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
 	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
-		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
+		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() ||
 		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() )
 	{
@@ -1899,9 +1913,13 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		okim6258.begin_frame( out );
 	}
-	if ( okim6295.enabled() )
+	if ( okim6295[0].enabled() )
 	{
-		okim6295.begin_frame( out );
+		okim6295[0].begin_frame( out );
+		if ( okim6295[1].enabled() )
+		{
+			okim6295[1].begin_frame( out );
+		}
 	}
 	if ( k051649.enabled() )
 	{
@@ -1938,7 +1956,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_rf5c164( pairs );
 	run_pwm( pairs );
 	run_okim6258( pairs );
-	run_okim6295( pairs );
+	run_okim6295( 0, pairs ); run_okim6295( 1, pairs );
 	run_k051649( pairs );
 	run_k053260( pairs );
 	run_k054539( pairs );

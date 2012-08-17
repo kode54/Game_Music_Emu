@@ -146,7 +146,7 @@ public:
 	// True if any FM chips are used by file. Always false until init_fm()
 	// is called.
 	bool uses_fm() const                { return ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() ||
-		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295.enabled() ||
+		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() || ymf262[0].enabled() ||
 		ymz280b.enabled() || ym2610[0].enabled(); }
 	
@@ -195,7 +195,7 @@ public:
 	Chip_Resampler_Emu<Rf5C164_Emu> rf5c164;
 	Chip_Resampler_Emu<Pwm_Emu> pwm;
 	Chip_Resampler_Emu<Okim6258_Emu> okim6258;
-	Chip_Resampler_Emu<Okim6295_Emu> okim6295;
+	Chip_Resampler_Emu<Okim6295_Emu> okim6295[2];
 	Chip_Resampler_Emu<K051649_Emu> k051649;
 	Chip_Resampler_Emu<K053260_Emu> k053260;
 	Chip_Resampler_Emu<K054539_Emu> k054539;
@@ -331,7 +331,7 @@ private:
 	int run_rf5c164( int time );
 	int run_pwm( int time );
 	int run_okim6258( int time );
-	int run_okim6295( int time );
+	int run_okim6295( int chip, int time );
 	int run_k051649( int time );
 	int run_k053260( int time );
 	int run_k054539( int time );
