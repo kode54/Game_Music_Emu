@@ -1059,7 +1059,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( ym2608_rate )
 	{
 		bool dual_chip = !!(header().ym2610_rate[3] & 0x40);
-		double gain = dual_chip ? 0.5 : 1.0;
+		double gain = dual_chip ? 1.0 : 2.0;
 		double fm_rate = ym2608_rate / 72.0;
 		int result = ym2608[0].set_rate( fm_rate, ym2608_rate );
 		CHECK_ALLOC( !result );
