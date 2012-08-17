@@ -179,6 +179,8 @@ struct Vgm_File : Gme_Info_
 
 		if ( h.size() > h.size_min )
 			RETURN_ERR( in.read( &h.rf5c68_rate, h.size() - h.size_min ) );
+
+		h.cleanup();
 		
 		int gd3_offset = get_le32( h.gd3_offset );
 		int remain = file_size - gd3_offset - offsetof( Vgm_Core::header_t, gd3_offset );
