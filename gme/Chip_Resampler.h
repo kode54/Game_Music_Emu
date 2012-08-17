@@ -33,7 +33,7 @@ class Chip_Resampler_Emu : public Emu {
 		sample_t * inptr = sample_buf.begin();
 		for ( unsigned i = 0; i < count * 2; i++ )
 		{
-			int sample = (inptr[i] * gain_) >> gain_bits;
+			int sample = inptr[i];
 			sample += buf[i];
 			if ((short)sample != sample) sample = 0x7FFF ^ (sample >> 31);
 			buf[i] = sample;
@@ -117,6 +117,11 @@ public:
 			int sample_count = oversamples_per_frame - resampler.written() + resampler_extra;
 			memset( resampler.buffer(), 0, sample_count * sizeof(*resampler.buffer()) );
 			Emu::run( sample_count >> 1, resampler.buffer() );
+			for ( unsigned i = 0; i < sample_count; i++ )
+			{
+				sample_t * ptr = resampler.buffer() + i;
+				*ptr = ( *ptr * gain_ ) >> gain_bits;
+			}
 			short* p = out;
 			resampler.write( sample_count );
 			sample_count = resampler.read( sample_buf.begin(), count * 2 > sample_buf_size ? sample_buf_size : count * 2 ) >> 1;
