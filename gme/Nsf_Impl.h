@@ -90,6 +90,8 @@ public:
 	
 	// Time emulated to
 	time_t time() const             { return cpu.time(); }
+
+	void enable_w4011_(bool enable = true) { enable_w4011 = enable; }
 	
 protected:
 // Nsf_Core use
@@ -164,6 +166,7 @@ private:
 	time_t play_period;
 	int play_extra;
 	int play_delay;
+	bool enable_w4011;
 	Nes_Cpu::registers_t saved_state; // of interrupted init routine
 	
 	// Large objects after others
