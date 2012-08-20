@@ -26,6 +26,7 @@ Vgm_Emu::Vgm_Emu()
 {
 	resampler.set_callback( play_frame_, this );
 	disable_oversampling_ = false;
+	muted_voices = 0;
 	set_type( gme_vgm_type );
 	set_max_initial_silence( 1 );
 	set_silence_lookahead( 1 ); // tracks should already be trimmed
@@ -248,6 +249,8 @@ void Vgm_Emu::set_voice( int i, Blip_Buffer* c, Blip_Buffer* l, Blip_Buffer* r )
 
 void Vgm_Emu::mute_voices_( int mask )
 {
+	muted_voices = mask;
+
 	Classic_Emu::mute_voices_( mask );
 	
 	// TODO: what was this for?
@@ -355,6 +358,8 @@ blargg_err_t Vgm_Emu::start_track_( int track )
 	RETURN_ERR( Classic_Emu::start_track_( track ) );
 	
 	core.start_track();
+
+	mute_voices_(muted_voices);
 	
 	if ( core.uses_fm() )
 		resampler.clear();

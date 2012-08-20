@@ -54,6 +54,7 @@ protected:
 	
 private:
 	bool disable_oversampling_;
+	unsigned muted_voices;
 	Dual_Resampler resampler;
 	Vgm_Core core;
 	
