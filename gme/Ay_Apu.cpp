@@ -107,6 +107,7 @@ void Ay_Apu::reset()
 	last_time   = 0;
 	noise_delay = 0;
 	noise_lfsr  = 1;
+	period_factor = ((type_ & 0xF0) == 0x10) ? ::period_factor / 2 : ::period_factor;
 	
 	for ( osc_t* osc = &oscs [osc_count]; osc != oscs; )
 	{

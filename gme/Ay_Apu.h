@@ -84,6 +84,7 @@ private:
 	} oscs [osc_count];
 
 	Ay_Apu_Type type_;
+	int         period_factor;
 	
 	blip_time_t last_time;
 	byte        addr_;
