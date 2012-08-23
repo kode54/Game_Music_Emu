@@ -36,7 +36,7 @@ static const ssg_callbacks psgintf =
 	psg_reset
 };
 
-Ym2203_Emu::Ym2203_Emu() { opn = 0; }
+Ym2203_Emu::Ym2203_Emu() { opn = 0; psg.set_type( Ay_Apu::Ym2203 ); }
 
 Ym2203_Emu::~Ym2203_Emu()
 {
@@ -69,6 +69,7 @@ int Ym2203_Emu::set_rate( int sample_rate, int clock_rate )
 
 void Ym2203_Emu::reset()
 {
+	psg.reset();
 	ym2203_reset_chip( opn );
 	mute_voices( 0 );
 }

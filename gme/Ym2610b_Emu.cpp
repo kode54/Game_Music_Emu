@@ -50,6 +50,8 @@ int Ym2610b_Emu::set_rate( int sample_rate, int clock_rate, bool is_2610b )
 		ym2610_shutdown( opn );
 		opn = 0;
 	}
+
+	psg.set_type( is_2610b ? Ay_Apu::Ym2610b : Ay_Apu::Ym2610 );
 	
 	opn = ym2610_init( this, clock_rate, sample_rate, &psgintf );
 	if ( !opn )
@@ -70,6 +72,7 @@ int Ym2610b_Emu::set_rate( int sample_rate, int clock_rate, bool is_2610b )
 
 void Ym2610b_Emu::reset()
 {
+	psg.reset();
 	ym2610_reset_chip( opn );
 	mute_voices( 0 );
 }

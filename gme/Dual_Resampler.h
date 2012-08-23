@@ -24,7 +24,7 @@ public:
 	void resize( int pairs_per_frame );
 	void clear();
 	
-	void dual_play( int count, dsample_t out [], Stereo_Buffer& );
+	void dual_play( int count, dsample_t out [], Stereo_Buffer&, Stereo_Buffer* second = NULL );
 	
 	blargg_callback<int (*)( void*, blip_time_t, int, dsample_t* )> set_callback;
 
@@ -44,10 +44,12 @@ private:
 	int gain_;
 	
 	Dual_Resampler_Downsampler resampler;
-	void mix_samples( Stereo_Buffer&, dsample_t [], int);
-	void mix_mono( Stereo_Buffer&, dsample_t [], int);
-	void mix_stereo( Stereo_Buffer&, dsample_t [], int);
-	int play_frame_( Stereo_Buffer&, dsample_t []);
+	void mix_samples( Stereo_Buffer&, dsample_t [], int, Stereo_Buffer* );
+	void mix_mono( Stereo_Buffer&, dsample_t [], int );
+	void mix_stereo( Stereo_Buffer&, dsample_t [], int );
+	void mix_extra_mono( Stereo_Buffer&, dsample_t [], int );
+	void mix_extra_stereo( Stereo_Buffer&, dsample_t [], int );
+	int play_frame_( Stereo_Buffer&, dsample_t [], Stereo_Buffer* );
 };
 
 inline blargg_err_t Dual_Resampler::setup( double oversample, double rolloff, double gain )

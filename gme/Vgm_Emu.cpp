@@ -226,7 +226,8 @@ void Vgm_Emu::set_tempo_( double t )
 
 blargg_err_t Vgm_Emu::set_sample_rate_( int sample_rate )
 {
-	RETURN_ERR( core.stereo_buf.set_sample_rate( sample_rate, 1000 / 30 ) );
+	RETURN_ERR( core.stereo_buf[0].set_sample_rate( sample_rate, 1000 / 30 ) );
+	RETURN_ERR( core.stereo_buf[1].set_sample_rate( sample_rate, 1000 / 30 ) );
 	core.set_sample_rate( sample_rate );
 	return Classic_Emu::set_sample_rate_( sample_rate );
 }
@@ -235,6 +236,8 @@ void Vgm_Emu::update_eq( blip_eq_t const& eq )
 {
 	core.psg[0].treble_eq( eq );
 	core.psg[1].treble_eq( eq );
+	core.ay[0].treble_eq( eq );
+	core.ay[1].treble_eq( eq );
 	core.pcm.treble_eq( eq );
 }
 
@@ -259,8 +262,10 @@ void Vgm_Emu::mute_voices_( int mask )
 	// TODO: silence PCM if FM isn't used?
 	if ( core.uses_fm() )
 	{
-		core.psg[0].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
-		core.psg[1].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf.center() );
+		core.psg[0].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[0].center() );
+		core.psg[1].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[0].center() );
+		core.ay[0].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[1].center() );
+		core.ay[1].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[1].center() );
 		if ( core.ym2612[0].enabled() )
 		{
 			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * fm_gain * gain() );
@@ -326,9 +331,11 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 	{
 		set_voice_count( 8 );
 		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, gain() ) );
-		RETURN_ERR( resampler.reset( core.stereo_buf.length() * sample_rate() / 1000 ) );
+		RETURN_ERR( resampler.reset( core.stereo_buf[0].length() * sample_rate() / 1000 ) );
 		core.psg[0].volume( 0.135 * fm_gain * gain() );
 		core.psg[1].volume( 0.135 * fm_gain * gain() );
+		core.ay[0].volume( 0.135 * fm_gain * gain() );
+		core.ay[1].volume( 0.135 * fm_gain * gain() );
 	}
 	else
 	{
@@ -348,7 +355,7 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 	};
 	set_voice_types( types );
 	
-	return Classic_Emu::setup_buffer( core.stereo_buf.center()->clock_rate() );
+	return Classic_Emu::setup_buffer( core.stereo_buf[0].center()->clock_rate() );
 }
 
 // Emulation
@@ -406,6 +413,6 @@ blargg_err_t Vgm_Emu::play_( int count, sample_t out [] )
 	if ( !core.uses_fm() )
 		return Classic_Emu::play_( count, out );
 		
-	resampler.dual_play( count, out, core.stereo_buf );
+	resampler.dual_play( count, out, core.stereo_buf[0], &core.stereo_buf[1] );
 	return blargg_ok;
 }

@@ -72,6 +72,7 @@ enum {
 	cmd_dacctl_play     = 0x93,
 	cmd_dacctl_stop     = 0x94,
 	cmd_dacctl_playblock= 0x95,
+	cmd_ay8910          = 0xA0,
 	cmd_rf5c68          = 0xB0,
 	cmd_rf5c164         = 0xB1,
 	cmd_pwm             = 0xB2,
@@ -230,7 +231,7 @@ int Vgm_Core::run_dac_control( int time )
 
 Vgm_Core::Vgm_Core()
 {
-	blip_buf[0] = stereo_buf.center();
+	blip_buf[0] = stereo_buf[0].center();
 	blip_buf[1] = blip_buf[0];
 	has_looped = false;
 	DacCtrlUsed = 0;
@@ -639,9 +640,9 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 					switch ( Data >> 6 )
 					{
 					case 0: blip_buf = NULL; break;
-					case 1: blip_buf = stereo_buf.right(); break;
-					case 2: blip_buf = stereo_buf.left(); break;
-					case 3: blip_buf = stereo_buf.center(); break;
+					case 1: blip_buf = stereo_buf[0].right(); break;
+					case 2: blip_buf = stereo_buf[0].left(); break;
+					case 3: blip_buf = stereo_buf[0].center(); break;
 					}
 					/*if ( this->blip_buf != blip_buf )
 					{
@@ -724,6 +725,11 @@ void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, 
 			ymz280b.write( Offset, Data );
 		break;
 
+	case 0x12:
+		ay[ChipID].write_addr( Offset );
+		ay[ChipID].write_data( to_ay_time( Sample ), Data );
+		break;
+
 	case 0x17:
 		if ( run_okim6258( to_fm_time( Sample ) ) )
 			okim6258.write( Offset, Data );
@@ -757,7 +763,9 @@ void Vgm_Core::set_tempo( double t )
 	{
 		vgm_rate = (int) (44100 * t + 0.5);
 		blip_time_factor = (int) ((double)
-				(1 << blip_time_bits) / vgm_rate * stereo_buf.center()->clock_rate() + 0.5);
+				(1 << blip_time_bits) / vgm_rate * stereo_buf[0].center()->clock_rate() + 0.5);
+		blip_ay_time_factor = (int) ((double)
+			(1 << blip_time_bits) / vgm_rate * stereo_buf[1].center()->clock_rate() + 0.5);
 		//dprintf( "blip_time_factor: %ld\n", blip_time_factor );
 		//dprintf( "vgm_rate: %ld\n", vgm_rate );
 		// TODO: remove? calculates vgm_rate more accurately (above differs at most by one Hz only)
@@ -869,7 +877,14 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	int psg_rate = get_le32( h.psg_rate ) & 0xBFFFFFFF;
 	if ( !psg_rate )
 		psg_rate = 3579545;
-	stereo_buf.clock_rate( psg_rate );
+	stereo_buf[0].clock_rate( psg_rate );
+
+	int ay_rate = get_le32( h.ay8910_rate ) & 0xBFFFFFFF;
+	if ( !ay_rate )
+		ay_rate = 2000000;
+	stereo_buf[1].clock_rate( ay_rate );
+	ay[0].set_type( (Ay_Apu::Ay_Apu_Type) header().ay8910_type );
+	ay[1].set_type( (Ay_Apu::Ay_Apu_Type) header().ay8910_type );
 	
 	// Disable FM
 	fm_rate = 0;
@@ -1241,8 +1256,10 @@ void Vgm_Core::start_track()
 {
 	psg[0].reset( get_le16( header().noise_feedback ), header().noise_width );
 	psg[1].reset( get_le16( header().noise_feedback ), header().noise_width );
+	ay[0].reset();
+	ay[1].reset();
 	
-	blip_buf[0] = stereo_buf.center();
+	blip_buf[0] = stereo_buf[0].center();
 	blip_buf[1] = blip_buf[0];
 
 	dac_disabled[0] = -1;
@@ -1343,7 +1360,8 @@ void Vgm_Core::start_track()
 		if ( ymz280b.enabled() )
 			ymz280b.reset();
 		
-		stereo_buf.clear();
+		stereo_buf[0].clear();
+		stereo_buf[1].clear();
 	}
 
 	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
@@ -1362,6 +1380,7 @@ void Vgm_Core::start_track()
 	PCMTbl.EntryCount = 0;
 
 	fm_time_offset = 0;
+	ay_time_offset = 0;
 }
 
 inline Vgm_Core::fm_time_t Vgm_Core::to_fm_time( vgm_time_t t ) const
@@ -1372,6 +1391,11 @@ inline Vgm_Core::fm_time_t Vgm_Core::to_fm_time( vgm_time_t t ) const
 inline blip_time_t Vgm_Core::to_psg_time( vgm_time_t t ) const
 {
 	return (t * blip_time_factor) >> blip_time_bits;
+}
+
+inline blip_time_t Vgm_Core::to_ay_time( vgm_time_t t ) const
+{
+	return (t * blip_ay_time_factor) >> blip_time_bits;
 }
 
 void Vgm_Core::write_pcm( vgm_time_t vgm_time, int chip, int amp )
@@ -1436,6 +1460,12 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 
 		case cmd_psg_2:
 			psg[1].write_data( to_psg_time( vgm_time ), *pos++ );
+			break;
+
+		case cmd_ay8910:
+			ChipID = !!(pos [0] & 0x80);
+			chip_reg_write( vgm_time, 0x12, ChipID, 0x00, pos [0] & 0x7F, pos [1] );
+			pos += 2;
 			break;
 		
 		case cmd_delay:
@@ -1916,7 +1946,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
 		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() ||
-		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() )
+		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() || (get_le32(header().ay8910_rate)) )
 	{
 		memset( out, 0, pairs * stereo * sizeof *out );
 	}
@@ -2064,6 +2094,12 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	
 	psg[0].end_frame( blip_time );
 	psg[1].end_frame( blip_time );
+
+	ay_time_offset = (vgm_time * blip_ay_time_factor + ay_time_offset) - (pairs << blip_time_bits);
+
+	blip_time_t ay_end_time = to_ay_time( vgm_time );
+	ay[0].end_frame( ay_end_time );
+	ay[1].end_frame( ay_end_time );
 
 	memset( DacCtrlTime, 0, sizeof(DacCtrlTime) );
 	

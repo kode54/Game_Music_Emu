@@ -36,7 +36,7 @@ static const ssg_callbacks psgintf =
 	psg_reset
 };
 
-Ym2608_Emu::Ym2608_Emu() { opn = 0; }
+Ym2608_Emu::Ym2608_Emu() { opn = 0; psg.set_type( Ay_Apu::Ym2608 ); }
 
 Ym2608_Emu::~Ym2608_Emu()
 {
@@ -69,6 +69,7 @@ int Ym2608_Emu::set_rate( int sample_rate, int clock_rate )
 
 void Ym2608_Emu::reset()
 {
+	psg.reset();
 	ym2608_reset_chip( opn );
 	mute_voices( 0 );
 }
