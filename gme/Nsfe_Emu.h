@@ -20,7 +20,9 @@ public:
 		char copyright [256];
 		char dumper    [256];
 	} info;
-	
+
+	blargg_vector<unsigned char> data;
+
 	void disable_playlist( bool = true );
 	
 	blargg_err_t track_info_( track_info_t* out, int track ) const;

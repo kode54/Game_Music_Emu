@@ -37,6 +37,8 @@ public:
 		byte const* tracks;
 		byte const* end;    // end of file data
 	};
+
+	blargg_err_t hash_( Hash_Function& out ) const;
 	
 protected:
 	virtual blargg_err_t track_info_( track_info_t*, int track ) const;

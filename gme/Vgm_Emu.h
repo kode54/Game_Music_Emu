@@ -29,6 +29,8 @@ public:
 	// Header for currently loaded file
 	header_t const& header() const                      { return core.header(); }
 
+	blargg_err_t hash_( Hash_Function& ) const;
+
 	// Gd3 tag for currently loaded file
 	blargg_err_t gd3_data( const unsigned char ** data, int * size );
 	

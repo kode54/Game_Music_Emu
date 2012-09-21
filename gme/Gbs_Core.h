@@ -40,6 +40,9 @@ public:
 	
 	// Sound chip
 	Gb_Apu& apu()                       { return apu_; }
+
+	// ROM data
+	Rom_Data const& rom_() const         { return rom; }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	void set_tempo( double );

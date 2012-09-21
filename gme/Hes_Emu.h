@@ -18,6 +18,8 @@ public:
 	// Header for currently loaded file
 	header_t const& header() const { return core.header(); }
 
+	blargg_err_t hash_( Hash_Function& ) const;
+
 // Implementation
 public:
 	Hes_Emu();

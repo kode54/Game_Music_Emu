@@ -45,6 +45,8 @@ public:
 	
 	// Header for currently loaded file
 	header_t const& header() const                  { return header_; }
+
+	Rom_Data const& rom_() const                    { return rom; }
 	
 	int clock_rate() const                          { return header_.rate ? 3546893 : 3579545; }
 	

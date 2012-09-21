@@ -26,6 +26,8 @@ public:
 	// Info for currently loaded file
 	info_t const& info() const { return info_; }
 
+	blargg_err_t hash_( Hash_Function& ) const;
+
 	static gme_type_t static_type() { return gme_sap_type; }
 
 // Implementation

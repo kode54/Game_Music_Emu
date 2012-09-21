@@ -92,6 +92,8 @@ public:
 	time_t time() const             { return cpu.time(); }
 
 	void enable_w4011_(bool enable = true) { enable_w4011 = enable; }
+
+	Rom_Data const& rom_() const { return rom; }
 	
 protected:
 // Nsf_Core use

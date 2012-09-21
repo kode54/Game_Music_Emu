@@ -36,6 +36,8 @@ public:
 	static gme_type_t static_type() { return gme_gbs_type; }
 
 	Gbs_Core& core() { return core_; }
+
+	blargg_err_t hash_( Hash_Function& ) const;
 	
 // Internal
 public:

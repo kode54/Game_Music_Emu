@@ -7,6 +7,8 @@
 #include "Classic_Emu.h"
 #include "Nsf_Core.h"
 
+void hash_nsf_file( Nsf_Core::header_t const& h, unsigned char const* data, int data_size, Music_Emu::Hash_Function& out );
+
 class Nsf_Emu : public Classic_Emu {
 public:
 	// Equalizer profiles for US NES and Japanese Famicom
@@ -18,6 +20,8 @@ public:
 	
 	// Header for currently loaded file
 	header_t const& header() const { return core_.header(); }
+
+	blargg_err_t hash_( Hash_Function& ) const;
 	
 	static gme_type_t static_type() { return gme_nsf_type; }
 	

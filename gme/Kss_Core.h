@@ -40,6 +40,9 @@ public:
 	
 	// Header for currently loaded file
 	header_t const& header() const { return header_; }
+
+	// ROM data
+	Rom_Data const& rom_() const { return rom; }
 	
 	typedef int time_t;
 	void set_play_period( time_t p )        { play_period = p; }

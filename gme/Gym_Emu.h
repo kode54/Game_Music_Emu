@@ -37,6 +37,8 @@ public:
 	// Disables running FM chips at higher than normal rate. Will result in slightly
 	// more aliasing of high notes.
 	void disable_oversampling( bool disable = true ) { disable_oversampling_ = disable; }
+
+	blargg_err_t hash_( Hash_Function& ) const;
 	
 // Implementation
 public:

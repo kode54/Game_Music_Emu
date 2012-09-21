@@ -161,9 +161,69 @@ blargg_err_t Vgm_Emu::gd3_data( const unsigned char ** data, int * size )
 	return blargg_ok;
 }
 
+static void hash_vgm_file( Vgm_Emu::header_t const& h, byte const* data, int data_size, Music_Emu::Hash_Function& out )
+{
+	out.hash_( &h.data_size[0], sizeof(h.data_size) );
+	out.hash_( &h.version[0], sizeof(h.version) );
+	out.hash_( &h.psg_rate[0], sizeof(h.psg_rate) );
+	out.hash_( &h.ym2413_rate[0], sizeof(h.ym2413_rate) );
+	out.hash_( &h.track_duration[0], sizeof(h.track_duration) );
+	out.hash_( &h.loop_offset[0], sizeof(h.loop_offset) );
+	out.hash_( &h.loop_duration[0], sizeof(h.loop_duration) );
+	out.hash_( &h.frame_rate[0], sizeof(h.frame_rate) );
+	out.hash_( &h.noise_feedback[0], sizeof(h.noise_feedback) );
+	out.hash_( &h.noise_width, sizeof(h.noise_width) );
+	out.hash_( &h.sn76489_flags, sizeof(h.sn76489_flags) );
+	out.hash_( &h.ym2612_rate[0], sizeof(h.ym2612_rate) );
+	out.hash_( &h.ym2151_rate[0], sizeof(h.ym2151_rate) );
+	out.hash_( &h.data_offset[0], sizeof(h.data_offset) );
+	out.hash_( &h.segapcm_rate[0], sizeof(h.segapcm_rate) );
+	out.hash_( &h.segapcm_reg[0], sizeof(h.segapcm_reg) );
+	out.hash_( &h.rf5c68_rate[0], sizeof(h.rf5c68_rate) );
+	out.hash_( &h.ym2203_rate[0], sizeof(h.ym2203_rate) );
+	out.hash_( &h.ym2608_rate[0], sizeof(h.ym2608_rate) );
+	out.hash_( &h.ym2610_rate[0], sizeof(h.ym2610_rate) );
+	out.hash_( &h.ym3812_rate[0], sizeof(h.ym3812_rate) );
+	out.hash_( &h.ym3526_rate[0], sizeof(h.ym3526_rate) );
+	out.hash_( &h.y8950_rate[0], sizeof(h.y8950_rate) );
+	out.hash_( &h.ymf262_rate[0], sizeof(h.ymf262_rate) );
+	out.hash_( &h.ymf278b_rate[0], sizeof(h.ymf278b_rate) );
+	out.hash_( &h.ymf271_rate[0], sizeof(h.ymf271_rate) );
+	out.hash_( &h.ymz280b_rate[0], sizeof(h.ymz280b_rate) );
+	out.hash_( &h.rf5c164_rate[0], sizeof(h.rf5c164_rate) );
+	out.hash_( &h.pwm_rate[0], sizeof(h.pwm_rate) );
+	out.hash_( &h.ay8910_rate[0], sizeof(h.ay8910_rate) );
+	out.hash_( &h.ay8910_type, sizeof(h.ay8910_type) );
+	out.hash_( &h.ay8910_flags, sizeof(h.ay8910_flags) );
+	out.hash_( &h.ym2203_ay8910_flags, sizeof(h.ym2203_ay8910_flags) );
+	out.hash_( &h.ym2608_ay8910_flags, sizeof(h.ym2608_ay8910_flags) );
+	out.hash_( &h.reserved, sizeof(h.reserved) );
+	out.hash_( &h.gbdmg_rate[0], sizeof(h.gbdmg_rate) );
+	out.hash_( &h.nesapu_rate[0], sizeof(h.nesapu_rate) );
+	out.hash_( &h.multipcm_rate[0], sizeof(h.multipcm_rate) );
+	out.hash_( &h.upd7759_rate[0], sizeof(h.upd7759_rate) );
+	out.hash_( &h.okim6258_rate[0], sizeof(h.okim6258_rate) );
+	out.hash_( &h.okim6258_flags, sizeof(h.okim6258_flags) );
+	out.hash_( &h.k054539_flags, sizeof(h.k054539_flags) );
+	out.hash_( &h.c140_type, sizeof(h.c140_type) );
+	out.hash_( &h.reserved_flags, sizeof(h.reserved_flags) );
+	out.hash_( &h.okim6295_rate[0], sizeof(h.okim6295_rate) );
+	out.hash_( &h.k051649_rate[0], sizeof(h.k051649_rate) );
+	out.hash_( &h.k054539_rate[0], sizeof(h.k054539_rate) );
+	out.hash_( &h.huc6280_rate[0], sizeof(h.huc6280_rate) );
+	out.hash_( &h.c140_rate[0], sizeof(h.c140_rate) );
+	out.hash_( &h.k053260_rate[0], sizeof(h.k053260_rate) );
+	out.hash_( &h.pokey_rate[0], sizeof(h.pokey_rate) );
+	out.hash_( &h.qsound_rate[0], sizeof(h.qsound_rate) );
+	out.hash_( &h.reserved2[0], sizeof(h.reserved2) );
+	out.hash_( &h.extra_offset[0], sizeof(h.extra_offset) );
+	out.hash_( data, data_size );
+}
+
 struct Vgm_File : Gme_Info_
 {
 	Vgm_Emu::header_t h;
+	blargg_vector<byte> data;
 	blargg_vector<byte> gd3;
 	
 	Vgm_File() { set_type( gme_vgm_type ); }
@@ -182,14 +242,30 @@ struct Vgm_File : Gme_Info_
 			RETURN_ERR( in.read( &h.rf5c68_rate, h.size() - h.size_min ) );
 
 		h.cleanup();
-		
+
+		int data_offset = get_le32( h.data_offset ) + offsetof( Vgm_Core::header_t, data_offset );
+		int data_size = file_size - offsetof( Vgm_Core::header_t, data_offset ) - data_offset;
 		int gd3_offset = get_le32( h.gd3_offset );
+		if ( gd3_offset > 0 )
+			gd3_offset += offsetof( Vgm_Core::header_t, gd3_offset );
+
+		int amount_to_skip = gd3_offset - h.size();
+
+		if ( gd3_offset > 0 && gd3_offset > data_offset )
+		{
+			data_size = gd3_offset - data_offset;
+			amount_to_skip = gd3_offset - data_offset - data_size;
+
+			RETURN_ERR( data.resize( data_size ) );
+			RETURN_ERR( in.skip( data_offset - h.size() ) );
+			RETURN_ERR( in.read( data.begin(), data_size ) );
+		}
+
 		int remain = file_size - gd3_offset - offsetof( Vgm_Core::header_t, gd3_offset );
 		byte gd3_h [gd3_header_size];
 		if ( gd3_offset > 0 && remain >= gd3_header_size )
 		{
-			gd3_offset += offsetof( Vgm_Core::header_t, gd3_offset ) - h.size();
-			RETURN_ERR( in.skip( gd3_offset ) );
+			RETURN_ERR( in.skip( amount_to_skip ) );
 			RETURN_ERR( in.read( gd3_h, sizeof gd3_h ) );
 			int gd3_size = check_gd3_header( gd3_h, remain );
 			if ( gd3_size )
@@ -197,7 +273,15 @@ struct Vgm_File : Gme_Info_
 				RETURN_ERR( gd3.resize( gd3_size ) );
 				RETURN_ERR( in.read( gd3.begin(), gd3.size() ) );
 			}
+
+			if ( data_offset > gd3_offset )
+			{
+				RETURN_ERR( data.resize( data_size ) );
+				RETURN_ERR( in.skip( data_offset - gd3_offset - sizeof gd3_h - gd3.size() ) );
+				RETURN_ERR( in.read( data.begin(), data.end() - data.begin() ) );
+			}
 		}
+
 		return blargg_ok;
 	}
 	
@@ -206,6 +290,12 @@ struct Vgm_File : Gme_Info_
 		get_vgm_length( h, out );
 		if ( gd3.size() )
 			parse_gd3( gd3.begin(), gd3.end(), out );
+		return blargg_ok;
+	}
+
+	blargg_err_t hash_( Hash_Function& out ) const
+	{
+		hash_vgm_file( h, data.begin(), data.end() - data.begin(), out );
 		return blargg_ok;
 	}
 };
@@ -414,5 +504,19 @@ blargg_err_t Vgm_Emu::play_( int count, sample_t out [] )
 		return Classic_Emu::play_( count, out );
 		
 	resampler.dual_play( count, out, core.stereo_buf[0], &core.stereo_buf[1] );
+	return blargg_ok;
+}
+
+blargg_err_t Vgm_Emu::hash_( Hash_Function& out ) const
+{
+	byte const* p = file_begin() + header().size();
+	byte const* e = file_end();
+	int data_offset = get_le32( header().data_offset );
+	if ( data_offset )
+		p += data_offset + offsetof( header_t, data_offset ) - header().size();
+	int gd3_offset = get_le32( header().gd3_offset );
+	if ( gd3_offset > 0 && gd3_offset + offsetof( header_t, gd3_offset ) > data_offset + offsetof( header_t, data_offset ) )
+		e = file_begin() + gd3_offset + offsetof( header_t, gd3_offset );
+	hash_vgm_file( header(), p, e - p, out );
 	return blargg_ok;
 }
