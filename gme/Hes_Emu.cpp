@@ -60,13 +60,14 @@ static byte const* copy_field( byte const in [], char* out )
 
 static byte const* copy_hes_fields( byte const in [], track_info_t* out )
 {
-	if ( *in >= ' ' )
+	byte const* in_offset = in;
+	if ( *in_offset >= ' ' )
 	{
-		in = copy_field( in, out->game      );
-		in = copy_field( in, out->author    );
-		in = copy_field( in, out->copyright );
+		in_offset = copy_field( in_offset, out->game      );
+		in_offset = copy_field( in_offset, out->author    );
+		in_offset = copy_field( in_offset, out->copyright );
 	}
-	return in;
+	return in_offset ? in_offset : in;
 }
 
 static void hash_hes_file( Hes_Emu::header_t const& h, byte const* data, int data_size, Music_Emu::Hash_Function& out )
