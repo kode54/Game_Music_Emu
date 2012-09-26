@@ -127,7 +127,7 @@ struct Kss_File : Gme_Info_
 		if ( header_->tag [3] == 'X' && header_->extra_header == 0x10 )
 			set_track_count( get_le16( header_->last_track ) + 1 );
 
-		return check_kss_header( &header_ );
+		return check_kss_header( header_ );
 	}
 
 	blargg_err_t track_info_( track_info_t* out, int ) const
