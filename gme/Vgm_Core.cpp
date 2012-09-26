@@ -874,7 +874,7 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 		loop_begin = &data [get_le32( h.loop_offset ) + offsetof (header_t,loop_offset)];
 	
 	// PSG rate
-	int psg_rate = get_le32( h.psg_rate ) & 0xBFFFFFFF;
+	int psg_rate = get_le32( h.psg_rate ) & 0x3FFFFFFF;
 	if ( !psg_rate )
 		psg_rate = 3579545;
 	stereo_buf[0].clock_rate( psg_rate );

@@ -416,21 +416,23 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 	if ( !disable_oversampling_ )
 		fm_rate = sample_rate() * oversample_factor;
 	RETURN_ERR( core.init_chips( &fm_rate ) );
+
+	double psg_gain = ( ( core.header().psg_rate[3] & 0xC0 ) == 0x40 ) ? 0.5 : 1.0;
 	
 	if ( core.uses_fm() )
 	{
 		set_voice_count( 8 );
 		RETURN_ERR( resampler.setup( fm_rate / sample_rate(), rolloff, gain() ) );
 		RETURN_ERR( resampler.reset( core.stereo_buf[0].length() * sample_rate() / 1000 ) );
-		core.psg[0].volume( 0.135 * fm_gain * gain() );
-		core.psg[1].volume( 0.135 * fm_gain * gain() );
+		core.psg[0].volume( 0.135 * fm_gain * psg_gain * gain() );
+		core.psg[1].volume( 0.135 * fm_gain * psg_gain * gain() );
 		core.ay[0].volume( 0.135 * fm_gain * gain() );
 		core.ay[1].volume( 0.135 * fm_gain * gain() );
 	}
 	else
 	{
-		core.psg[0].volume( gain() );
-		core.psg[1].volume( gain() );
+		core.psg[0].volume( psg_gain * gain() );
+		core.psg[1].volume( psg_gain * gain() );
 	}
 	
 	static const char* const fm_names [] = {
