@@ -223,25 +223,6 @@ public:
 
 	int run_dac_control( int time );
 
-	typedef struct chip_reg_write_data
-	{
-		unsigned Sample;
-		unsigned SerialNumber; // for finer grained sorting
-		byte ChipType;
-		byte ChipID;
-		byte Port;
-		byte Offset;
-		byte Data;
-	} REG_WRITE_DATA;
-
-	unsigned reg_data_count;
-	unsigned reg_data_serial;
-	REG_WRITE_DATA * reg_data;
-
-	static int chip_reg_compare( const void * a, const void * b );
-	void chip_reg_write_play();
-	void chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data);
-
 public:
 	void chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data);
 

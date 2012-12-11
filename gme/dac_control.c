@@ -162,7 +162,6 @@ void daccontrol_update(void *_chip, UINT32 base_clock, UINT32 samples)
 	chip->Step += samples;
 	// Formula: Step * Freq / SampleRate
 	NewPos = muldiv64round(chip->Step * chip->DataStep, chip->Frequency, chip->SampleRate);
-	daccontrol_SendCommand(chip, base_clock);
 	
 	while(chip->RemainCmds && chip->Pos < NewPos)
 	{

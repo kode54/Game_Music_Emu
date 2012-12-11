@@ -219,12 +219,17 @@ int Vgm_Core::run_k054539( int time )
 	return k054539.run_until( time );
 }
 
+/* Recursive fun starts here! */
 int Vgm_Core::run_dac_control( int time )
 {
 	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
 	{
-		daccontrol_update( dac_control [i], DacCtrlTime[DacCtrlMap[i]], time - DacCtrlTime[DacCtrlMap[i]] );
-		DacCtrlTime[DacCtrlMap[i]] = time;
+		int time_start = DacCtrlTime[DacCtrlMap[i]];
+		if ( time > time_start )
+		{
+			DacCtrlTime[DacCtrlMap[i]] = time;
+			daccontrol_update( dac_control [i], time_start, time - time_start );
+		}
 	}
 	return 1;
 }
@@ -236,9 +241,6 @@ Vgm_Core::Vgm_Core()
 	has_looped = false;
 	DacCtrlUsed = 0;
 	dac_control = NULL;
-	reg_data_count = 0;
-	reg_data_serial = 0;
-	reg_data = NULL;
 	memset( PCMBank, 0, sizeof( PCMBank ) );
 	memset( &PCMTbl, 0, sizeof( PCMTbl ) );
 	memset( DacCtrl, 0, sizeof( DacCtrl ) );
@@ -255,7 +257,6 @@ Vgm_Core::~Vgm_Core()
 		if ( PCMBank [i].Data ) free( PCMBank [i].Data );
 	}
 	if ( PCMTbl.Entries ) free( PCMTbl.Entries );
-	if ( reg_data ) free( reg_data );
 }
 
 typedef unsigned int FUINT8;
@@ -564,51 +565,9 @@ extern "C" void chip_reg_write(void * context, UINT32 Sample, UINT8 ChipType, UI
 	core->chip_reg_write(Sample, ChipType, ChipID, Port, Offset, Data);
 }
 
-int Vgm_Core::chip_reg_compare( const void * _a, const void * _b )
-{
-	REG_WRITE_DATA * a = (REG_WRITE_DATA *) _a;
-	REG_WRITE_DATA * b = (REG_WRITE_DATA *) _b;
-	if (a->Sample == b->Sample) return (int)a->SerialNumber - (int)b->SerialNumber;
-	else return (int)a->Sample - (int)b->Sample;
-}
-
-void Vgm_Core::chip_reg_write_play()
-{
-	qsort( reg_data, reg_data_count, sizeof(REG_WRITE_DATA), chip_reg_compare );
-
-	for ( unsigned i = 0; i < reg_data_count; i++ )
-	{
-		REG_WRITE_DATA * TempReg = &reg_data [i];
-		chip_reg_write_real( TempReg->Sample, TempReg->ChipType, TempReg->ChipID, TempReg->Port, TempReg->Offset, TempReg->Data );
-	}
-
-	if ( reg_data ) free( reg_data );
-
-	reg_data = NULL;
-	reg_data_count = 0;
-	reg_data_serial = 0;
-}
-
 void Vgm_Core::chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data)
 {
-	unsigned actual_reg_size = ( reg_data_count + 1023 ) & ~1023;
-	if ( reg_data_count + 1 > actual_reg_size )
-	{
-		reg_data = ( REG_WRITE_DATA * ) realloc( reg_data, ( actual_reg_size + 1024 ) * sizeof( *reg_data ) );
-	}
-
-	REG_WRITE_DATA * TempReg = &reg_data [reg_data_count++];
-	TempReg->Sample = Sample;
-	TempReg->SerialNumber = reg_data_serial++;
-	TempReg->ChipType = ChipType;
-	TempReg->ChipID = ChipID;
-	TempReg->Port = Port;
-	TempReg->Offset = Offset;
-	TempReg->Data = Data;
-}
-
-void Vgm_Core::chip_reg_write_real(unsigned Sample, byte ChipType, byte ChipID, byte Port, byte Offset, byte Data)
-{
+	run_dac_control( Sample ); /* Let's get recursive! */
 	ChipID = !!ChipID;
 	switch (ChipType)
 	{
@@ -2068,7 +2027,6 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run( vgm_time );
 
 	run_dac_control( vgm_time );
-	chip_reg_write_play();
 
 	run_ymf262( 0, pairs ); run_ymf262( 1, pairs );
 	run_ym3812( 0, pairs ); run_ym3812( 1, pairs );
