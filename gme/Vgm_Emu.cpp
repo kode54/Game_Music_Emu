@@ -254,14 +254,14 @@ struct Vgm_File : Gme_Info_
 		if ( gd3_offset > 0 && gd3_offset > data_offset )
 		{
 			data_size = gd3_offset - data_offset;
-			amount_to_skip = gd3_offset - data_offset - data_size;
+			amount_to_skip = 0;
 
 			RETURN_ERR( data.resize( data_size ) );
 			RETURN_ERR( in.skip( data_offset - h.size() ) );
 			RETURN_ERR( in.read( data.begin(), data_size ) );
 		}
 
-		int remain = file_size - gd3_offset - offsetof( Vgm_Core::header_t, gd3_offset );
+		int remain = file_size - gd3_offset;
 		byte gd3_h [gd3_header_size];
 		if ( gd3_offset > 0 && remain >= gd3_header_size )
 		{
