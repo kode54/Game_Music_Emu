@@ -158,8 +158,8 @@ void Ym2610b_Emu::psg_set_clock( int clock )
 
 void Ym2610b_Emu::psg_write( int addr, int data )
 {
-	psg.write_addr( addr );
-	psg.write_data( 0, data );
+    if ( !(addr & 1) ) psg.write_addr( data );
+    else psg.write_data( 0, data );
 }
 
 int Ym2610b_Emu::psg_read()

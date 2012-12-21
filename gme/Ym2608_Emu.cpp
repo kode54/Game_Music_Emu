@@ -112,7 +112,7 @@ void Ym2608_Emu::run( int pair_count, sample_t* out )
 	FMSAMPLE bufR[ 1024 ];
 	FMSAMPLE * buffers[2] = { bufL, bufR };
 
-	blip_time_t psg_end_time = pair_count * psg_clock / sample_rate;
+    blip_time_t psg_end_time = pair_count * psg_clock / sample_rate;
 	psg.end_frame( psg_end_time );
 	buffer.end_frame( psg_end_time );
 
@@ -146,14 +146,14 @@ void Ym2608_Emu::run( int pair_count, sample_t* out )
 
 void Ym2608_Emu::psg_set_clock( int clock )
 {
-	psg_clock = clock;
+    psg_clock = clock;
 	buffer.clock_rate( clock );
 }
 
 void Ym2608_Emu::psg_write( int addr, int data )
 {
-	psg.write_addr( addr );
-	psg.write_data( 0, data );
+    if ( !(addr & 1) ) psg.write_addr( data );
+    else psg.write_data( 0, data );
 }
 
 int Ym2608_Emu::psg_read()
