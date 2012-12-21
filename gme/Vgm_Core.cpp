@@ -1929,13 +1929,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 		vgm_time++;
 	//dprintf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
 	
-	if ( ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() || segapcm.enabled() ||
-		rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
-		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() ||
-		ymf262[0].enabled() || ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() || (get_le32(header().ay8910_rate)) )
-	{
-		memset( out, 0, pairs * stereo * sizeof *out );
-	}
+    memset( out, 0, pairs * stereo * sizeof *out );
 
 	if ( ymf262[0].enabled() )
 	{
