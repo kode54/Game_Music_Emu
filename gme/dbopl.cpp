@@ -1426,8 +1426,8 @@ void InitTables( void ) {
 		TremoloTable[TREMOLO_TABLE - 1 - i] = val;
 	}
 	//Create a table with offsets of the channels from the start of the chip
-	DBOPL::Chip* chip = 0;
-	for ( Bitu i = 0; i < 32; i++ ) {
+    DBOPL::Chip* chip = 0;
+    for ( Bitu i = 0; i < 32; i++ ) {
 		Bitu index = i & 0xf;
 		if ( index >= 9 ) {
 			ChanOffsetTable[i] = 0;
@@ -1440,7 +1440,7 @@ void InitTables( void ) {
 		//Add back the bits for highest ones
 		if ( i >= 16 )
 			index += 9;
-		Bitu blah = reinterpret_cast<Bitu>( &(chip->chan[ index ]) );
+        Bitu blah = static_cast<Bitu>( reinterpret_cast<unsigned long>( &(chip->chan[ index ]) ) );
 		ChanOffsetTable[i] = blah;
 	}
 	//Same for operators
@@ -1454,14 +1454,14 @@ void InitTables( void ) {
 		if ( chNum >= 12 )
 			chNum += 16 - 12;
 		Bitu opNum = ( i % 8 ) / 3;
-		DBOPL::Channel* chan = 0;
-		Bitu blah = reinterpret_cast<Bitu>( &(chan->op[opNum]) );
+        DBOPL::Channel* chan = 0;
+        Bitu blah = static_cast<Bitu>( reinterpret_cast<unsigned long> ( &(chan->op[opNum]) ) );
 		OpOffsetTable[i] = ChanOffsetTable[ chNum ] + blah;
 	}
 #if 0
 	//Stupid checks if table's are correct
 	for ( Bitu i = 0; i < 18; i++ ) {
-		Bit32u find = (Bit16u)( &(chip->chan[ i ]) );
+        Bit32u find = (Bit16u)( &(chip->chan[ i ]) );
 		for ( Bitu c = 0; c < 32; c++ ) {
 			if ( ChanOffsetTable[c] == find ) {
 				find = 0;
@@ -1473,7 +1473,7 @@ void InitTables( void ) {
 		}
 	}
 	for ( Bitu i = 0; i < 36; i++ ) {
-		Bit32u find = (Bit16u)( &(chip->chan[ i / 2 ].op[i % 2]) );
+        Bit32u find = (Bit16u)( &(chip->chan[ i / 2 ].op[i % 2]) );
 		for ( Bitu c = 0; c < 64; c++ ) {
 			if ( OpOffsetTable[c] == find ) {
 				find = 0;

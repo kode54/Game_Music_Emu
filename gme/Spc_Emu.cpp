@@ -362,7 +362,7 @@ blargg_err_t Spc_Emu::start_track_( int track )
 	resampler.clear();
 	filter.clear();
 	RETURN_ERR( apu.load_spc( file_begin(), file_size() ) );
-	filter.set_gain( (int) (gain() * SPC_Filter::gain_unit) );
+	filter.set_gain( (int) (gain() * Spc_Filter::gain_unit) );
 	apu.clear_echo();
 	return blargg_ok;
 }
@@ -418,6 +418,6 @@ blargg_err_t Spc_Emu::play_( int count, sample_t out [] )
 
 blargg_err_t Spc_Emu::hash_( Hash_Function& out ) const
 {
-	hash_spc_file( header(), file_begin() + header_t::size, blargg_min( 0x10200 - header_t::size, file_end() - file_begin() - header_t::size ), out );
+    hash_spc_file( header(), file_begin() + header_t::size, blargg_min( (size_t) ( 0x10200 - header_t::size ), (size_t) ( file_end() - file_begin() - header_t::size ) ), out );
 	return blargg_ok;
 }

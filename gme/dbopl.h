@@ -16,11 +16,29 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#ifdef _WIN32
 #define INLINE __forceinline
 #define DB_FASTCALL __fastcall
+#else
+#define INLINE inline
+#define DB_FASTCALL __attribute__((fastcall))
+#endif
 
 typedef         double		Real64;
 /* The internal types */
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+
+typedef uint8_t         	Bit8u;
+typedef int8_t         		Bit8s;
+typedef uint16_t        	Bit16u;
+typedef int16_t     		Bit16s;
+typedef uint32_t    		Bit32u;
+typedef int32_t     		Bit32s;
+typedef uint64_t        	Bit64u;
+typedef int64_t         	Bit64s;
+#else
 typedef  unsigned char		Bit8u;
 typedef    signed char		Bit8s;
 typedef unsigned short		Bit16u;
@@ -29,6 +47,8 @@ typedef  unsigned long		Bit32u;
 typedef    signed long		Bit32s;
 typedef unsigned __int64	Bit64u;
 typedef   signed __int64	Bit64s;
+#endif
+
 typedef unsigned int		Bitu;
 typedef signed int			Bits;
 

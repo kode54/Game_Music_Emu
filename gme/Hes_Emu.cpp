@@ -81,7 +81,8 @@ static void hash_hes_file( Hes_Emu::header_t const& h, byte const* data, int dat
 	out.hash_( &h.unused[0], sizeof(h.unused) );
 	out.hash_( data, Hes_Core::info_offset );
 
-	byte const* more_data = copy_hes_fields( data + Hes_Core::info_offset, &track_info_t() );
+    track_info_t temp; // GCC whines about passing a pointer to a temporary here
+    byte const* more_data = copy_hes_fields( data + Hes_Core::info_offset, &temp );
 	out.hash_( more_data, data_size - ( more_data - data ) );
 }
 

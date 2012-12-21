@@ -30,7 +30,7 @@ class Chip_Resampler_Emu : public Emu {
 
 	void mix_samples( short * buf, int count )
 	{
-		sample_t * inptr = sample_buf.begin();
+        dsample_t * inptr = sample_buf.begin();
 		for ( unsigned i = 0; i < count * 2; i++ )
 		{
 			int sample = inptr[i];
@@ -119,7 +119,7 @@ public:
 			Emu::run( sample_count >> 1, resampler.buffer() );
 			for ( unsigned i = 0; i < sample_count; i++ )
 			{
-				sample_t * ptr = resampler.buffer() + i;
+                dsample_t * ptr = resampler.buffer() + i;
 				*ptr = ( *ptr * gain_ ) >> gain_bits;
 			}
 			short* p = out;

@@ -78,7 +78,7 @@ protected:
 
 private:
 	Spc_Emu_Resampler resampler;
-	SPC_Filter filter;
+	Spc_Filter filter;
 	Snes_Spc apu;
 	
 	byte const* trailer_() const;
