@@ -97,7 +97,7 @@ void Hes_Core::recalc_timer_load()
 void Hes_Core::set_tempo( double t )
 {
 	play_period = (time_t) (period_60hz / t);
-	timer_base = (int) (1024 / t);
+    timer_base = (int) (512 / t);
 	recalc_timer_load();
 }
 

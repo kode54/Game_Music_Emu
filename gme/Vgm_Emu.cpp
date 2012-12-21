@@ -318,6 +318,7 @@ blargg_err_t Vgm_Emu::set_sample_rate_( int sample_rate )
 {
 	RETURN_ERR( core.stereo_buf[0].set_sample_rate( sample_rate, 1000 / 30 ) );
 	RETURN_ERR( core.stereo_buf[1].set_sample_rate( sample_rate, 1000 / 30 ) );
+    RETURN_ERR( core.stereo_buf[2].set_sample_rate( sample_rate, 1000 / 30 ) );
 	core.set_sample_rate( sample_rate );
 	return Classic_Emu::set_sample_rate_( sample_rate );
 }
@@ -356,6 +357,14 @@ void Vgm_Emu::mute_voices_( int mask )
 		core.psg[1].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[0].center() );
 		core.ay[0].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[1].center() );
 		core.ay[1].set_output( ( mask & 0x80 ) ? 0 : core.stereo_buf[1].center() );
+        for ( unsigned i = 0, j = 1; i < core.huc6280[0].osc_count; i++, j <<= 1)
+        {
+            Blip_Buffer * center = ( mask & j ) ? 0 : core.stereo_buf[2].center();
+            Blip_Buffer * left   = ( mask & j ) ? 0 : core.stereo_buf[2].left();
+            Blip_Buffer * right  = ( mask & j ) ? 0 : core.stereo_buf[2].right();
+            core.huc6280[0].set_output( i, center, left, right );
+            core.huc6280[1].set_output( i, center, left, right );
+        }
 		if ( core.ym2612[0].enabled() )
 		{
 			core.pcm.volume( (mask & 0x40) ? 0.0 : 0.1115 / 256 * fm_gain * gain() );
@@ -428,6 +437,8 @@ blargg_err_t Vgm_Emu::load_mem_( byte const data [], int size )
 		core.psg[1].volume( 0.135 * fm_gain * psg_gain * gain() );
 		core.ay[0].volume( 0.135 * fm_gain * gain() );
 		core.ay[1].volume( 0.135 * fm_gain * gain() );
+        core.huc6280[0].volume( 0.135 * fm_gain * gain() );
+        core.huc6280[1].volume( 0.135 * fm_gain * gain() );
 	}
 	else
 	{
@@ -504,8 +515,9 @@ blargg_err_t Vgm_Emu::play_( int count, sample_t out [] )
 {
 	if ( !core.uses_fm() )
 		return Classic_Emu::play_( count, out );
-		
-	resampler.dual_play( count, out, core.stereo_buf[0], &core.stereo_buf[1] );
+
+    Stereo_Buffer * secondaries[] = { &core.stereo_buf[1], &core.stereo_buf[2] };
+    resampler.dual_play( count, out, core.stereo_buf[0], secondaries, 2 );
 	return blargg_ok;
 }
 

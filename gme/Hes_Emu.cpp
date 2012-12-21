@@ -152,7 +152,7 @@ blargg_err_t Hes_Emu::load_( Data_Reader& in )
 	core.apu().volume( gain() );
 	core.adpcm().volume( gain() );
 	
-	return setup_buffer( 7159091 );
+    return setup_buffer( 3579545 );
 }
 
 void Hes_Emu::update_eq( blip_eq_t const& eq )

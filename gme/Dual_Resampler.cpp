@@ -59,43 +59,54 @@ void Dual_Resampler::clear()
 }
 
 
-int Dual_Resampler::play_frame_( Stereo_Buffer& stereo_buf, dsample_t out [], Stereo_Buffer* second_buf )
+int Dual_Resampler::play_frame_( Stereo_Buffer& stereo_buf, dsample_t out [], Stereo_Buffer** secondary_buf_set, int secondary_buf_set_count )
 {
 	int pair_count = sample_buf_size >> 1;
 	blip_time_t blip_time = stereo_buf.center()->count_clocks( pair_count );
-	blip_time_t blip_time_2 = second_buf ? second_buf->center()->count_clocks( pair_count ) : 0;
-	int sample_count = oversamples_per_frame - resampler.written() + resampler_extra;
+    int sample_count = oversamples_per_frame - resampler.written() + resampler_extra;
 	
 	int new_count = set_callback.f( set_callback.data, blip_time, sample_count, resampler.buffer() );
 	assert( new_count < resampler_size );
 	
 	stereo_buf.end_frame( blip_time );
-	if (second_buf) second_buf->end_frame( blip_time_2 );
-	assert( stereo_buf.samples_avail() == pair_count * 2 );
-	if (second_buf) assert( second_buf->samples_avail() == pair_count * 2 );
-	
+    assert( stereo_buf.samples_avail() == pair_count * 2 );
+    if ( secondary_buf_set && secondary_buf_set_count )
+    {
+        for ( int i = 0; i < secondary_buf_set_count; i++ )
+        {
+            Stereo_Buffer * second_buf = secondary_buf_set[i];
+            blip_time_t blip_time_2 = second_buf->center()->count_clocks( pair_count );
+            second_buf->end_frame( blip_time_2 );
+            assert( second_buf->samples_avail() == pair_count * 2 );
+        }
+    }
+
 	resampler.write( new_count );
 	
 	int count = resampler.read( sample_buf.begin(), sample_buf_size );
 	
-	mix_samples( stereo_buf, out, count, second_buf );
+    mix_samples( stereo_buf, out, count, secondary_buf_set, secondary_buf_set_count );
 
 	pair_count = count >> 1;
 	stereo_buf.left()->remove_samples( pair_count );
 	stereo_buf.right()->remove_samples( pair_count );
 	stereo_buf.center()->remove_samples( pair_count );
 
-	if (second_buf)
-	{
-		second_buf->left()->remove_samples( pair_count );
-		second_buf->right()->remove_samples( pair_count );
-		second_buf->center()->remove_samples( pair_count );
+    if ( secondary_buf_set && secondary_buf_set_count )
+    {
+        for ( int i = 0; i < secondary_buf_set_count; i++ )
+        {
+            Stereo_Buffer * second_buf = secondary_buf_set[i];
+            second_buf->left()->remove_samples( pair_count );
+            second_buf->right()->remove_samples( pair_count );
+            second_buf->center()->remove_samples( pair_count );
+        }
 	}
 
 	return count;
 }
 
-void Dual_Resampler::dual_play( int count, dsample_t out [], Stereo_Buffer& stereo_buf, Stereo_Buffer* second_stereo_buf )
+void Dual_Resampler::dual_play( int count, dsample_t out [], Stereo_Buffer& stereo_buf, Stereo_Buffer** secondary_buf_set, int secondary_buf_set_count )
 {
 	// empty extra buffer
 	int remain = buffered - buf_pos;
@@ -112,14 +123,14 @@ void Dual_Resampler::dual_play( int count, dsample_t out [], Stereo_Buffer& ster
 	// entire frames
 	while ( count >= sample_buf_size )
 	{
-		buf_pos = buffered = play_frame_( stereo_buf, out, second_stereo_buf );
+        buf_pos = buffered = play_frame_( stereo_buf, out, secondary_buf_set, secondary_buf_set_count );
 		out += buffered;
 		count -= buffered;
 	}
 
 	while (count > 0)
 	{
-		buffered = play_frame_( stereo_buf, sample_buf.begin(), second_stereo_buf );
+        buffered = play_frame_( stereo_buf, sample_buf.begin(), secondary_buf_set, secondary_buf_set_count );
 		if ( buffered >= count )
 		{
 			buf_pos = count;
@@ -136,7 +147,7 @@ void Dual_Resampler::dual_play( int count, dsample_t out [], Stereo_Buffer& ster
 	}
 }
 
-void Dual_Resampler::mix_samples( Stereo_Buffer& stereo_buf, dsample_t out_ [], int count, Stereo_Buffer* second_buf )
+void Dual_Resampler::mix_samples( Stereo_Buffer& stereo_buf, dsample_t out_ [], int count, Stereo_Buffer** secondary_buf_set, int secondary_buf_set_count )
 {
 	// lol hax
 	if ( ((Tracked_Blip_Buffer*)stereo_buf.left())->non_silent() | ((Tracked_Blip_Buffer*)stereo_buf.right())->non_silent() )
@@ -144,12 +155,16 @@ void Dual_Resampler::mix_samples( Stereo_Buffer& stereo_buf, dsample_t out_ [], 
 	else
 		mix_mono( stereo_buf, out_, count );
 
-	if ( second_buf )
-	{
-		if ( ((Tracked_Blip_Buffer*)second_buf->left())->non_silent() | ((Tracked_Blip_Buffer*)second_buf->right())->non_silent() )
-			mix_extra_stereo( *second_buf, out_, count );
-		else
-			mix_extra_mono( *second_buf, out_, count );
+    if ( secondary_buf_set && secondary_buf_set_count )
+    {
+        for ( int i = 0; i < secondary_buf_set_count; i++ )
+        {
+            Stereo_Buffer * second_buf = secondary_buf_set[i];
+            if ( ((Tracked_Blip_Buffer*)second_buf->left())->non_silent() | ((Tracked_Blip_Buffer*)second_buf->right())->non_silent() )
+                mix_extra_stereo( *second_buf, out_, count );
+            else
+                mix_extra_mono( *second_buf, out_, count );
+        }
 	}
 }
 

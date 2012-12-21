@@ -25,6 +25,7 @@
 #include "K054539_Emu.h"
 #include "Ym2203_Emu.h"
 #include "Ay_Apu.h"
+#include "Hes_Apu.h"
 #include "Sms_Apu.h"
 #include "Multi_Buffer.h"
 #include "Chip_Resampler.h"
@@ -150,7 +151,9 @@ public:
 	bool uses_fm() const                { return ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() ||
 		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() || ymf262[0].enabled() ||
-		ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() || (*(int*)&header().ay8910_rate); }
+        ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() ||
+        (header().ay8910_rate[0] | header().ay8910_rate[1] | header().ay8910_rate[2] | header().ay8910_rate[3]) ||
+        (header().huc6280_rate[0] | header().huc6280_rate[1] | header().huc6280_rate[2] | header().huc6280_rate[3]); }
 	
 	// Adjusts music tempo, where 1.0 is normal. Can be changed while playing.
 	// Loading a file resets tempo to 1.0.
@@ -171,13 +174,16 @@ public:
 	// True if all of file data has been played
 	bool track_ended() const            { return pos >= file_end(); }
 	
-	// PCM sound is always generated here
-	Stereo_Buffer stereo_buf[2];
-	Blip_Buffer * blip_buf[2];
+    // 0 for PSG and YM2612 DAC, 1 for AY, 2 for HuC6280
+    Stereo_Buffer stereo_buf[3];
+
+    // PCM sound is always generated here
+    Blip_Buffer * blip_buf[2];
 	
 	// PSG sound chips, for assigning to Blip_Buffer, and setting volume and EQ
 	Sms_Apu psg[2];
 	Ay_Apu ay[2];
+    Hes_Apu huc6280[2];
 	
 	// PCM synth, for setting volume and EQ
 	Blip_Synth_Fast pcm;
@@ -257,6 +263,10 @@ private:
 	int blip_ay_time_factor;
 	int ay_time_offset;
 	blip_time_t to_ay_time( vgm_time_t ) const;
+
+    int blip_huc6280_time_factor;
+    int huc6280_time_offset;
+    blip_time_t to_huc6280_time( vgm_time_t ) const;
 	
 	// Current time and position in log
 	vgm_time_t vgm_time;
