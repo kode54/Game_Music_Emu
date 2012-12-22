@@ -23,6 +23,7 @@
 #include "K051649_Emu.h"
 #include "K053260_Emu.h"
 #include "K054539_Emu.h"
+#include "Qsound_Emu.h"
 #include "Ym2203_Emu.h"
 #include "Ay_Apu.h"
 #include "Hes_Apu.h"
@@ -151,7 +152,7 @@ public:
 	bool uses_fm() const                { return ym2612[0].enabled() || ym2413[0].enabled() || ym2151[0].enabled() || c140.enabled() ||
 		segapcm.enabled() || rf5c68.enabled() || rf5c164.enabled() || pwm.enabled() || okim6258.enabled() || okim6295[0].enabled() ||
 		k051649.enabled() || k053260.enabled() || k054539.enabled() || ym2203[0].enabled() || ym3812[0].enabled() || ymf262[0].enabled() ||
-        ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() ||
+        ymz280b.enabled() || ym2610[0].enabled() || ym2608[0].enabled() || qsound[0].enabled() ||
         (header().ay8910_rate[0] | header().ay8910_rate[1] | header().ay8910_rate[2] | header().ay8910_rate[3]) ||
         (header().huc6280_rate[0] | header().huc6280_rate[1] | header().huc6280_rate[2] | header().huc6280_rate[3]); }
 	
@@ -210,6 +211,7 @@ public:
 	Chip_Resampler_Emu<K053260_Emu> k053260;
 	Chip_Resampler_Emu<K054539_Emu> k054539;
 	Chip_Resampler_Emu<Ymz280b_Emu> ymz280b;
+    Chip_Resampler_Emu<Qsound_Emu> qsound[2];
 
 	// DAC control
 	typedef struct daccontrol_data
@@ -335,6 +337,7 @@ private:
 	int run_k051649( int time );
 	int run_k053260( int time );
 	int run_k054539( int time );
+    int run_qsound( int chip, int time );
 	void update_fm_rates( int* ym2151_rate, int* ym2413_rate, int* ym2612_rate ) const;
 };
 

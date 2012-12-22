@@ -149,6 +149,8 @@
     <ClCompile Include="..\gme\Opl_Apu.cpp" />
     <ClCompile Include="..\gme\pwm.c" />
     <ClCompile Include="..\gme\Pwm_Emu.cpp" />
+    <ClCompile Include="..\gme\qmix.c" />
+    <ClCompile Include="..\gme\Qsound_Emu.cpp" />
     <ClCompile Include="..\gme\Resampler.cpp" />
     <ClCompile Include="..\gme\Rf5C164_Emu.cpp" />
     <ClCompile Include="..\gme\rf5c68.c" />
@@ -274,6 +276,8 @@
     <ClInclude Include="..\gme\Opl_Apu.h" />
     <ClInclude Include="..\gme\pwm.h" />
     <ClInclude Include="..\gme\Pwm_Emu.h" />
+    <ClInclude Include="..\gme\qmix.h" />
+    <ClInclude Include="..\gme\Qsound_Emu.h" />
     <ClInclude Include="..\gme\Resampler.h" />
     <ClInclude Include="..\gme\Rf5C164_Emu.h" />
     <ClInclude Include="..\gme\rf5c68.h" />

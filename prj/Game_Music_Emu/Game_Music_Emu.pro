@@ -128,7 +128,9 @@ SOURCES += \
     ../../gme/Ay_Emu.cpp \
     ../../gme/Ay_Cpu.cpp \
     ../../gme/Ay_Core.cpp \
-    ../../gme/Ay_Apu.cpp
+    ../../gme/Ay_Apu.cpp \
+    ../../gme/Qsound_Emu.cpp \
+    ../../gme/qmix.c
 
 HEADERS += \
     ../../gme/Z80_Cpu.h \
@@ -254,7 +256,9 @@ HEADERS += \
     ../../gme/Ay_Emu.h \
     ../../gme/Ay_Core.h \
     ../../gme/Ay_Apu.h \
-    ../../gme/adlib.h
+    ../../gme/adlib.h \
+    ../../gme/Qsound_Emu.h \
+    ../../gme/qmix.h
 
 unix:!symbian {
     maemo5 {

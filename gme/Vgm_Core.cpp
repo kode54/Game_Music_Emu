@@ -83,6 +83,7 @@ enum {
 	cmd_segapcm_write   = 0xC0,
 	cmd_rf5c68_mem      = 0xC1,
 	cmd_rf5c164_mem     = 0xC2,
+    cmd_qsound_write    = 0xC4,
 	cmd_k051649_write   = 0xD2,
 	cmd_k054539_write   = 0xD3,
 	cmd_c140            = 0xD4,
@@ -105,6 +106,7 @@ enum {
 	rom_k054539         = 0x8C,
 	rom_c140            = 0x8D,
 	rom_k053260         = 0x8E,
+    rom_qsound          = 0x8F,
 
 	ram_rf5c68          = 0xC0,
 	ram_rf5c164         = 0xC1,
@@ -218,6 +220,11 @@ int Vgm_Core::run_k053260( int time )
 int Vgm_Core::run_k054539( int time )
 {
 	return k054539.run_until( time );
+}
+
+int Vgm_Core::run_qsound( int chip, int time )
+{
+    return qsound[!!chip].run_until( time );
 }
 
 /* Recursive fun starts here! */
@@ -718,6 +725,11 @@ void Vgm_Core::chip_reg_write(unsigned Sample, byte ChipType, byte ChipID, byte 
 		if ( run_k053260( to_fm_time( Sample ) ) )
 			k053260.write( Offset, Data );
 		break;
+
+    case 0x1F:
+        if ( run_qsound( ChipID, Sample ) )
+            qsound[ ChipID ].write( Data, ( Port << 8 ) + Offset );
+        break;
 	}
 }
 
@@ -887,6 +899,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	k051649.enable( false );
 	k053260.enable( false );
 	k054539.enable( false );
+    qsound[0].enable( false );
+    qsound[1].enable( false );
 	
 	set_tempo( 1 );
 	
@@ -970,6 +984,7 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	int k051649_rate = get_le32( header().k051649_rate ) & 0xBFFFFFFF;
 	int k053260_rate = get_le32( header().k053260_rate ) & 0xBFFFFFFF;
 	int k054539_rate = get_le32( header().k054539_rate ) & 0xBFFFFFFF;
+    int qsound_rate = get_le32( header().qsound_rate ) & 0xBFFFFFFF;
 	if ( ym2413_rate && get_le32( header().version ) < 0x110 )
 		update_fm_rates( &ym2151_rate, &ym2413_rate, &ym2612_rate );
 	
@@ -1217,6 +1232,14 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		RETURN_ERR( ymz280b.setup( (double)result / vgm_rate, 0.85, 0.59375 ) );
 		ymz280b.enable();
 	}
+    if ( qsound_rate )
+    {
+        double pcm_rate = (double)qsound_rate / 166.0;
+        int result = qsound[0].set_rate( qsound_rate );
+        CHECK_ALLOC( result );
+        RETURN_ERR( qsound[0].setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
+        qsound[0].enable();
+    }
 
 	fm_rate = *rate;
 	
@@ -1332,6 +1355,12 @@ void Vgm_Core::start_track()
 
 		if ( ymz280b.enabled() )
 			ymz280b.reset();
+
+        if ( qsound[0].enabled() )
+            qsound[0].reset();
+
+        if ( qsound[1].enabled() )
+            qsound[1].reset();
 		
 		stereo_buf[0].clear();
 		stereo_buf[1].clear();
@@ -1656,6 +1685,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 			chip_reg_write( vgm_time, 0x1A, 0x00, pos [0] & 0x7F, pos [1], pos [2] );
 			pos += 3;
 			break;
+
+        case cmd_qsound_write:
+            chip_reg_write( vgm_time, 0x1F, 0x00, pos [0], pos [1], pos [2] );
+            pos += 3;
+            break;
 			
 		case cmd_dacctl_setup:
 			if ( run_dac_control( vgm_time ) )
@@ -1821,6 +1855,11 @@ blip_time_t Vgm_Core::run( vgm_time_t end_time )
 						if ( k053260.enabled() )
 							k053260.write_rom( rom_size, data_start, data_size, rom_data );
 						break;
+
+                    case rom_qsound:
+                        if ( qsound[chipid].enabled() )
+                            qsound[chipid].write_rom( rom_size, data_start, data_size, rom_data );
+                        break;
 					}
 				}
 				break;
@@ -2044,6 +2083,14 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	{
 		ymz280b.begin_frame( out );
 	}
+    if ( qsound[0].enabled() )
+    {
+        qsound[0].begin_frame( out );
+        if ( qsound[1].enabled() )
+        {
+            qsound[1].begin_frame( out );
+        }
+    }
 
 	run( vgm_time );
 
@@ -2068,6 +2115,7 @@ int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t
 	run_k053260( pairs );
 	run_k054539( pairs );
 	run_ymz280b( pairs );
+    run_qsound( 0, pairs ); run_qsound( 1, pairs );
 	
 	fm_time_offset = (vgm_time * fm_time_factor + fm_time_offset) - (pairs << fm_time_bits);
 	
