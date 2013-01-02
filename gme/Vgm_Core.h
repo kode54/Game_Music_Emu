@@ -23,7 +23,7 @@
 #include "K051649_Emu.h"
 #include "K053260_Emu.h"
 #include "K054539_Emu.h"
-#include "Qsound_Emu.h"
+#include "Qsound_Apu.h"
 #include "Ym2203_Emu.h"
 #include "Ay_Apu.h"
 #include "Hes_Apu.h"
@@ -211,7 +211,7 @@ public:
 	Chip_Resampler_Emu<K053260_Emu> k053260;
 	Chip_Resampler_Emu<K054539_Emu> k054539;
 	Chip_Resampler_Emu<Ymz280b_Emu> ymz280b;
-    Chip_Resampler_Emu<Qsound_Emu> qsound[2];
+    Chip_Resampler_Emu<Qsound_Apu> qsound[2];
 
 	// DAC control
 	typedef struct daccontrol_data

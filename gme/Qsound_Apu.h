@@ -1,16 +1,16 @@
 // Capcom QSound sound chip emulator interface
 
 // Game_Music_Emu $vers
-#ifndef QSOUND_EMU_H
-#define QSOUND_EMU_H
+#ifndef QSOUND_APU_H
+#define QSOUND_APU_H
 
-class Qsound_Emu  {
+class Qsound_Apu  {
 	void* chip;
     void* rom;
     int rom_size;
 public:
-    Qsound_Emu();
-    ~Qsound_Emu();
+    Qsound_Apu();
+    ~Qsound_Apu();
 	
 	// Sets output sample rate and chip clock rates, in Hz. Returns non-zero
 	// if error.
@@ -23,7 +23,7 @@ public:
 	void write( int addr, int data );
 
 	// Scales ROM size, then writes length bytes from data at start offset
-	void write_rom( int size, int start, int length, void * data );
+    void write_rom( int size, int start, int length, void const* data );
 	
 	// Runs and writes pair_count*2 samples to output
 	typedef short sample_t;

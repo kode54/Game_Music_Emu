@@ -158,6 +158,7 @@ blargg_err_t Hes_Emu::load_( Data_Reader& in )
 void Hes_Emu::update_eq( blip_eq_t const& eq )
 {
 	core.apu().treble_eq( eq );
+    core.adpcm().treble_eq( eq );
 }
 
 void Hes_Emu::set_voice( int i, Blip_Buffer* c, Blip_Buffer* l, Blip_Buffer* r )

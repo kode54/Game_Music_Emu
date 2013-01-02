@@ -329,6 +329,8 @@ void Vgm_Emu::update_eq( blip_eq_t const& eq )
 	core.psg[1].treble_eq( eq );
 	core.ay[0].treble_eq( eq );
 	core.ay[1].treble_eq( eq );
+    core.huc6280[0].treble_eq( eq );
+    core.huc6280[1].treble_eq( eq );
 	core.pcm.treble_eq( eq );
 }
 

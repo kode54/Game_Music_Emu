@@ -254,7 +254,7 @@
     <ClCompile Include="..\gme\Pwm_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\Qsound_Emu.cpp">
+    <ClCompile Include="..\gme\Qsound_Apu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gme\dac_control.c">
@@ -607,7 +607,7 @@
     <ClInclude Include="..\gme\Pwm_Emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\gme\Qsound_Emu.h">
+    <ClInclude Include="..\gme\Qsound_Apu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\dac_control.h">

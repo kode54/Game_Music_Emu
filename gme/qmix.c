@@ -63,7 +63,7 @@ static const sint32 pan_table[33] = {
 //
 // Static information
 //
-sint32 EMU_CALL qmix_init(void) { return 0; }
+sint32 EMU_CALL _qmix_init(void) { return 0; }
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -168,17 +168,17 @@ struct QMIX_STATE {
   sint32 acc_r;
 };
 
-uint32 EMU_CALL qmix_get_state_size(void) {
+uint32 EMU_CALL _qmix_get_state_size(void) {
   return sizeof(struct QMIX_STATE);
 }
 
-void EMU_CALL qmix_clear_state(void *state) {
+void EMU_CALL _qmix_clear_state(void *state) {
   memset(state, 0, sizeof(struct QMIX_STATE));
 
 
 }
 
-void EMU_CALL qmix_set_sample_rom(void *state, void *rom, uint32 size) {
+void EMU_CALL _qmix_set_sample_rom(void *state, void *rom, uint32 size) {
   QMIXSTATE->sample_rom = rom;
   QMIXSTATE->sample_rom_size = size;
 }
@@ -296,7 +296,7 @@ static void recalc_mix(struct QMIX_CHAN *chan) {
 //
 //#include <stdio.h>
 
-void EMU_CALL qmix_command(void *state, uint8 cmd, uint16 data) {
+void EMU_CALL _qmix_command(void *state, uint8 cmd, uint16 data) {
   struct QMIX_CHAN *chan;
   uint32 ch = 0;
   uint32 reg = 99;
@@ -441,7 +441,7 @@ static void render(
 
 /////////////////////////////////////////////////////////////////////////////
 
-void EMU_CALL qmix_render(void *state, sint16 *buf, uint32 samples) {
+void EMU_CALL _qmix_render(void *state, sint16 *buf, uint32 samples) {
 //printf("qmix render %u samples\n",samples);
   for(; samples >= RENDERMAX; samples -= RENDERMAX) {
     render(QMIXSTATE, buf, RENDERMAX);
@@ -454,7 +454,7 @@ void EMU_CALL qmix_render(void *state, sint16 *buf, uint32 samples) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-/*void EMU_CALL qmix_set_sample_rate(void *state, uint32 rate) {
+/*void EMU_CALL _qmix_set_sample_rate(void *state, uint32 rate) {
   if(rate < 1) rate = 1;
   QMIXSTATE->pitchscaler = (65536 * 24000) / rate;
 }*/
