@@ -866,8 +866,8 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 
     int huc6280_rate = get_le32( h.huc6280_rate ) & 0xBFFFFFFF;
     if ( !huc6280_rate )
-        huc6280_rate = 7159091;
-    stereo_buf[2].clock_rate( huc6280_rate );
+        huc6280_rate = 3579545;
+    stereo_buf[2].clock_rate( huc6280_rate * 2 );
 	
 	// Disable FM
 	fm_rate = 0;
