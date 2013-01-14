@@ -8,6 +8,7 @@ class Qsound_Apu  {
 	void* chip;
     void* rom;
     int rom_size;
+	int sample_rate;
 public:
     Qsound_Apu();
     ~Qsound_Apu();
@@ -15,6 +16,7 @@ public:
 	// Sets output sample rate and chip clock rates, in Hz. Returns non-zero
 	// if error.
 	int set_rate( int clock_rate );
+	void set_sample_rate( int sample_rate );
 	
 	// Resets to power-up state
 	void reset();

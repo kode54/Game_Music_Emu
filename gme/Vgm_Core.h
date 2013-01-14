@@ -145,7 +145,7 @@ public:
 	// *sample_rate is zero, sets *sample_rate to the proper accurate rate and
 	// uses that. The output of the FM sound emulator is resampled to the
 	// final sampling rate.
-	blargg_err_t init_chips( double* fm_rate );
+	blargg_err_t init_chips( double* fm_rate, bool reinit = false );
 	
 	// True if any FM chips are used by file. Always false until init_fm()
 	// is called.
@@ -205,12 +205,12 @@ public:
 	Chip_Resampler_Emu<Rf5C68_Emu> rf5c68;
 	Chip_Resampler_Emu<Rf5C164_Emu> rf5c164;
 	Chip_Resampler_Emu<Pwm_Emu> pwm;
-	Chip_Resampler_Emu<Okim6258_Emu> okim6258;
-	Chip_Resampler_Emu<Okim6295_Emu> okim6295[2];
+	Chip_Resampler_Emu<Okim6258_Emu> okim6258; int okim6258_hz;
+	Chip_Resampler_Emu<Okim6295_Emu> okim6295[2]; int okim6295_hz;
 	Chip_Resampler_Emu<K051649_Emu> k051649;
 	Chip_Resampler_Emu<K053260_Emu> k053260;
 	Chip_Resampler_Emu<K054539_Emu> k054539;
-	Chip_Resampler_Emu<Ymz280b_Emu> ymz280b;
+	Chip_Resampler_Emu<Ymz280b_Emu> ymz280b; int ymz280b_hz;
     Chip_Resampler_Emu<Qsound_Apu> qsound[2];
 
 	// DAC control

@@ -3,7 +3,7 @@
 #include "Qsound_Apu.h"
 #include "qmix.h"
 
-Qsound_Apu::Qsound_Apu() { chip = 0; rom = 0; rom_size = 0; }
+Qsound_Apu::Qsound_Apu() { chip = 0; rom = 0; rom_size = 0; sample_rate = 0; }
 
 Qsound_Apu::~Qsound_Apu()
 {
@@ -28,9 +28,16 @@ int Qsound_Apu::set_rate( int clock_rate )
     return clock_rate / 166;
 }
 
+void Qsound_Apu::set_sample_rate( int sample_rate )
+{
+	this->sample_rate = sample_rate;
+	if ( chip ) _qmix_set_sample_rate( chip, sample_rate );
+}
+
 void Qsound_Apu::reset()
 {
     _qmix_clear_state( chip );
+	_qmix_set_sample_rate( chip, sample_rate );
     if ( rom ) _qmix_set_sample_rom( chip, rom, rom_size );
 }
 

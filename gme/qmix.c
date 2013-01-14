@@ -158,7 +158,7 @@ static EMU_INLINE void anticlick(struct QMIX_CHAN *chan) {
 struct QMIX_STATE {
   uint8 *sample_rom;
   uint32 sample_rom_size;
-  /*uint32 pitchscaler;*/
+  uint32 pitchscaler;
   struct QMIX_CHAN chan[16];
   sint32 last_in_l;
   sint32 last_in_r;
@@ -327,7 +327,7 @@ void EMU_CALL _qmix_command(void *state, uint8 cmd, uint16 data) {
     break;
   case 2: // pitch
     //printf("qmix: pitch ch%X = %04X\n",ch,data);
-    chan->pitch = (uint32)(data & 0xFFFF); /*(((uint32)(data & 0xFFFF)) * QMIXSTATE->pitchscaler) / 0x10000;*/
+    chan->pitch = (((uint32)(data & 0xFFFF)) * QMIXSTATE->pitchscaler) / 0x10000;
     if (chan->pitch == 0) {
       chan->on = 0;
       anticlick(chan);
@@ -454,9 +454,9 @@ void EMU_CALL _qmix_render(void *state, sint16 *buf, uint32 samples) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-/*void EMU_CALL _qmix_set_sample_rate(void *state, uint32 rate) {
+void EMU_CALL _qmix_set_sample_rate(void *state, uint32 rate) {
   if(rate < 1) rate = 1;
   QMIXSTATE->pitchscaler = (65536 * 24000) / rate;
-}*/
+}
 
 /////////////////////////////////////////////////////////////////////////////

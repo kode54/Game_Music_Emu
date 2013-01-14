@@ -749,6 +749,10 @@ void Vgm_Core::set_tempo( double t )
 		// TODO: remove? calculates vgm_rate more accurately (above differs at most by one Hz only)
 		//blip_time_factor = (int) floor( double (1 << blip_time_bits) * psg_rate_ / 44100 / t + 0.5 );
 		//vgm_rate = (int) floor( double (1 << blip_time_bits) * psg_rate_ / blip_time_factor + 0.5 );
+
+		// All those Chip_Resamplers need reinitialization
+		double temp;
+		init_chips( &temp, true );
 		
 		fm_time_factor = 2 + (int) (fm_rate * (1 << fm_time_bits) / vgm_rate + 0.5);
 	}
@@ -963,7 +967,7 @@ void Vgm_Core::update_fm_rates( int* ym2151_rate, int* ym2413_rate, int* ym2612_
 	}
 }
 
-blargg_err_t Vgm_Core::init_chips( double* rate )
+blargg_err_t Vgm_Core::init_chips( double* rate, bool reinit )
 {
 	int ymz280b_rate = get_le32( header().ymz280b_rate ) & 0xBFFFFFFF;
 	int ymf262_rate = get_le32( header().ymf262_rate ) & 0xBFFFFFFF;
@@ -995,14 +999,21 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ymf262_rate[3] & 0x40);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ymf262_rate / 288.0;
-		int result = ymf262[0].set_rate( fm_rate, ymf262_rate );
-		CHECK_ALLOC( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ymf262[0].set_rate( fm_rate, ymf262_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( ymf262[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ymf262[0].enable();
 		if ( dual_chip )
 		{
-			result = ymf262[1].set_rate( fm_rate, ymf262_rate );
-			CHECK_ALLOC( !result );
+			if ( !reinit )
+			{
+				result = ymf262[1].set_rate( fm_rate, ymf262_rate );
+				CHECK_ALLOC( !result );
+			}
 			RETURN_ERR( ymf262[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ymf262[1].enable();
 		}
@@ -1012,14 +1023,21 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ym3812_rate[3] & 0x40);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym3812_rate / 72.0;
-		int result = ym3812[0].set_rate( fm_rate, ym3812_rate );
-		CHECK_ALLOC( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ym3812[0].set_rate( fm_rate, ym3812_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( ym3812[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym3812[0].enable();
 		if ( dual_chip )
 		{
-			result = ym3812[1].set_rate( fm_rate, ym3812_rate );
-			CHECK_ALLOC( !result );
+			if ( !reinit )
+			{
+				result = ym3812[1].set_rate( fm_rate, ym3812_rate );
+				CHECK_ALLOC( !result );
+			}
 			RETURN_ERR( ym3812[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym3812[1].enable();
 		}
@@ -1029,12 +1047,18 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ym2612_rate[3] & 0x40);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2612_rate / 144.0;
-		RETURN_ERR( ym2612[0].set_rate( fm_rate, ym2612_rate ) );
+		if ( !reinit )
+		{
+			RETURN_ERR( ym2612[0].set_rate( fm_rate, ym2612_rate ) );
+		}
 		RETURN_ERR( ym2612[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2612[0].enable();
 		if ( dual_chip )
 		{
-			RETURN_ERR( ym2612[1].set_rate( fm_rate, ym2612_rate ) );
+			if ( !reinit )
+			{
+				RETURN_ERR( ym2612[1].set_rate( fm_rate, ym2612_rate ) );
+			}
 			RETURN_ERR( ym2612[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2612[1].enable();
 		}
@@ -1045,14 +1069,21 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool is_2610b = !!(header().ym2610_rate[3] & 0x80);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2610_rate / 72.0;
-		int result = ym2610[0].set_rate( fm_rate, ym2610_rate, is_2610b );
-		CHECK_ALLOC( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ym2610[0].set_rate( fm_rate, ym2610_rate, is_2610b );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( ym2610[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2610[0].enable();
 		if ( dual_chip )
 		{
-			result = ym2610[1].set_rate( fm_rate, ym2610_rate, is_2610b );
-			CHECK_ALLOC( !result );
+			if ( !reinit )
+			{
+				result = ym2610[1].set_rate( fm_rate, ym2610_rate, is_2610b );
+				CHECK_ALLOC( !result );
+			}
 			RETURN_ERR( ym2610[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2610[1].enable();
 		}
@@ -1062,14 +1093,21 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ym2610_rate[3] & 0x40);
 		double gain = dual_chip ? 1.0 : 2.0;
 		double fm_rate = ym2608_rate / 72.0;
-		int result = ym2608[0].set_rate( fm_rate, ym2608_rate );
-		CHECK_ALLOC( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ym2608[0].set_rate( fm_rate, ym2608_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( ym2608[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2608[0].enable();
 		if ( dual_chip )
 		{
-			result = ym2608[1].set_rate( fm_rate, ym2608_rate );
-			CHECK_ALLOC( !result );
+			if ( !reinit )
+			{
+				result = ym2608[1].set_rate( fm_rate, ym2608_rate );
+				CHECK_ALLOC( !result );
+			}
 			RETURN_ERR( ym2608[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2608[1].enable();
 		}
@@ -1079,16 +1117,23 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ym2413_rate[3] & 0x40);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2413_rate / 72.0;
-		int result = ym2413[0].set_rate( fm_rate, ym2413_rate );
-		if ( result == 2 )
-			return "YM2413 FM sound not supported";
-		CHECK_ALLOC( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ym2413[0].set_rate( fm_rate, ym2413_rate );
+			if ( result == 2 )
+				return "YM2413 FM sound not supported";
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( ym2413[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2413[0].enable();
 		if ( dual_chip )
 		{
-			result = ym2413[1].set_rate( fm_rate, ym2413_rate );
-			CHECK_ALLOC( !result );
+			if ( !reinit )
+			{
+				result = ym2413[1].set_rate( fm_rate, ym2413_rate );
+				CHECK_ALLOC( !result );
+			}
 			RETURN_ERR( ym2413[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2413[1].enable();
 		}
@@ -1098,14 +1143,21 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ym2151_rate[3] & 0x40);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2151_rate / 64.0;
-		int result = ym2151[0].set_rate( fm_rate, ym2151_rate );
-		CHECK_ALLOC( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ym2151[0].set_rate( fm_rate, ym2151_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( ym2151[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2151[0].enable();
 		if ( dual_chip )
 		{
-			result = ym2151[1].set_rate( fm_rate, ym2151_rate );
-			CHECK_ALLOC( !result );
+			if ( !reinit )
+			{
+				result = ym2151[1].set_rate( fm_rate, ym2151_rate );
+				CHECK_ALLOC( !result );
+			}
 			RETURN_ERR( ym2151[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2151[1].enable();
 		}
@@ -1115,14 +1167,21 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!(header().ym2203_rate[3] & 0x40);
 		double gain = dual_chip ? 0.5 : 1.0;
 		double fm_rate = ym2203_rate / 72.0;
-		int result = ym2203[0].set_rate( fm_rate, ym2203_rate );
-		CHECK_ALLOC ( !result );
+		int result;
+		if ( !reinit )
+		{
+			result = ym2203[0].set_rate( fm_rate, ym2203_rate );
+			CHECK_ALLOC ( !result );
+		}
 		RETURN_ERR( ym2203[0].setup( fm_rate / vgm_rate, 0.85, gain ) );
 		ym2203[0].enable();
 		if ( dual_chip )
 		{
-			result = ym2203[1].set_rate( fm_rate, ym2203_rate );
-			CHECK_ALLOC ( !result );
+			if ( !reinit )
+			{
+				result = ym2203[1].set_rate( fm_rate, ym2203_rate );
+				CHECK_ALLOC ( !result );
+			}
 			RETURN_ERR( ym2203[1].setup( fm_rate / vgm_rate, 0.85, gain ) );
 			ym2203[1].enable();
 		}
@@ -1131,40 +1190,55 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 	if ( segapcm_rate )
 	{
 		double pcm_rate = segapcm_rate / 128.0;
-		int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = segapcm.set_rate( get_le32( header().segapcm_reg ) );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( segapcm.setup( pcm_rate / vgm_rate, 0.85, 1.5 ) );
 		segapcm.enable();
 	}
 	if ( rf5c68_rate )
 	{
 		double pcm_rate = rf5c68_rate / 384.0;
-		int result = rf5c68.set_rate();
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = rf5c68.set_rate();
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( rf5c68.setup( pcm_rate / vgm_rate, 0.85, 0.6875 ) );
 		rf5c68.enable();
 	}
 	if ( rf5c164_rate )
 	{
 		double pcm_rate = rf5c164_rate / 384.0;
-		int result = rf5c164.set_rate( rf5c164_rate );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = rf5c164.set_rate( rf5c164_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( rf5c164.setup( pcm_rate / vgm_rate, 0.85, 0.5 ) );
 		rf5c164.enable();
 	}
 	if ( pwm_rate )
 	{
 		double pcm_rate = 22020.0;
-		int result = pwm.set_rate( pwm_rate );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = pwm.set_rate( pwm_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( pwm.setup( pcm_rate / vgm_rate, 0.85, 0.875 ) );
 		pwm.enable();
 	}
 	if ( okim6258_rate )
 	{
-		int result = okim6258.set_rate( okim6258_rate, header().okim6258_flags & 0x03, ( header().okim6258_flags & 0x04 ) >> 2, ( header().okim6258_flags & 0x08 ) >> 3 );
-		CHECK_ALLOC( result );
-		RETURN_ERR( okim6258.setup( (double)result / vgm_rate, 0.85, 1.0 ) );
+		if ( !reinit )
+		{
+			okim6258_hz = okim6258.set_rate( okim6258_rate, header().okim6258_flags & 0x03, ( header().okim6258_flags & 0x04 ) >> 2, ( header().okim6258_flags & 0x08 ) >> 3 );
+			CHECK_ALLOC( okim6258_hz );
+		}
+		RETURN_ERR( okim6258.setup( (double)okim6258_hz / vgm_rate, 0.85, 1.0 ) );
 		okim6258.enable();
 	}
 	if ( okim6295_rate )
@@ -1181,63 +1255,88 @@ blargg_err_t Vgm_Core::init_chips( double* rate )
 		bool dual_chip = !!( header().okim6295_rate[3] & 0x40 );
 		double gain = is_cp_system ? 0.4296875 : 1.0;
 		if ( dual_chip ) gain *= 0.5;
-		int result = okim6295[0].set_rate( okim6295_rate );
-		CHECK_ALLOC( result );
-		RETURN_ERR( okim6295[0].setup( (double)result / vgm_rate, 0.85, gain ) );
+		if ( !reinit )
+		{
+			okim6295_hz = okim6295[0].set_rate( okim6295_rate );
+			CHECK_ALLOC( okim6295_hz );
+		}
+		RETURN_ERR( okim6295[0].setup( (double)okim6295_hz / vgm_rate, 0.85, gain ) );
 		okim6295[0].enable();
 		if ( dual_chip )
 		{
-			result = okim6295[1].set_rate( okim6295_rate );
-			CHECK_ALLOC( result );
-			RETURN_ERR( okim6295[1].setup( (double)result / vgm_rate, 0.85, gain ) );
+			if ( !reinit )
+			{
+				int result = okim6295[1].set_rate( okim6295_rate );
+				CHECK_ALLOC( result );
+			}
+			RETURN_ERR( okim6295[1].setup( (double)okim6295_hz / vgm_rate, 0.85, gain ) );
 			okim6295[1].enable();
 		}
 	}
 	if ( c140_rate )
 	{
 		double pcm_rate = c140_rate;
-		int result = c140.set_rate( header().c140_type, c140_rate, c140_rate );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = c140.set_rate( header().c140_type, c140_rate, c140_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( c140.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		c140.enable();
 	}
 	if ( k051649_rate )
 	{
 		double pcm_rate = k051649_rate / 16.0;
-		int result = k051649.set_rate( k051649_rate );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = k051649.set_rate( k051649_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( k051649.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		k051649.enable();
 	}
 	if ( k053260_rate )
 	{
 		double pcm_rate = k053260_rate / 32.0;
-		int result = k053260.set_rate( k053260_rate );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = k053260.set_rate( k053260_rate );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( k053260.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		k053260.enable();
 	}
 	if ( k054539_rate )
 	{
 		double pcm_rate = k054539_rate;
-		int result = k054539.set_rate( k054539_rate, header().k054539_flags );
-		CHECK_ALLOC( !result );
+		if ( !reinit )
+		{
+			int result = k054539.set_rate( k054539_rate, header().k054539_flags );
+			CHECK_ALLOC( !result );
+		}
 		RETURN_ERR( k054539.setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
 		k054539.enable();
 	}
 	if ( ymz280b_rate )
 	{
-		int result = ymz280b.set_rate( ymz280b_rate );
-		CHECK_ALLOC( result );
-		RETURN_ERR( ymz280b.setup( (double)result / vgm_rate, 0.85, 0.59375 ) );
+		if ( !reinit )
+		{
+			ymz280b_hz = ymz280b.set_rate( ymz280b_rate );
+			CHECK_ALLOC( ymz280b_hz );
+		}
+		RETURN_ERR( ymz280b.setup( (double)ymz280b_hz / vgm_rate, 0.85, 0.59375 ) );
 		ymz280b.enable();
 	}
     if ( qsound_rate )
     {
         double pcm_rate = (double)qsound_rate / 166.0;
-        int result = qsound[0].set_rate( qsound_rate );
-        CHECK_ALLOC( result );
-        RETURN_ERR( qsound[0].setup( pcm_rate / vgm_rate, 0.85, 1.0 ) );
+		if ( !reinit )
+		{
+			int result = qsound[0].set_rate( qsound_rate );
+			CHECK_ALLOC( result );
+		}
+		qsound[0].set_sample_rate( vgm_rate );
+        RETURN_ERR( qsound[0].setup( 1.0, 0.85, 1.0 ) );
         qsound[0].enable();
     }
 
