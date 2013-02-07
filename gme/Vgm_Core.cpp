@@ -749,10 +749,6 @@ void Vgm_Core::set_tempo( double t )
 		// TODO: remove? calculates vgm_rate more accurately (above differs at most by one Hz only)
 		//blip_time_factor = (int) floor( double (1 << blip_time_bits) * psg_rate_ / 44100 / t + 0.5 );
 		//vgm_rate = (int) floor( double (1 << blip_time_bits) * psg_rate_ / blip_time_factor + 0.5 );
-
-		// All those Chip_Resamplers need reinitialization
-		double temp;
-		init_chips( &temp, true );
 		
 		fm_time_factor = 2 + (int) (fm_rate * (1 << fm_time_bits) / vgm_rate + 0.5);
 	}
