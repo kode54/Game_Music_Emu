@@ -58,7 +58,7 @@ int Ym2610b_Emu::set_rate( int sample_rate, int clock_rate, bool is_2610b )
 		return 1;
 
 	this->sample_rate = sample_rate;
-	psg_clock = clock_rate;
+	psg_clock = clock_rate * 2;
 	this->is_2610b = is_2610b;
 
 	buffer.set_sample_rate( sample_rate );
@@ -152,7 +152,7 @@ void Ym2610b_Emu::run( int pair_count, sample_t* out )
 
 void Ym2610b_Emu::psg_set_clock( int clock )
 {
-	psg_clock = clock;
+	psg_clock = clock * 2;
 	buffer.clock_rate( clock );
 }
 

@@ -24,7 +24,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 // Power of two is more efficient (avoids division).
 int const inaudible_freq = 16384;
 
-int const period_factor = 8;
+int const period_factor = 16;
 
 static byte const amp_table [16] =
 {

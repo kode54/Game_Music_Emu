@@ -56,7 +56,7 @@ int Ym2203_Emu::set_rate( int sample_rate, int clock_rate )
 		return 1;
 
 	this->sample_rate = sample_rate;
-	psg_clock = clock_rate;
+	psg_clock = clock_rate * 2;
 
 	buffer.set_sample_rate( sample_rate );
 	buffer.clock_rate( psg_clock );
@@ -134,7 +134,7 @@ void Ym2203_Emu::run( int pair_count, sample_t* out )
 
 void Ym2203_Emu::psg_set_clock( int clock )
 {
-	psg_clock = clock;
+	psg_clock = clock * 2;
 	buffer.clock_rate( clock );
 }
 

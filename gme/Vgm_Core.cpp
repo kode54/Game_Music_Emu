@@ -860,7 +860,7 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	int ay_rate = get_le32( h.ay8910_rate ) & 0xBFFFFFFF;
 	if ( !ay_rate )
 		ay_rate = 2000000;
-	stereo_buf[1].clock_rate( ay_rate );
+	stereo_buf[1].clock_rate( ay_rate * 2 );
 	ay[0].set_type( (Ay_Apu::Ay_Apu_Type) header().ay8910_type );
 	ay[1].set_type( (Ay_Apu::Ay_Apu_Type) header().ay8910_type );
 
