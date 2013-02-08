@@ -135,7 +135,7 @@ void Ym2203_Emu::run( int pair_count, sample_t* out )
 void Ym2203_Emu::psg_set_clock( int clock )
 {
 	psg_clock = clock * 2;
-	buffer.clock_rate( clock );
+	buffer.clock_rate( psg_clock );
 }
 
 void Ym2203_Emu::psg_write( int addr, int data )
