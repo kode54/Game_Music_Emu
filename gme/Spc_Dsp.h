@@ -8,7 +8,11 @@
 
 extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
 
+class Sfm_Emu;
+
 class Spc_Dsp {
+    friend class Sfm_Emu;
+
 public:
 	typedef BOOST::uint8_t uint8_t;
 	

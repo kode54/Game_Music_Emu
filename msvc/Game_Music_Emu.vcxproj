@@ -89,6 +89,7 @@
     <ClCompile Include="..\gme\Ay_Core.cpp" />
     <ClCompile Include="..\gme\Ay_Cpu.cpp" />
     <ClCompile Include="..\gme\Ay_Emu.cpp" />
+    <ClCompile Include="..\gme\Bml_Parser.cpp" />
     <ClCompile Include="..\gme\blargg_common.cpp" />
     <ClCompile Include="..\gme\blargg_errors.cpp" />
     <ClCompile Include="..\gme\Blip_Buffer.cpp" />
@@ -177,6 +178,7 @@
     <ClCompile Include="..\gme\Spc_Dsp.cpp" />
     <ClCompile Include="..\gme\Spc_Emu.cpp" />
     <ClCompile Include="..\gme\Spc_Filter.cpp" />
+    <ClCompile Include="..\gme\Spc_Sfm.cpp" />
     <ClCompile Include="..\gme\Track_Filter.cpp" />
     <ClCompile Include="..\gme\Upsampler.cpp" />
     <ClCompile Include="..\gme\Vgm_Core.cpp" />
@@ -209,6 +211,7 @@
     <ClInclude Include="..\gme\Ay_Apu.h" />
     <ClInclude Include="..\gme\Ay_Core.h" />
     <ClInclude Include="..\gme\Ay_Emu.h" />
+    <ClInclude Include="..\gme\Bml_Parser.h" />
     <ClInclude Include="..\gme\blargg_common.h" />
     <ClInclude Include="..\gme\blargg_config.h" />
     <ClInclude Include="..\gme\blargg_endian.h" />
@@ -302,6 +305,7 @@
     <ClInclude Include="..\gme\Spc_Dsp.h" />
     <ClInclude Include="..\gme\Spc_Emu.h" />
     <ClInclude Include="..\gme\Spc_Filter.h" />
+    <ClInclude Include="..\gme\Spc_Sfm.h" />
     <ClInclude Include="..\gme\Track_Filter.h" />
     <ClInclude Include="..\gme\Upsampler.h" />
     <ClInclude Include="..\gme\Vgm_Core.h" />
