@@ -35,6 +35,9 @@
     <ClCompile Include="..\gme\Ay_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\gme\Bml_Parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\gme\blargg_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -218,6 +221,9 @@
     <ClCompile Include="..\gme\Spc_Filter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\gme\Spc_Sfm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\gme\Track_Filter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -368,6 +374,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Ay_Emu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\Bml_Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\blargg_common.h">
@@ -563,6 +572,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Spc_Filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gme\Spc_Sfm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Track_Filter.h">

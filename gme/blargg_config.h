@@ -23,6 +23,7 @@
 	gme_nsf_type,\
 	gme_nsfe_type,\
 	gme_sap_type,\
+    gme_sfm_type,\
 	gme_sgc_type,\
 	gme_spc_type,\
 	gme_vgm_type,\

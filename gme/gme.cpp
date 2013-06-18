@@ -35,6 +35,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	gme_nsf_type,\
 	gme_nsfe_type,\
 	gme_sap_type,\
+    gme_sfm_type,\
 	gme_sgc_type,\
 	gme_spc_type,\
 	gme_vgm_type,\
@@ -62,6 +63,7 @@ const char* gme_identify_header( void const* header )
 		case BLARGG_4CHAR('N','E','S','M'):  return "NSF";
 		case BLARGG_4CHAR('N','S','F','E'):  return "NSFE";
 		case BLARGG_4CHAR('S','A','P',0x0D): return "SAP";
+        case BLARGG_4CHAR('S','F','M','1'):  return "SFM";
 		case BLARGG_4CHAR('S','G','C',0x1A): return "SGC";
 		case BLARGG_4CHAR('S','N','E','S'):  return "SPC";
 		case BLARGG_4CHAR('V','g','m',' '):  return "VGM";

@@ -33,13 +33,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 //// Timers
 
-#if SPC_DISABLE_TEMPO
-	#define TIMER_DIV( t, n ) ((n) >> t->prescaler)
-	#define TIMER_MUL( t, n ) ((n) << t->prescaler)
-#else
-	#define TIMER_DIV( t, n ) ((n) / t->prescaler)
-	#define TIMER_MUL( t, n ) ((n) * t->prescaler)
-#endif
+#define TIMER_DIV( t, n ) ((n) / t->prescaler)
+#define TIMER_MUL( t, n ) ((n) * t->prescaler)
 
 Snes_Spc::Timer* Snes_Spc::run_timer_( Timer* t, rel_time_t time )
 {
@@ -468,6 +463,14 @@ inline int Snes_Spc::cpu_read_smp_reg( int reg, rel_time_t time )
 		if ( (unsigned) reg == 1 )
 			result = dsp_read( time ); // 0xF3
 	}
+    reg -= r_cpuio0 - r_dspaddr;
+    if ( (unsigned) reg <= 3 )
+    {
+        if ( m.sfm_queue && m.sfm_queue < m.sfm_queue_end )
+        {
+            result = *m.sfm_queue++;
+        }
+    }
 	return result;
 }
 
