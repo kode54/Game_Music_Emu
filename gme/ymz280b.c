@@ -30,7 +30,7 @@
 #include <stdio.h>
 #endif
 #include <memory.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include "ymz280b.h"
 
 static void update_irq_state_timer_common(void *param, int voicenum);

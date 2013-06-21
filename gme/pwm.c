@@ -23,7 +23,7 @@
 #include "pwm.h"
 
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #define INLINE __inline
 

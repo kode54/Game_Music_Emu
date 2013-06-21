@@ -117,7 +117,7 @@
 #include <stdarg.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "mamedef.h"
 //#ifndef __RAINE__

@@ -44,7 +44,7 @@ Unmapped registers:
 
 
 //#include "emu.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <memory.h>
 #include "c140.h"
 

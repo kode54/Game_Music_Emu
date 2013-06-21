@@ -17,7 +17,7 @@
 
 #include "dac_control.h"
 
-#include <malloc.h>
+#include <stdlib.h>
 
 #define INLINE static __inline
 

@@ -18,7 +18,7 @@ CHANNEL_DEBUG enables the following keys:
 *********************************************************/
 
 //#include "emu.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <memory.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
