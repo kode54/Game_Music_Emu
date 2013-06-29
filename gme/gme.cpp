@@ -327,9 +327,9 @@ const char* gme_voice_name   ( Music_Emu const* gme, int i )            { return
 
 void gme_effects( Music_Emu const* gme, gme_effects_t* out )
 {
-	static gme_effects_t const zero = { 0 };
+	static gme_effects_t const zero = { 0, 0, 0,0,0,0,0,0, FALSE, FALSE, 0,0,0,0,0,0 };
 	*out = zero;
-	
+
 	#if !GME_DISABLE_EFFECTS
 	{
 		Simple_Effects_Buffer* b = STATIC_CAST(Simple_Effects_Buffer*,gme->effects_buffer_);

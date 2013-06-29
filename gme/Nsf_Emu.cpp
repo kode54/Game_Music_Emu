@@ -24,8 +24,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #include "blargg_source.h"
 
-Nsf_Emu::equalizer_t const Nsf_Emu::nes_eq     = {  -1.0, 80 };
-Nsf_Emu::equalizer_t const Nsf_Emu::famicom_eq = { -15.0, 80 };
+Nsf_Emu::equalizer_t const Nsf_Emu::nes_eq     = {  -1.0, 80, 0,0,0,0,0,0,0,0 };
+Nsf_Emu::equalizer_t const Nsf_Emu::famicom_eq = { -15.0, 80, 0,0,0,0,0,0,0,0 };
 
 Nsf_Emu::Nsf_Emu()
 {

@@ -15,9 +15,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #include "blargg_source.h"
 
-Gbs_Emu::equalizer_t const Gbs_Emu::handheld_eq   = { -47.0, 2000 };
-Gbs_Emu::equalizer_t const Gbs_Emu::cgb_eq        = {   0.0,  300 };
-Gbs_Emu::equalizer_t const Gbs_Emu::headphones_eq = {   0.0,   30 }; // DMG
+Gbs_Emu::equalizer_t const Gbs_Emu::handheld_eq   = { -47.0, 2000, 0,0,0,0,0,0,0,0 };
+Gbs_Emu::equalizer_t const Gbs_Emu::cgb_eq        = {   0.0,  300, 0,0,0,0,0,0,0,0 };
+Gbs_Emu::equalizer_t const Gbs_Emu::headphones_eq = {   0.0,   30, 0,0,0,0,0,0,0,0 }; // DMG
 
 Gbs_Emu::Gbs_Emu()
 {
@@ -27,9 +27,9 @@ Gbs_Emu::Gbs_Emu()
 	set_silence_lookahead( 6 );
 	set_max_initial_silence( 21 );
 	set_gain( 1.2 );
-	
+
 	// kind of midway between headphones and speaker
-	static equalizer_t const eq = { -1.0, 120 };
+	static equalizer_t const eq = { -1.0, 120, 0,0,0,0,0,0,0,0 };
 	set_equalizer( eq );
 }
 

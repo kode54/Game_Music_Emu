@@ -17,7 +17,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 int const stereo = 2; // number of channels for stereo
 
-Music_Emu::equalizer_t const Music_Emu::tv_eq = { -8.0, 180 };
+Music_Emu::equalizer_t const Music_Emu::tv_eq = { -8.0, 180, 0,0,0,0,0,0,0,0 };
 
 void Music_Emu::clear_track_vars()
 {
