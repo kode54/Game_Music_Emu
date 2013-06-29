@@ -6,7 +6,7 @@
 
 namespace DBOPL {
 	struct Chip;
-};
+}
 
 class Ym3812_Emu  {
 	DBOPL::Chip * opl;

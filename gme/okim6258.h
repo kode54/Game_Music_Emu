@@ -53,5 +53,5 @@ void okim6258_write(void *, UINT8 Port, UINT8 Data);
 //DECLARE_LEGACY_SOUND_DEVICE(OKIM6258, okim6258);
 
 #ifdef __cplusplus
-};
+}
 #endif

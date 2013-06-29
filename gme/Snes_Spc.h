@@ -298,7 +298,7 @@ inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( d
 
 inline void Snes_Spc::interpolation_level( int level ) { dsp.interpolation_level( level ); }
 
-inline Spc_Dsp * Snes_Spc::get_dsp() { return &dsp; };
+inline Spc_Dsp * Snes_Spc::get_dsp() { return &dsp; }
 
 inline void Snes_Spc::set_sfm_queue(const uint8_t *queue, const uint8_t *queue_end) { m.sfm_queue = queue; m.sfm_queue_end = queue_end; }
 

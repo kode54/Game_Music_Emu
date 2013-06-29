@@ -174,5 +174,5 @@ void ym2612_setoptions(void *chip, UINT8 Flags);
 #endif /* (BUILD_YM2612||BUILD_YM3438) */
 
 #ifdef __cplusplus
-};
+}
 #endif

@@ -56,5 +56,5 @@ INT16 clock_adpcm(struct adpcm_state *state, UINT8 nibble);
 //#define SOUND_OKIM6295 DEVICE_GET_INFO_NAME( okim6295 )
 
 #ifdef __cplusplus
-};
+}
 #endif

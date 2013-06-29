@@ -88,7 +88,7 @@ void YM_DELTAT_ADPCM_CALC(YM_DELTAT *DELTAT);
 void YM_DELTAT_savestate(const device_config *device,YM_DELTAT *DELTAT);*/
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif /* __YMDELTAT_H__ */

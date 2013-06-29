@@ -532,7 +532,7 @@ INLINE bool Operator::Silent() const {
 	if ( !(rateZero & ( 1 << state ) ) )
 		return false;
 	return true;
-};
+}
 
  INLINE void Operator::Prepare( const Chip* chip )  {
 	currentLevel = totalLevel + (chip->tremoloValue & tremoloMask);
@@ -635,7 +635,7 @@ Channel::Channel() {
 	feedback = 31;
 	fourMask = 0;
 	synthHandler = &Channel::BlockTemplate< sm2FM >;
-};
+}
 
 void Channel::SetChanData( const Chip* chip, Bit32u data ) {
 	Bit32u change = chanData ^ data;
@@ -786,7 +786,7 @@ void Channel::ResetC0( const Chip* chip ) {
 	Bit8u val = regC0;
 	regC0 ^= 0xff;
 	WriteC0( chip, val );
-};
+}
 
 template< bool opl3Mode>
 void Channel::GeneratePercussion( Chip* chip, Bit32s* output ) {
@@ -1519,4 +1519,4 @@ public:
 } init_stuff;
 
 
-};		//Namespace DBOPL
+}		//Namespace DBOPL

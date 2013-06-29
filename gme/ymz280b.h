@@ -43,5 +43,5 @@ void ymz280b_write_rom(void *, offs_t ROMSize, offs_t DataStart, offs_t DataLeng
 void ymz280b_set_mute_mask(void *, UINT32 MuteMask);
 
 #ifdef __cplusplus
-};
+}
 #endif
