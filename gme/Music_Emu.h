@@ -39,7 +39,7 @@ public:
 	int current_track() const;
 
 	// Info for currently playing track
-	Gme_File::track_info;
+	using Gme_File::track_info;
 	blargg_err_t track_info( track_info_t* out ) const;
 
 	struct Hash_Function
