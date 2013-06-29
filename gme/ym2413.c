@@ -672,7 +672,7 @@ INLINE void advance(YM2413 *chip)
 				{
 					op->volume += eg_inc[op->eg_sel_dr + ((chip->eg_cnt>>op->eg_sh_dr)&7)];
 
-					if ( op->volume >= op->sl )
+					if ( op->volume >= (INT32)(op->sl) )
 						op->state = EG_SUS;
 				}
 			break;
@@ -1681,7 +1681,7 @@ static void OPLLWriteReg(YM2413 *chip, int r, int v)
 	case 0x10:
 	case 0x20:
 	{
-		int block_fnum;
+		UINT32 block_fnum;
 
 		chan = r&0x0f;
 

@@ -299,8 +299,8 @@ void device_stop_k053260(void *chip)
 INLINE void check_bounds( k053260_state *ic, int channel )
 {
 
-	int channel_start = ( ic->channels[channel].bank << 16 ) + ic->channels[channel].start;
-	int channel_end = channel_start + ic->channels[channel].size - 1;
+	UINT32 channel_start = ( ic->channels[channel].bank << 16 ) + ic->channels[channel].start;
+	UINT32 channel_end = channel_start + ic->channels[channel].size - 1;
 
 	if ( channel_start > ic->rom_size ) {
 		logerror("K53260: Attempting to start playing past the end of the ROM ( start = %06x, end = %06x ).\n", channel_start, channel_end );

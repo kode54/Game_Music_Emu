@@ -980,7 +980,7 @@ void ym2151_write_reg(void *_chip, int r, int v)
 
 		case 0x08:	/* Key Code */
 			v &= 0x7f;
-			if (v != op->kc)
+			if (v != (int)(op->kc))
 			{
 				UINT32 kc, kc_channel;
 
@@ -1017,7 +1017,7 @@ void ym2151_write_reg(void *_chip, int r, int v)
 
 		case 0x10:	/* Key Fraction */
 			v >>= 2;
-			if (v !=  (op->kc_i & 63))
+			if (v != (int)(op->kc_i & 63))
 			{
 				UINT32 kc_channel;
 
@@ -1636,7 +1636,7 @@ INLINE void advance_eg(YM2151 *PSG)
 				{
 					op->volume += eg_inc[op->eg_sel_d1r + ((PSG->eg_cnt>>op->eg_sh_d1r)&7)];
 
-					if ( op->volume >= op->d1l )
+					if ( op->volume >= (INT32)(op->d1l) )
 						op->state = EG_SUS;
 
 				}

@@ -769,7 +769,7 @@ int Vgm_Core::header_t::size() const
 		if ( data_offset ) data_offset += offsetof( header_t, data_offset );
 	}
 	else data_offset = 0x40;
-	unsigned expected_size = ( version > 0x150 ) ? ( ( version > 0x160 ) ? size_max : size_151 ) : size_min;
+	unsigned expected_size = ( version > 0x150 ) ? ( ( version > 0x160 ) ? unsigned(size_max) : unsigned(size_151) ) : unsigned(size_min);
 	if ( expected_size > data_offset ) expected_size = data_offset ? (data_offset > size_max ? size_max : data_offset) : size_min;
 	return expected_size;
 }

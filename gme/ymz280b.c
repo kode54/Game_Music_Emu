@@ -299,7 +299,7 @@ static void compute_tables(void)
 
 static int generate_adpcm(struct YMZ280BVoice *voice, UINT8 *base, UINT32 size, INT16 *buffer, int samples)
 {
-	int position = voice->position;
+	UINT32 position = voice->position;
 	int signal = voice->signal;
 	int step = voice->step;
 	int val;
@@ -426,8 +426,8 @@ static int generate_adpcm(struct YMZ280BVoice *voice, UINT8 *base, UINT32 size, 
 
 static int generate_pcm8(struct YMZ280BVoice *voice, UINT8 *base, UINT32 size, INT16 *buffer, int samples)
 {
-	int position = voice->position;
 	int val;
+	UINT32 position = voice->position;
 
 	/*if (! DISABLE_YMZ_FIX)
 	{
@@ -511,8 +511,8 @@ static int generate_pcm8(struct YMZ280BVoice *voice, UINT8 *base, UINT32 size, I
 
 static int generate_pcm16(struct YMZ280BVoice *voice, UINT8 *base, UINT32 size, INT16 *buffer, int samples)
 {
-	int position = voice->position;
 	int val;
+	UINT32 position = voice->position;
 
 	/*if (! DISABLE_YMZ_FIX)
 	{
@@ -685,7 +685,8 @@ void ymz280b_update(void *_chip, stream_sample_t **outputs, int samples)
 		{
 			/* note: samples_left bit 16 is set if the voice was finished at the same time the function ended */
 			int base;
-			int i, t;
+			UINT32 i;
+			int t;
 			
 			samples_left &= 0xffff;
 			base = new_samples - samples_left;
