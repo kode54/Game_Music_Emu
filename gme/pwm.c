@@ -25,7 +25,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define INLINE __inline
+#ifndef INLINE
+#define INLINE static __inline
+#endif
 
 //#include "gens_core/mem/mem_sh2.h"
 //#include "gens_core/cpu/sh2/sh2.h"
@@ -277,7 +279,7 @@ void PWM_Update_Timer(unsigned int cycle)
 }*/
 
 
-static INLINE int PWM_Update_Scale(pwm_chip* chip, int PWM_In)
+INLINE int PWM_Update_Scale(pwm_chip* chip, int PWM_In)
 {
 	if (PWM_In == 0)
 		return 0;

@@ -63,8 +63,12 @@
 */
 
 #include "ymdeltat.h"
+#ifndef INLINE
 #define INLINE __inline
+#endif
+#ifndef logerror
 #define logerror (void)
+#endif
 
 #define YM_DELTAT_DELTA_MAX (24576)
 #define YM_DELTAT_DELTA_MIN (127)

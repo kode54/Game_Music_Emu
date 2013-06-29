@@ -11,7 +11,9 @@
 #include "mamedef.h"
 #include "ym2151.h"
 
+#ifndef logerror
 #define logerror (void)
+#endif
 
 
 /* struct describing a single operator */
