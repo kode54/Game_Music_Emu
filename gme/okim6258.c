@@ -16,6 +16,7 @@
 #endif
 //#include "streams.h"
 #include <math.h>
+#include <stdlib.h>
 #include "okim6258.h"
 
 #define COMMAND_STOP		(1 << 0)
