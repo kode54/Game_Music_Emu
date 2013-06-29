@@ -21,7 +21,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 int const fixed_shift = 12;
 #define TO_FIXED( f )   fixed_t ((f) * ((fixed_t) 1 << fixed_shift))
-#define FROM_FIXED( f ) (f >> fixed_shift)
+#define FROM_FIXED( f ) ((f) >> fixed_shift)
 
 int const max_read = 2560; // determines minimum delay
 

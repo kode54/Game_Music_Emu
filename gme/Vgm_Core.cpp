@@ -300,7 +300,7 @@ bool Vgm_Core::DecompressDataBlk(VGM_PCM_DATA* Bank, unsigned DataSize, const by
 	UINT8* OutPos;
 	const UINT8* OutDataEnd;
 	FUINT16 InVal;
-	FUINT16 OutVal;
+	FUINT16 OutVal = 0;
 	FUINT8 ValSize;
 	FUINT8 InShift;
 	FUINT8 OutShift;
@@ -770,7 +770,7 @@ int Vgm_Core::header_t::size() const
 	}
 	else data_offset = 0x40;
 	unsigned expected_size = ( version > 0x150 ) ? ( ( version > 0x160 ) ? unsigned(size_max) : unsigned(size_151) ) : unsigned(size_min);
-	if ( expected_size > data_offset ) expected_size = data_offset ? (data_offset > size_max ? size_max : data_offset) : size_min;
+	if ( expected_size > data_offset ) expected_size = data_offset ? (data_offset > unsigned(size_max) ? unsigned(size_max) : data_offset) : unsigned(size_min);
 	return expected_size;
 }
 
