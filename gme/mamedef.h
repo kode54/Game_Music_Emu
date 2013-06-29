@@ -1,3 +1,7 @@
+#ifndef GME_MAMEDEFS_H
+#define GME_MAMEDEFS_H
+
+
 // typedefs to use MAME's (U)INTxx types (copied from MAME\src\ods\odscomm.h)
 /* 8-bit values */
 typedef unsigned char						UINT8;
@@ -49,4 +53,7 @@ typedef INT32 stream_sample_t;
 #define logerror	printf
 #else
 #define logerror
+#endif
+
+
 #endif

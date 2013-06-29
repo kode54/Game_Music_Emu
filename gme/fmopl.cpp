@@ -74,11 +74,15 @@ Revision History:
 #include "fmopl.h"
 #include "ymdeltat.h"
 
+#ifndef INLINE
 #define INLINE __inline
+#endif
 #ifndef NULL
 	#define NULL ((void *)0)
 #endif
+#ifndef logerror
 #define logerror (void)
+#endif
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846

@@ -54,7 +54,9 @@ typedef struct _dac_control
 	void * context; // context data sent to chip_reg_write
 } dac_control;
 
+#ifndef NULL
 #define NULL	(void*)0
+#endif
 
 static void daccontrol_SendCommand(dac_control *chip, UINT32 Sample)
 {
