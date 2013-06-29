@@ -115,9 +115,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include <stdlib.h>
+#include "mathdefs.h"
+
 
 #include "mamedef.h"
 //#ifndef __RAINE__

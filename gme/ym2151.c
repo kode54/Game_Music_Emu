@@ -4,8 +4,7 @@
 *
 ******************************************************************************/
 
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include "mathdefs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

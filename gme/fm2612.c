@@ -131,8 +131,7 @@
 //#include "emu.h"
 #include <stdlib.h>
 #include <memory.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include "mathdefs.h"
 #include "mamedef.h"
 #include "fm.h"
 
