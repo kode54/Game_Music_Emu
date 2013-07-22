@@ -81,7 +81,7 @@ public:
 	blargg_err_t load_spc( void const* in, long size );
 	
 	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
-	void clear_echo();
+	void clear_echo(bool force = false);
 
 	// Plays for count samples and write samples to out. Discards samples if out
 	// is NULL. Count must be a multiple of 2 since output is stereo.

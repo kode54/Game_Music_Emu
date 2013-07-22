@@ -240,9 +240,9 @@ blargg_err_t Snes_Spc::load_spc( void const* data, long size )
 	return blargg_ok;
 }
 
-void Snes_Spc::clear_echo()
+void Snes_Spc::clear_echo(bool force)
 {
-	if ( !m.echo_cleared && !(dsp.read( Spc_Dsp::r_flg ) & 0x20) )
+	if ( ( force || !m.echo_cleared ) && !(dsp.read( Spc_Dsp::r_flg ) & 0x20) )
 	{
 		int addr = 0x100 * dsp.read( Spc_Dsp::r_esa );
 		int end  = addr + 0x800 * (dsp.read( Spc_Dsp::r_edl ) & 0x0F);
