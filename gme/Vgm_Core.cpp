@@ -230,6 +230,9 @@ int Vgm_Core::run_qsound( int chip, int time )
 /* Recursive fun starts here! */
 int Vgm_Core::run_dac_control( int time )
 {
+	if (dac_control_recursion) return 1;
+
+	++dac_control_recursion;
 	for ( unsigned i = 0; i < DacCtrlUsed; i++ )
 	{
 		int time_start = DacCtrlTime[DacCtrlMap[i]];
@@ -239,6 +242,8 @@ int Vgm_Core::run_dac_control( int time )
 			daccontrol_update( dac_control [i], time_start, time - time_start );
 		}
 	}
+	--dac_control_recursion;
+
 	return 1;
 }
 
@@ -1480,6 +1485,8 @@ void Vgm_Core::start_track()
 	fm_time_offset = 0;
 	ay_time_offset = 0;
     huc6280_time_offset = 0;
+
+    dac_control_recursion = 0;
 }
 
 inline Vgm_Core::fm_time_t Vgm_Core::to_fm_time( vgm_time_t t ) const

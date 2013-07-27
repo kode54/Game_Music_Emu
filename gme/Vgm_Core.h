@@ -229,6 +229,8 @@ public:
 
 	void dac_control_grow(byte chip_id);
 
+	int dac_control_recursion;
+
 	int run_dac_control( int time );
 
 public:
