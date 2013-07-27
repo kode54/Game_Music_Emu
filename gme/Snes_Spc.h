@@ -91,6 +91,7 @@ public:
 	blargg_err_t skip( int count );
 
 	// blah
+	Spc_Dsp const* get_dsp() const;
     Spc_Dsp * get_dsp();
 
     // SFM Queue
@@ -298,6 +299,7 @@ inline void Snes_Spc::disable_surround( bool disable ) { dsp.disable_surround( d
 
 inline void Snes_Spc::interpolation_level( int level ) { dsp.interpolation_level( level ); }
 
+inline Spc_Dsp const* Snes_Spc::get_dsp() const { return &dsp; }
 inline Spc_Dsp * Snes_Spc::get_dsp() { return &dsp; }
 
 inline void Snes_Spc::set_sfm_queue(const uint8_t *queue, const uint8_t *queue_end) { m.sfm_queue = queue; m.sfm_queue_end = queue_end; }

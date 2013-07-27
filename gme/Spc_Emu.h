@@ -28,7 +28,8 @@ public:
 	// Enables gaussian, cubic or sinc interpolation
 	void interpolation_level( int level = 0 )   { apu.interpolation_level( level ); }
 
-	const Snes_Spc * get_apu() const;
+	Snes_Spc const* get_apu() const;
+	Snes_Spc * get_apu();
 	
 	// SPC file header
 	struct header_t
@@ -86,6 +87,7 @@ private:
 	blargg_err_t play_and_filter( int count, sample_t out [] );
 };
 
-inline const Snes_Spc * Spc_Emu::get_apu() const { return &apu; }
+inline Snes_Spc const* Spc_Emu::get_apu() const { return &apu; }
+inline Snes_Spc * Spc_Emu::get_apu() { return &apu; }
 
 #endif
