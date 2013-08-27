@@ -11,6 +11,7 @@ global namespace with unprefixed names. */
 	#include "blargg_common.h"
 #endif
 #include "blargg_errors.h"
+#include "gme_custom_dprintf.h"
 
 #include <string.h> /* memcpy(), memset(), memmove() */
 #include <stddef.h> /* offsetof() */
@@ -39,6 +40,22 @@ void require( bool expr ); */
 /* Like printf() except output goes to debugging console/file.
 
 void dprintf( const char format [], ... ); */
+
+#ifdef CUSTOM_DPRINTF_FUNCTION
+
+static inline void dprintf( const char * fmt, ... )
+{
+	if (gme_custom_dprintf)
+	{
+		va_list vl;
+		va_start(vl, fmt);
+		gme_custom_dprintf(fmt, vl);
+		va_end(vl);
+	}
+}
+
+#else
+
 #ifdef NDEBUG
 static inline void blargg_dprintf_( const char [], ... ) { }
 #undef  dprintf
@@ -63,6 +80,8 @@ static inline void blargg_dprintf_( const char * fmt, ... )
 #endif
 #undef  dprintf
 #define dprintf blargg_dprintf_
+#endif
+
 #endif
 
 /* If expr is false, prints file and line number to debug console/log, then
