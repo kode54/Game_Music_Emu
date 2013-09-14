@@ -487,6 +487,26 @@ inline int Spc_Dsp::interpolate_sinc( voice_t const* v )
 	return out;
 }
 
+inline int Spc_Dsp::interpolate_linear( voice_t const* v )
+{
+	int fract = v->interp_pos & 0xFFF;
+
+	int const* in = &v->buf [(v->interp_pos >> 12) + v->buf_pos];
+	int out;
+	out  = (0x1000 - fract) * in [0];
+	out +=           fract  * in [1];
+	out >>= 12;
+
+	// no need to clamp
+	out &= ~1;
+	return out;
+}
+
+inline int Spc_Dsp::interpolate_nearest( voice_t const* v )
+{
+	return v->buf [(v->interp_pos >> 12) + v->buf_pos] & ~1;
+}
+
 //// Counters
 
 int const simple_counter_range = 2048 * 5 * 3; // 30720
@@ -801,6 +821,14 @@ VOICE_CLOCK( V3c )
 
 		case 2:
 			output = interpolate_sinc( v );
+			break;
+
+		case -1:
+			output = interpolate_linear( v );
+			break;
+
+		case -2:
+			output = interpolate_nearest( v );
 			break;
 		}
 		

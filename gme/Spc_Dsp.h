@@ -207,6 +207,8 @@ private:
 	int  interpolate( voice_t const* v );
 	int  interpolate_cubic( voice_t const* v );
 	int  interpolate_sinc( voice_t const* v );
+	int  interpolate_linear( voice_t const* v );
+	int  interpolate_nearest( voice_t const* v );
 	void run_envelope( voice_t* const v );
 	void decode_brr( voice_t* v );
 
