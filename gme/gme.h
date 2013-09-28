@@ -224,7 +224,7 @@ gme_err_t gme_load_data( gme_t*, void const* data, long size );
 
 /* Loads music file using custom data reader function that will be called to
 read file data. Most emulators load the entire file in one read call. */
-typedef gme_err_t (*gme_reader_t)( void* your_data, void* out, int count );
+typedef gme_err_t (*gme_reader_t)( void* your_data, void* out, long count );
 gme_err_t gme_load_custom( gme_t*, gme_reader_t, long file_size, void* your_data );
 
 /* Loads m3u playlist file from memory (must be done after loading music) */
