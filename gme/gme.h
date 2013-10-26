@@ -44,7 +44,7 @@ void gme_delete( gme_t* );
 
 /* Sets time to start fading track out. Once fade ends track_ended() returns true.
 Fade time can be changed while track is playing. */
-void gme_set_fade( gme_t*, int start_msec );
+void gme_set_fade( gme_t*, int start_msec, int length_msec );
 
 /* True if a track has reached its end */
 gme_bool gme_track_ended( const gme_t* );
@@ -230,6 +230,10 @@ gme_err_t gme_load_custom( gme_t*, gme_reader_t, long file_size, void* your_data
 /* Loads m3u playlist file from memory (must be done after loading music) */
 gme_err_t gme_load_m3u_data( gme_t*, void const* data, long size );
 
+        
+/******** Saving ********/
+typedef gme_err_t (*gme_writer_t)( void* your_data, void const* in, long count );
+gme_err_t gme_save( gme_t const*, gme_writer_t, void* your_data );
 
 /******** User data ********/
 

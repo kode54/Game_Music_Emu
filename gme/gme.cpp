@@ -312,7 +312,7 @@ void      gme_set_user_cleanup(Music_Emu* gme, gme_user_cleanup_t func ){ gme->s
 
 gme_err_t gme_start_track    ( Music_Emu* gme, int index )              { return gme->start_track( index ); }
 gme_err_t gme_play           ( Music_Emu* gme, int n, short p [] )      { return gme->play( n, p ); }
-void      gme_set_fade       ( Music_Emu* gme, int start_msec )         { gme->set_fade( start_msec ); }
+void      gme_set_fade       ( Music_Emu* gme, int start_msec, int length_msec ) { gme->set_fade( start_msec, length_msec ); }
 gme_bool  gme_track_ended    ( Music_Emu const* gme )                   { return gme->track_ended(); }
 int       gme_tell           ( Music_Emu const* gme )                   { return gme->tell(); }
 gme_err_t gme_seek           ( Music_Emu* gme, int msec )               { return gme->seek( msec ); }
@@ -324,6 +324,7 @@ void      gme_mute_voices    ( Music_Emu* gme, int mask )               { gme->m
 void      gme_set_equalizer  ( Music_Emu* gme, gme_equalizer_t const* eq ) { gme->set_equalizer( *eq ); }
 void      gme_equalizer      ( Music_Emu const* gme, gme_equalizer_t* o )  { *o = gme->equalizer(); }
 const char* gme_voice_name   ( Music_Emu const* gme, int i )            { return gme->voice_name( i ); }
+gme_err_t gme_save           ( Music_Emu const* gme, gme_writer_t writer, void* your_data ) { return gme->save( writer, your_data ); }
 
 void gme_effects( Music_Emu const* gme, gme_effects_t* out )
 {
