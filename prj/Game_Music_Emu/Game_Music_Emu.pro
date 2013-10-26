@@ -37,9 +37,6 @@ SOURCES += \
     ../../gme/Track_Filter.cpp \
     ../../gme/Spc_Filter.cpp \
     ../../gme/Spc_Emu.cpp \
-    ../../gme/Spc_Dsp.cpp \
-    ../../gme/Spc_Cpu.cpp \
-    ../../gme/Snes_Spc.cpp \
     ../../gme/Sms_Fm_Apu.cpp \
     ../../gme/Sms_Apu.cpp \
     ../../gme/Sgc_Impl.cpp \
@@ -160,9 +157,6 @@ HEADERS += \
     ../../gme/Track_Filter.h \
     ../../gme/Spc_Filter.h \
     ../../gme/Spc_Emu.h \
-    ../../gme/Spc_Dsp.h \
-    ../../gme/Spc_Cpu.h \
-    ../../gme/Snes_Spc.h \
     ../../gme/Sms_Fm_Apu.h \
     ../../gme/Sms_Apu.h \
     ../../gme/Sgc_Impl.h \
