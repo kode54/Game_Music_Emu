@@ -97,6 +97,15 @@ void SMP::op_buswrite(uint16_t addr, uint8_t data) {
 
   case 0xf1:  //CONTROL
     status.iplrom_enable = data & 0x80;
+          
+    if (data & 0x10) {
+      sfm_last[ 0 ] = 0;
+      sfm_last[ 1 ] = 0;
+    }
+    if (data & 0x20) {
+      sfm_last[ 2 ] = 0;
+      sfm_last[ 3 ] = 0;
+    }
 
     //0->1 transistion resets timers
     if(timer2.enable == false && (data & 0x04)) {
@@ -180,12 +189,6 @@ void SMP::op_write(uint16_t addr, uint8_t data) {
   add_clocks(24);
   op_buswrite(addr, data);
   cycle_edge();
-}
-
-uint8_t SMP::disassembler_read(uint16_t addr) {
-  if((addr & 0xfff0) == 0x00f0) return 0x00;
-  if((addr & 0xffc0) == 0xffc0 && status.iplrom_enable) return iplrom[addr & 0x3f];
-  return apuram[addr];
 }
 
 #endif
