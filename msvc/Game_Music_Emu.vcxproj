@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -85,8 +85,8 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\gme\higan\processor\spc700\spc700.cpp" />
     <ClCompile Include="..\gme\higan\dsp\SPC_DSP.cpp" />
+    <ClCompile Include="..\gme\higan\processor\spc700\spc700.cpp" />
     <ClCompile Include="..\gme\higan\dsp\dsp.cpp" />
     <ClCompile Include="..\gme\higan\smp\smp.cpp" />
     <ClCompile Include="..\gme\Ay_Apu.cpp" />
@@ -177,9 +177,6 @@
     <ClCompile Include="..\gme\Sgc_Impl.cpp" />
     <ClCompile Include="..\gme\Sms_Apu.cpp" />
     <ClCompile Include="..\gme\Sms_Fm_Apu.cpp" />
-    <ClCompile Include="..\gme\Snes_Spc.cpp" />
-    <ClCompile Include="..\gme\Spc_Cpu.cpp" />
-    <ClCompile Include="..\gme\Spc_Dsp.cpp" />
     <ClCompile Include="..\gme\Spc_Emu.cpp" />
     <ClCompile Include="..\gme\Spc_Filter.cpp" />
     <ClCompile Include="..\gme\Spc_Sfm.cpp" />
@@ -304,9 +301,6 @@
     <ClInclude Include="..\gme\Sgc_Impl.h" />
     <ClInclude Include="..\gme\Sms_Apu.h" />
     <ClInclude Include="..\gme\Sms_Fm_Apu.h" />
-    <ClInclude Include="..\gme\Snes_Spc.h" />
-    <ClInclude Include="..\gme\Spc_Cpu.h" />
-    <ClInclude Include="..\gme\Spc_Dsp.h" />
     <ClInclude Include="..\gme\Spc_Emu.h" />
     <ClInclude Include="..\gme\Spc_Filter.h" />
     <ClInclude Include="..\gme\Spc_Sfm.h" />

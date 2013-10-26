@@ -21,6 +21,18 @@
     <Filter Include="Source Files\Dosbox">
       <UniqueIdentifier>{b6535167-399f-4bc9-9b39-645d33866191}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\higan">
+      <UniqueIdentifier>{afcea77e-40c7-47bf-bcce-a6364ccded3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\higan\processor">
+      <UniqueIdentifier>{353e6b26-dfac-4611-85db-002bfc0d14c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\higan\dsp">
+      <UniqueIdentifier>{df7372ce-63c0-44d2-85b7-3bf19011cbc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\higan\smp">
+      <UniqueIdentifier>{b10e4146-4f24-4d4c-9a03-2725c20e3f50}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\gme\Ay_Apu.cpp">
@@ -206,15 +218,6 @@
     <ClCompile Include="..\gme\Sms_Fm_Apu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gme\Snes_Spc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\Spc_Cpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gme\Spc_Dsp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gme\Spc_Emu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -364,6 +367,18 @@
     </ClCompile>
     <ClCompile Include="..\gme\qmix.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\higan\processor\spc700\spc700.cpp">
+      <Filter>Source Files\higan\processor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\higan\smp\smp.cpp">
+      <Filter>Source Files\higan\smp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\higan\dsp\dsp.cpp">
+      <Filter>Source Files\higan\dsp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gme\higan\dsp\SPC_DSP.cpp">
+      <Filter>Source Files\higan\dsp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -557,15 +572,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Sms_Fm_Apu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\Snes_Spc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\Spc_Cpu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gme\Spc_Dsp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\gme\Spc_Emu.h">
