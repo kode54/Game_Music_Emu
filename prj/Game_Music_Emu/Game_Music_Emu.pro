@@ -132,7 +132,11 @@ SOURCES += \
     ../../gme/qmix.c \
     ../../gme/Qsound_Apu.cpp \
     ../../gme/Bml_Parser.cpp \
-    ../../gme/Spc_Sfm.cpp
+    ../../gme/Spc_Sfm.cpp \
+    ../../gme/higan/processor/spc700/spc700.cpp \
+    ../../gme/higan/dsp/SPC_DSP.cpp \
+    ../../gme/higan/dsp/dsp.cpp \
+    ../../gme/higan/smp/smp.cpp
 
 HEADERS += \
     ../../gme/Z80_Cpu.h \
