@@ -468,7 +468,7 @@ void Sfm_Emu::create_updated_metadata( Bml_Parser &out ) const
     
     oss.str("");
     oss.clear();
-    oss << smp.status.ram00f8 << "," << smp.status.ram00f9;
+    oss << (unsigned long)smp.status.ram00f8 << "," << (unsigned long)smp.status.ram00f9;
     out.setValue( "smp:ram", oss.str().c_str() );
     
     name = "smp:regs:";
