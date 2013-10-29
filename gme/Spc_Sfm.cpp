@@ -149,7 +149,7 @@ struct Sfm_File : Gme_Info_
         return blargg_ok;
     }
     
-    blargg_err_t save_( gme_writer_t writer, void* your_data )
+    blargg_err_t save_( gme_writer_t writer, void* your_data ) const
     {
 		std::string metadata_serialized;
 		metadata.serialize( metadata_serialized );
