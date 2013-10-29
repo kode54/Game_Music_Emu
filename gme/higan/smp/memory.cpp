@@ -41,8 +41,11 @@ uint8_t SMP::op_busread(uint16_t addr) {
   case 0xf6:  //CPUIO2
   case 0xf7:  //CPUIO3
     if (sfm_queue && sfm_queue < sfm_queue_end) {
-      sfm_last[addr - 0xf4] = *sfm_queue;
-      return *sfm_queue++;
+      result = *sfm_queue;
+      if (++sfm_queue == sfm_queue_end)
+        sfm_queue = sfm_queue_repeat;
+      sfm_last[addr - 0xf4] = result;
+      return result;
     }
     return sfm_last[addr - 0xf4];
 
