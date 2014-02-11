@@ -15,6 +15,7 @@ struct SMP : Processor::SPC700 {
   uint8_t iplrom[64];
   uint8_t apuram[64 * 1024];
 
+  double tempo;
   int64_t dsp_clock_step;
   SuperFamicom::DSP dsp;
 
@@ -119,7 +120,7 @@ public:
   inline void cycle_edge();
 };
 
-inline void SMP::set_tempo(double speed) { dsp_clock_step = (int64_t)(4096.0 / speed); }
+inline void SMP::set_tempo(double speed) { tempo = speed; dsp_clock_step = (int64_t)(4096.0 / speed); }
 
 inline void SMP::set_sfm_queue(const uint8_t *queue, const uint8_t *queue_end, const uint8_t *queue_repeat) { sfm_queue = queue; sfm_queue_end = queue_end; sfm_queue_repeat = queue_repeat; sfm_last[0] = 0; sfm_last[1] = 0; sfm_last[2] = 0; sfm_last[3] = 0; }
 

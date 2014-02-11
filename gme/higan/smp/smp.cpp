@@ -19,7 +19,7 @@ void SMP::synchronize_dsp() {
 
 void SMP::enter() {
   while(sample_buffer < sample_buffer_end) {
-    clock -= (sample_buffer_end - sample_buffer) * 24 * 16;
+    clock -= (int64_t)((double)(sample_buffer_end - sample_buffer) * 24.0 * 16.0 * tempo);
     while(status.clock_speed != 2 && clock < 0) op_step();
     if(status.clock_speed == 2) step(-clock);
     synchronize_dsp();

@@ -25,12 +25,13 @@ struct DSP {
   void disable_surround(bool disable = true);
 
   DSP(struct SMP&);
+  ~DSP();
 
   SPC_DSP spc_dsp;
 
 private:
   struct SMP & smp;
-  int16_t samplebuffer[8192];
+  int16_t * samplebuffer;
   bool channel_enabled[8];
 };
 
