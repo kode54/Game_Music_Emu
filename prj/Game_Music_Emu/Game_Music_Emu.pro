@@ -8,7 +8,10 @@ QT       -= core gui
 
 TARGET = Game_Music_Emu
 TEMPLATE = lib
-CONFIG += staticlib
+CONFIG += staticlib c++11
+
+QMAKE_CXXFLAGS += -std=c++11
+macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7 -stdlib=libc++
 
 DEFINES += NDEBUG HAVE_STDINT_H HAVE_ZLIB_H
 
