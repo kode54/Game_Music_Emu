@@ -193,7 +193,7 @@ Gb_Apu::Gb_Apu()
 	set_tempo( 1.0 );
 	volume_ = 1.0;
 	reset();
-	set_hacks(4);
+	set_hacks(3);
 }
 
 void Gb_Apu::run_until_( blip_time_t end_time )
