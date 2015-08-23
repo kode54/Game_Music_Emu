@@ -28,29 +28,29 @@ blargg_err_t Opl_Apu::init( long clock, long rate, blip_time_t period, type_t ty
 	case type_opll:
 	case type_msxmusic:
 	case type_smsfmunit:
-		opl = OPLL_new( (uint32_t) clock, (uint32_t) rate );
+		opl = OPLL_new( (BOOST::uint32_t) clock, (BOOST::uint32_t) rate );
         OPLL_SetChipMode( (OPLL *) opl, 0);
 		break;
 
 	case type_vrc7:
-		opl = OPLL_new( (uint32_t) clock, (uint32_t) rate );
+		opl = OPLL_new( (BOOST::uint32_t) clock, (BOOST::uint32_t) rate );
         OPLL_SetChipMode((OPLL *) opl, 1 );
         OPLL_setPatch((OPLL *) opl, vrc7_inst);
 		break;
 
 	case type_opl:
-		opl = ym3526_init( (uint32_t) clock, (uint32_t) rate );
+		opl = ym3526_init( (BOOST::uint32_t) clock, (BOOST::uint32_t) rate );
 		break;
 
 	case type_msxaudio:
 		//logfile = fopen("c:\\temp\\msxaudio.log", "wb");
-		opl = y8950_init( (uint32_t) clock, (uint32_t) rate );
+		opl = y8950_init( (BOOST::uint32_t) clock, (BOOST::uint32_t) rate );
 		opl_memory = malloc( 32768 );
 		y8950_set_delta_t_memory( opl, opl_memory, 32768 );
 		break;
 
 	case type_opl2:
-		opl = ym3812_init( (uint32_t) clock, (uint32_t) rate );
+		opl = ym3812_init( (BOOST::uint32_t) clock, (BOOST::uint32_t) rate );
 		break;
 	}
 	reset();

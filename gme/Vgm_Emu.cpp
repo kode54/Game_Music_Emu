@@ -229,7 +229,7 @@ static void hash_vgm_file( Vgm_Emu::header_t const& h, byte const* data, int dat
 struct VGM_FILE_mem
 {
     VGM_FILE vf;
-    const uint8_t* buffer;
+    const BOOST::uint8_t* buffer;
     UINT32 ptr;
     UINT32 size;
 };

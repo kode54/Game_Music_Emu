@@ -107,7 +107,7 @@ void Vgm_Core::set_tempo( double t )
 struct VGM_FILE_mem
 {
 	VGM_FILE vf;
-	const uint8_t* buffer;
+	const BOOST::uint8_t* buffer;
 	UINT32 ptr;
 	UINT32 size;
 };

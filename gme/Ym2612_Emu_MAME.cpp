@@ -19,7 +19,7 @@ Ym2612_Emu::~Ym2612_Emu()
 		ym2612_shutdown( impl );
 }
 
-static uint8_t dummy = 0;
+static BOOST::uint8_t dummy = 0;
 
 const char* Ym2612_Emu::set_rate( double sample_rate, double clock_rate )
 {
