@@ -21,6 +21,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 Vgm_Core::Vgm_Core()
 {
 	vgmp = (VGM_PLAYER *) VGMPlay_Init();
+    vgmp->VGMMaxLoop = 0;
 	VGMPlay_Init2(vgmp);
 }
 
@@ -70,23 +71,22 @@ static UINT32 gcd(UINT32 x, UINT32 y)
 	return x << shift;
 }
 
-INLINE INT32 SampleVGM2Pbk_I(VGM_PLAYER* p, INT32 SampleVal)
-{
-	return (INT32)((INT64)SampleVal * p->VGMSmplRateMul / p->VGMSmplRateDiv);
-}
-
 void Vgm_Core::set_tempo( double t )
 {
 	if ( file_begin() )
 	{
-		int vgm_rate = (int) (44100 * t + 0.5);
+        int vgm_rate_unit = get_le32(&header().lngRate);
+        if (!vgm_rate_unit)
+            vgm_rate_unit = 44100;
+		int vgm_rate = (int) (vgm_rate_unit * t + 0.5);
 		int old_rate = vgmp->VGMPbRate;
 		vgmp->VGMPbRate = vgm_rate;
+        vgmp->SampleRate = sample_rate;
 
 		if (vgmp->PlayingMode != 0xFF)
 		{
 			if (!old_rate)
-				old_rate = 44100;
+				old_rate = vgm_rate_unit;
 
 			INT32 TempSLng = gcd(vgmp->VGMHead.lngRate, vgmp->VGMPbRate);
 			vgmp->VGMPbRateMul = vgmp->VGMHead.lngRate / TempSLng;
@@ -148,12 +148,12 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	memFile.ptr = 0;
 	memFile.size = size;
 
-	if ( !GetVGMFileInfo_Handle( &memFile, &_header, 0 ) )
+	if ( !GetVGMFileInfo_Handle( (VGM_FILE *) &memFile, &_header, 0 ) )
 		return blargg_err_file_type;
 
 	memFile.ptr = 0;
 
-	if ( !OpenVGMFile_Handle( vgmp, &memFile ) )
+	if ( !OpenVGMFile_Handle( vgmp, (VGM_FILE *) &memFile ) )
 		return blargg_err_file_type;
 
 	set_tempo( 1 );
@@ -167,12 +167,13 @@ void Vgm_Core::start_track()
 	RestartVGM(vgmp);
 }
 
-int Vgm_Core::play_frame( blip_time_t blip_time, int sample_count, blip_sample_t out [] )
+int Vgm_Core::play_( int sample_count, short out [] )
 {
 	// to do: timing is working mostly by luck
 	int pairs = (unsigned) sample_count / 2;
 
-  FillBuffer(vgmp, (WAVE_16BS*) out, pairs);
+    memset(out, 0, sizeof(short) * pairs * 2);
+    FillBuffer(vgmp, (WAVE_16BS*) out, pairs);
 
-	return pairs * stereo;
+	return pairs * 2;
 }

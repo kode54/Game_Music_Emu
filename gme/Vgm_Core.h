@@ -31,10 +31,10 @@ public:
 
 	// Plays FM for at most count samples into *out, and returns number of
 	// samples actually generated (always even).
-	int play_frame( int count, blip_sample_t out [] );
+	int play_( int count, short out [] );
 
 	// True if all of file data has been played
-	bool track_ended() const            { return !!p->VGMEnd; }
+	bool track_ended() const            { return !!vgmp->VGMEnd; }
 
 // Implementation
 public:

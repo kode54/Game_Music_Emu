@@ -1,6 +1,9 @@
 #include "Nes_Vrc7_Apu.h"
 
+extern "C" {
 #include "../vgmplay/VGMPlay/chips/emu2413.h"
+}
+
 #include <string.h>
 
 #include "blargg_source.h"
