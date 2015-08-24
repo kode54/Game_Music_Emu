@@ -155,6 +155,9 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 
 	if ( !OpenVGMFile_Handle( vgmp, (VGM_FILE *) &memFile ) )
 		return blargg_err_file_type;
+    
+    if ( !_header.lngLoopOffset )
+        vgmp->VGMMaxLoop = 1;
 
 	set_tempo( 1 );
 
