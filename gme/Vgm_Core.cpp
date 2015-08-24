@@ -180,5 +180,5 @@ int Vgm_Core::play_( int sample_count, short out [] )
 
 void Vgm_Core::skip_( int count )
 {
-	SeekVGM( vgmp, true, count );
+	SeekVGM( vgmp, true, count / 2 );
 }
