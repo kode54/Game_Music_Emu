@@ -177,3 +177,8 @@ int Vgm_Core::play_( int sample_count, short out [] )
 
 	return pairs * 2;
 }
+
+void Vgm_Core::skip_( int count )
+{
+	SeekVGM( vgmp, true, count );
+}

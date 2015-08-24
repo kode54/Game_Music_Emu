@@ -403,3 +403,9 @@ blargg_err_t Vgm_Emu::load_mem_( const byte* in, int file_size )
 {
     return core.load_mem(in, file_size);
 }
+
+blargg_err_t Vgm_Emu::skip_( int count )
+{
+	core.skip_(count);
+	return blargg_ok;
+}

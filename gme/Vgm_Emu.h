@@ -39,6 +39,7 @@ protected:
 	blargg_err_t set_sample_rate_( int sample_rate );
 	blargg_err_t start_track_( int );
 	blargg_err_t play_( int count, sample_t  []);
+	blargg_err_t skip_( int count );
 	virtual void set_tempo_( double );
 	virtual void mute_voices_( int mask );
 	virtual void unload();

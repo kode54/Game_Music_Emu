@@ -36,6 +36,9 @@ public:
 	// True if all of file data has been played
 	bool track_ended() const            { return !!vgmp->VGMEnd; }
 
+	// Skips the specified number of samples
+	void skip_( int count );
+
 // Implementation
 public:
 	Vgm_Core();
