@@ -124,7 +124,7 @@ blargg_err_t Vgm_Emu::track_info_( track_info_t* out, int ) const
 	if ( gd3_offset <= 0 )
 		return blargg_ok;
 	
-	byte const* gd3 = core.file_begin() + gd3_offset + offsetof( header_t, lngGD3Offset );
+	byte const* gd3 = core.file_begin() + gd3_offset;
 	int gd3_size = check_gd3_header( gd3, (int)(core.file_end() - gd3) );
 	if ( gd3_size )
 	{
@@ -144,7 +144,7 @@ blargg_err_t Vgm_Emu::gd3_data( const unsigned char ** data, int * size )
 	if ( gd3_offset <= 0 )
 		return blargg_ok;
 
-	byte const* gd3 = core.file_begin() + gd3_offset + offsetof( header_t, lngGD3Offset );
+	byte const* gd3 = core.file_begin() + gd3_offset;
 	int gd3_size = check_gd3_header( gd3, (int)(core.file_end() - gd3) );
 	if ( gd3_size )
 	{
@@ -281,11 +281,9 @@ struct Vgm_File : Gme_Info_
         if (!GetVGMFileInfo_Handle((VGM_FILE *) &memFile, &h, 0))
 			return blargg_err_file_type;
 		
-		int data_offset = get_le32( &h.lngDataOffset ) + offsetof( Vgm_Core::header_t, lngDataOffset );
-		int data_size = file_size - offsetof( Vgm_Core::header_t, lngDataOffset ) - data_offset;
+		int data_offset = get_le32( &h.lngDataOffset );
+		int data_size = file_size - data_offset;
 		int gd3_offset = get_le32( &h.lngGD3Offset );
-		if ( gd3_offset > 0 )
-			gd3_offset += offsetof( Vgm_Core::header_t, lngGD3Offset );
 
 		if ( gd3_offset > 0 && gd3_offset > data_offset )
 		{
@@ -393,10 +391,10 @@ blargg_err_t Vgm_Emu::hash_( Hash_Function& out ) const
 	byte const* e = file_end();
 	int data_offset = get_le32( &header().lngDataOffset );
 	if ( data_offset )
-		p += data_offset + offsetof( header_t, lngDataOffset );
+		p += data_offset;
 	int gd3_offset = get_le32( &header().lngGD3Offset );
-	if ( gd3_offset > 0 && gd3_offset + offsetof( header_t, lngGD3Offset ) > data_offset + offsetof( header_t, lngDataOffset ) )
-        e = file_begin() + gd3_offset + offsetof( header_t, lngGD3Offset );
+	if ( gd3_offset > 0 && gd3_offset > data_offset )
+        e = file_begin() + gd3_offset;
 	hash_vgm_file( header(), p, (int)(e - p), out );
 	return blargg_ok;
 }
