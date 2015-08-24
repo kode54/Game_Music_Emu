@@ -88,8 +88,8 @@ void Vgm_Core::set_tempo( double t )
 			if (!old_rate)
 				old_rate = vgm_rate_unit;
 
-			INT32 TempSLng = gcd(vgmp->VGMHead.lngRate, vgmp->VGMPbRate);
-			vgmp->VGMPbRateMul = vgmp->VGMHead.lngRate / TempSLng;
+			INT32 TempSLng = gcd(vgm_rate_unit, vgmp->VGMPbRate);
+			vgmp->VGMPbRateMul = vgm_rate_unit / TempSLng;
 			vgmp->VGMPbRateDiv = vgmp->VGMPbRate / TempSLng;
 
 			vgmp->VGMSmplRateMul = vgmp->SampleRate * vgmp->VGMPbRateMul;
