@@ -67,20 +67,70 @@ static byte const* get_gd3_str( byte const* in, byte const* end, char field [] )
 	return mid;
 }
 
-static byte const* get_gd3_pair( byte const* in, byte const* end, char field [] )
+static byte const* get_gd3_pair( byte const* in, byte const* end, char field [], char field_j [] )
 {
-	return skip_gd3_str( get_gd3_str( in, end, field ), end );
+	return get_gd3_str( get_gd3_str( in, end, field ), end, field_j );
 }
 
-static void parse_gd3( byte const in [], byte const* end, track_info_t* out )
+static void parse_gd3( byte const in [], byte const* end, track_info_t* out, track_info_t* out_j )
 {
-	in = get_gd3_pair( in, end, out->song      );
-	in = get_gd3_pair( in, end, out->game      );
-	in = get_gd3_pair( in, end, out->system    );
-	in = get_gd3_pair( in, end, out->author    );
+	in = get_gd3_pair( in, end, out->song      , out_j->song );
+	in = get_gd3_pair( in, end, out->game      , out_j->game );
+	in = get_gd3_pair( in, end, out->system    , out_j->system );
+	in = get_gd3_pair( in, end, out->author    , out_j->author );
 	in = get_gd3_str ( in, end, out->copyright );
-	in = get_gd3_pair( in, end, out->dumper    );
+	in = get_gd3_pair( in, end, out->dumper    , out_j->dumper );
 	in = get_gd3_str ( in, end, out->comment   );
+}
+
+static blargg_err_t write_gd3_str( gme_writer_t writer, void* your_data, const char field [] )
+{
+    blargg_wchar_t * wstring = blargg_to_wide( field );
+    if (!wstring)
+        return "Out of memory";
+    blargg_err_t err = writer( your_data, wstring, blargg_wcslen( wstring ) * 2 + 2 );
+    free( wstring );
+    return err;
+}
+
+static blargg_err_t write_gd3_pair( gme_writer_t writer, void* your_data, const char field [], const char field_j [] )
+{
+    RETURN_ERR(write_gd3_str( writer, your_data, field ));
+    RETURN_ERR(write_gd3_str( writer, your_data, field ));
+    return blargg_ok;
+}
+
+static blargg_err_t write_gd3_strings( gme_writer_t writer, void* your_data, const track_info_t* in, const track_info_t* in_j )
+{
+    RETURN_ERR(write_gd3_pair( writer, your_data, in->song      , in_j->song ));
+    RETURN_ERR(write_gd3_pair( writer, your_data, in->game      , in_j->game ));
+    RETURN_ERR(write_gd3_pair( writer, your_data, in->system    , in_j->system ));
+    RETURN_ERR(write_gd3_pair( writer, your_data, in->author    , in_j->author ));
+    RETURN_ERR(write_gd3_str ( writer, your_data, in->copyright ));
+    RETURN_ERR(write_gd3_pair( writer, your_data, in->dumper    , in_j->dumper ));
+    RETURN_ERR(write_gd3_str ( writer, your_data, in->comment ));
+    return blargg_ok;
+}
+
+static gme_err_t writer_calc_size(void* param, const void* ptr, long count)
+{
+    *(long *)param += count;
+    return blargg_ok;
+}
+
+static blargg_err_t write_gd3( gme_writer_t writer, void* your_data, const track_info_t* in, const track_info_t* in_j )
+{
+    long string_size = 0;
+    byte version[4];
+    RETURN_ERR(writer( your_data, "Gd3 ", 4 ));
+    set_le32(version, 0x100);
+    RETURN_ERR(writer( your_data, version, 4 ));
+    write_gd3_strings( &writer_calc_size, &string_size, in, in_j );
+    if ( string_size > 1000000000 )
+        return "GD3 tag too large";
+    set_le32(version, (int)string_size);
+    RETURN_ERR(writer( your_data, version, 4));
+    return write_gd3_strings( writer, your_data, in, in_j );
 }
 
 int const gd3_header_size = 12;
@@ -121,19 +171,6 @@ static void get_vgm_length( Vgm_Emu::header_t const& h, track_info_t* out )
 
 blargg_err_t Vgm_Emu::track_info_( track_info_t* out, int ) const
 {
-	get_vgm_length( header(), out );
-	
-	int gd3_offset = get_le32( &header().lngGD3Offset );
-	if ( gd3_offset <= 0 )
-		return blargg_ok;
-	
-	byte const* gd3 = core.file_begin() + gd3_offset;
-	int gd3_size = check_gd3_header( gd3, (int)(core.file_end() - gd3) );
-	if ( gd3_size )
-	{
-		byte const* gd3_data = gd3 + gd3_header_size;
-		parse_gd3( gd3_data, gd3_data + gd3_size, out );
-	}
 	
 	return blargg_ok;
 }
@@ -143,7 +180,7 @@ blargg_err_t Vgm_Emu::gd3_data( const unsigned char ** data, int * size )
 	*data = 0;
 	*size = 0;
 
-	int gd3_offset = get_le32( &header().lngGD3Offset );
+	int gd3_offset = header().lngGD3Offset;
 	if ( gd3_offset <= 0 )
 		return blargg_ok;
 
@@ -265,8 +302,12 @@ static UINT32 VGMF_mem_GetSize(VGM_FILE* f)
 struct Vgm_File : Gme_Info_
 {
 	Vgm_Emu::header_t h;
+    blargg_vector<byte> original_header;
 	blargg_vector<byte> data;
 	blargg_vector<byte> gd3;
+    
+    track_info_t metadata;
+    track_info_t metadata_j;
 	
 	Vgm_File() { set_type( gme_vgm_type ); }
 	
@@ -314,15 +355,25 @@ struct Vgm_File : Gme_Info_
                 memcpy( data.begin(), in + data_offset, data_size );
 			}
 		}
+        
+        int header_size = data_offset;
+        if ( gd3_offset && data_offset > gd3_offset )
+            header_size = gd3_offset;
+        RETURN_ERR( original_header.resize( header_size ) );
+        memcpy( original_header.begin(), in, header_size );
 
-		return blargg_ok;
+        memset( &metadata, 0, sizeof(metadata) );
+        memset( &metadata_j, 0, sizeof(metadata_j) );
+        get_vgm_length( h, &metadata );
+        if ( gd3.size() )
+            parse_gd3( gd3.begin(), gd3.end(), &metadata, &metadata_j );
+
+        return blargg_ok;
 	}
 	
 	blargg_err_t track_info_( track_info_t* out, int ) const
 	{
-		get_vgm_length( h, out );
-		if ( gd3.size() )
-			parse_gd3( gd3.begin(), gd3.end(), out );
+        *out = metadata;
 		return blargg_ok;
 	}
 
@@ -331,6 +382,28 @@ struct Vgm_File : Gme_Info_
 		hash_vgm_file( h, data.begin(), (int)(data.end() - data.begin()), out );
 		return blargg_ok;
 	}
+    
+    blargg_err_t set_track_info_( const track_info_t* in, int )
+    {
+        metadata = *in;
+        
+        return blargg_ok;
+    }
+    
+    blargg_err_t save_( gme_writer_t writer, void* your_data ) const
+    {
+        byte buffer[4];
+        int data_size = (int)(data.end() - data.begin());
+        int gd3_offset = (int)(original_header.end() - original_header.begin()) + data_size;
+        
+        RETURN_ERR( writer( your_data, original_header.begin(), 0x14 ) );
+        set_le32(buffer, gd3_offset - 0x14);
+        RETURN_ERR( writer( your_data, buffer, 4 ) );
+        RETURN_ERR( writer( your_data, original_header.begin() + 0x18, original_header.end() - original_header.begin() - 0x18 ) );
+        RETURN_ERR( writer( your_data, data.begin(), data_size ) );
+        
+        return write_gd3( writer, your_data, &metadata, &metadata_j );
+    }
 };
 
 static Music_Emu* new_vgm_emu () { return BLARGG_NEW Vgm_Emu ; }
@@ -386,10 +459,10 @@ blargg_err_t Vgm_Emu::hash_( Hash_Function& out ) const
 {
 	byte const* p = file_begin();
 	byte const* e = file_end();
-	int data_offset = get_le32( &header().lngDataOffset );
+	int data_offset = header().lngDataOffset;
 	if ( data_offset )
 		p += data_offset;
-	int gd3_offset = get_le32( &header().lngGD3Offset );
+	int gd3_offset = header().lngGD3Offset;
 	if ( gd3_offset > 0 && gd3_offset > data_offset )
         e = file_begin() + gd3_offset;
 	hash_vgm_file( header(), p, (int)(e - p), out );
@@ -398,11 +471,63 @@ blargg_err_t Vgm_Emu::hash_( Hash_Function& out ) const
 
 blargg_err_t Vgm_Emu::load_mem_( const byte* in, int file_size )
 {
-    return core.load_mem(in, file_size);
+    RETURN_ERR( core.load_mem(in, file_size) );
+
+    get_vgm_length( header(), &metadata );
+    
+    int data_offset = header().lngDataOffset;
+    int gd3_offset = header().lngGD3Offset;
+    int data_size = file_size - data_offset;
+
+    if (gd3_offset > 0)
+    {
+        if (gd3_offset > data_offset)
+            data_size = gd3_offset - data_offset;
+        byte const* gd3 = core.file_begin() + gd3_offset;
+        int gd3_size = check_gd3_header( gd3, (int)(core.file_end() - gd3) );
+        if ( gd3_size )
+        {
+            byte const* gd3_data = gd3 + gd3_header_size;
+            parse_gd3( gd3_data, gd3_data + gd3_size, &metadata, &metadata_j );
+        }
+    }
+    
+    int header_size = data_offset;
+    if ( gd3_offset && data_offset > gd3_offset )
+        header_size = gd3_offset;
+    RETURN_ERR( original_header.resize( header_size ) );
+    memcpy( original_header.begin(), in, header_size );
+    
+    RETURN_ERR( data.resize(data_size) );
+    memcpy( data.begin(), in + data_offset, data_size );
+    
+    return blargg_ok;
 }
 
 blargg_err_t Vgm_Emu::skip_( int count )
 {
 	core.skip_(count);
 	return blargg_ok;
+}
+
+blargg_err_t Vgm_Emu::set_track_info_( const track_info_t* in, int )
+{
+    metadata = *in;
+    
+    return blargg_ok;
+}
+
+blargg_err_t Vgm_Emu::save_(gme_writer_t writer, void* your_data)
+{
+    byte buffer[4];
+    int data_size = (int)(data.end() - data.begin());
+    int gd3_offset = (int)(original_header.end() - original_header.begin()) + data_size;
+    
+    RETURN_ERR( writer( your_data, original_header.begin(), 0x14 ) );
+    set_le32(buffer, gd3_offset - 0x14);
+    RETURN_ERR( writer( your_data, buffer, 4 ) );
+    RETURN_ERR( writer( your_data, original_header.begin() + 0x18, original_header.end() - original_header.begin() - 0x18 ) );
+    RETURN_ERR( writer( your_data, data.begin(), data_size ) );
+    
+    return write_gd3( writer, your_data, &metadata, &metadata_j );
 }

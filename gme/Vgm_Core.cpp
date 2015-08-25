@@ -75,7 +75,7 @@ void Vgm_Core::set_tempo( double t )
 {
 	if ( file_begin() )
 	{
-        int vgm_rate_unit = get_le32(&header().lngRate);
+        int vgm_rate_unit = header().lngRate;
         if (!vgm_rate_unit)
             vgm_rate_unit = 44100;
 		int vgm_rate = (int) (vgm_rate_unit * t + 0.5);
@@ -156,7 +156,7 @@ blargg_err_t Vgm_Core::load_mem_( byte const data [], int size )
 	if ( !OpenVGMFile_Handle( vgmp, (VGM_FILE *) &memFile ) )
 		return blargg_err_file_type;
     
-    if ( !_header.lngLoopOffset )
+    if ( !header().lngLoopOffset )
         vgmp->VGMMaxLoop = 1;
 
 	set_tempo( 1 );
