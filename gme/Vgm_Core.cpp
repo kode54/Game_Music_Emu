@@ -28,6 +28,7 @@ Vgm_Core::Vgm_Core()
 Vgm_Core::~Vgm_Core()
 {
 	StopVGM(vgmp);
+	CloseVGMFile(vgmp);
 	VGMPlay_Deinit(vgmp);
 }
 

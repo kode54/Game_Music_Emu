@@ -23,6 +23,7 @@ Spc_Emu::Spc_Emu()
 {
 	set_type( gme_spc_type );
 	set_gain( 1.4 );
+	enable_filter( false );
 }
 
 Spc_Emu::~Spc_Emu() { }
@@ -380,7 +381,7 @@ blargg_err_t Spc_Emu::start_track_( int track )
     memcpy( smp.sfm_last, ptr + 0xF4, 4 );
     
     static const uint8_t regs_to_copy[][2] = { {0xFC,0xFF}, {0xFB,0xFF}, {0xFA,0xFF}, {0xF9,0xFF}, {0xF8,0xFF}, {0xF2,0xFF}, {0xF1,0x87} };
-    for (auto n : regs_to_copy) smp.op_buswrite( n[0], ptr[ n[0] ] & n[1] );
+    for (int i = 0; i < _countof(regs_to_copy); i++) smp.op_buswrite( regs_to_copy[i][0], ptr[ regs_to_copy[i][0] ] & regs_to_copy[i][1] );
     smp.timer0.stage3_ticks = ptr[ 0xFD ] & 0x0F;
     smp.timer1.stage3_ticks = ptr[ 0xFE ] & 0x0F;
     smp.timer2.stage3_ticks = ptr[ 0xFF ] & 0x0F;
@@ -404,7 +405,7 @@ blargg_err_t Spc_Emu::start_track_( int track )
 blargg_err_t Spc_Emu::play_and_filter( int count, sample_t out [] )
 {
 	smp.render( out, count );
-	filter.run( out, count );
+	if ( _enable_filter ) filter.run( out, count );
 	return blargg_ok;
 }
 

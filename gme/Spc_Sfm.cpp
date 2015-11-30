@@ -27,6 +27,7 @@ Sfm_Emu::Sfm_Emu()
     set_gain( 1.4 );
     set_max_initial_silence( 30 );
 	set_silence_lookahead( 30 ); // Some SFMs may have a lot of initialization code
+	enable_filter( false );
 }
 
 Sfm_Emu::~Sfm_Emu() { }
@@ -297,9 +298,9 @@ blargg_err_t Sfm_Emu::start_track_( int track )
     value = metadata.enumValue("smp:ports");
     if (value)
     {
-        for (auto &n : smp.sfm_last)
+        for (int i = 0; i < _countof(smp.sfm_last); i++)
         {
-            n = strtol(value, &end, 10);
+            smp.sfm_last[i] = strtol(value, &end, 10);
             if (*end == ',')
                 value = end + 1;
             else
@@ -482,10 +483,10 @@ void Sfm_Emu::create_updated_metadata( Bml_Parser &out ) const
     oss.str("");
     oss.clear();
     first = true;
-    for (auto n : smp.sfm_last)
+    for (int i = 0; i < _countof(smp.sfm_last); i++)
     {
         if (!first) oss << ",";
-        oss << (unsigned long)n;
+        oss << (unsigned long)smp.sfm_last[i];
         first = false;
     }
     out.setValue("smp:ports", oss.str().c_str());
@@ -621,7 +622,7 @@ blargg_err_t Sfm_Emu::save_( gme_writer_t writer, void* your_data ) const
 blargg_err_t Sfm_Emu::play_and_filter( int count, sample_t out [] )
 {
     smp.render( out, count );
-    filter.run( out, count );
+    if ( _enable_filter ) filter.run( out, count );
     return blargg_ok;
 }
 

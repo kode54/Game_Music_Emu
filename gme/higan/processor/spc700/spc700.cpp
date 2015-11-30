@@ -4,7 +4,7 @@ namespace Processor {
 
 #include "algorithms.cpp"
 #include "instructions.cpp"
-#include "disassembler.cpp"
+//#include "disassembler.cpp"
 
 void SPC700::op_step() {
 #if 0
