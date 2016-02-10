@@ -171,6 +171,7 @@ static void get_vgm_length( Vgm_Emu::header_t const& h, track_info_t* out )
 
 blargg_err_t Vgm_Emu::track_info_( track_info_t* out, int ) const
 {
+	*out = metadata;
 	
 	return blargg_ok;
 }
