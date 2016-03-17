@@ -737,7 +737,7 @@ MISC_CLOCK( 30 )
 	if ( m.every_other_sample )
 	{
 		m.kon    = m.new_kon;
-		m.t_koff = REG(koff) | m.mute_mask; 
+		m.t_koff = REG(koff);
 	}
 	
 	run_counters();
@@ -890,6 +890,10 @@ inline void SPC_DSP::voice_output( voice_t const* v, int ch )
 	int abs_amp = abs( amp );
 	if ( abs_amp > m.max_level[v - (const SPC_DSP::voice_t *)&m.voices][ch] )
 		m.max_level[v - (const SPC_DSP::voice_t *)&m.voices][ch] = abs_amp;
+
+	// FIX: audibly mute, rather than do it in a way the SPC code can easily detect
+	if ( m.mute_mask & ( 1 << ( v - m.voices ) ) )
+		amp = 0;
 
 	// Add to output total
 	m.t_main_out [ch] += amp;
