@@ -178,7 +178,7 @@ protected:
 public:
 	gme_t();
 	~gme_t();
-	BLARGG_DEPRECATED( const char** voice_names() const { return CONST_CAST(const char**,voice_names_); } )
+	const char** voice_names() const { return CONST_CAST(const char**,voice_names_); }
 
 protected:
 	virtual void unload();
