@@ -4,6 +4,7 @@
 
 #include "blargg_endian.h"
 #include <math.h>
+#include <stdio.h>
 
 /* Copyright (C) 2003-2008 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -185,7 +186,11 @@ char* Vgm_Core::get_voice_name(int channel)
     size_t length = strlen(name) + 16;
     char * finalName = (char *) malloc(length);
     if (finalName)
+#ifdef _MSC_VER
+        sprintf_s(finalName, length, "%s #%u", name, realChannel);
+#else
         sprintf(finalName, "%s #%u", name, realChannel);
+#endif
     return finalName;
 }
 
