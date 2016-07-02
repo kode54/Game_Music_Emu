@@ -419,9 +419,6 @@
     <ClCompile Include="..\vgmplay\VGMPlay\chips\scsp.c">
       <Filter>Source Files\vgmplay\chips</Filter>
     </ClCompile>
-    <ClCompile Include="..\vgmplay\VGMPlay\chips\scspdsp.c">
-      <Filter>Source Files\vgmplay\chips</Filter>
-    </ClCompile>
     <ClCompile Include="..\vgmplay\VGMPlay\chips\segapcm.c">
       <Filter>Source Files\vgmplay\chips</Filter>
     </ClCompile>
@@ -468,6 +465,9 @@
       <Filter>Source Files\vgmplay\chips</Filter>
     </ClCompile>
     <ClCompile Include="..\vgmplay\VGMPlay\chips\ymz280b.c">
+      <Filter>Source Files\vgmplay\chips</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vgmplay\VGMPlay\chips\yam.c">
       <Filter>Source Files\vgmplay\chips</Filter>
     </ClCompile>
   </ItemGroup>
@@ -874,9 +874,6 @@
     <ClInclude Include="..\vgmplay\VGMPlay\chips\scsp.h">
       <Filter>Header Files\vgmplay\chips</Filter>
     </ClInclude>
-    <ClInclude Include="..\vgmplay\VGMPlay\chips\scspdsp.h">
-      <Filter>Header Files\vgmplay\chips</Filter>
-    </ClInclude>
     <ClInclude Include="..\vgmplay\VGMPlay\chips\segapcm.h">
       <Filter>Header Files\vgmplay\chips</Filter>
     </ClInclude>
@@ -929,6 +926,12 @@
       <Filter>Header Files\vgmplay\chips</Filter>
     </ClInclude>
     <ClInclude Include="..\vgmplay\VGMPlay\chips\ymz280b.h">
+      <Filter>Header Files\vgmplay\chips</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vgmplay\VGMPlay\chips\emuconfig.h">
+      <Filter>Header Files\vgmplay\chips</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vgmplay\VGMPlay\chips\yam.h">
       <Filter>Header Files\vgmplay\chips</Filter>
     </ClInclude>
   </ItemGroup>

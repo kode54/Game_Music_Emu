@@ -6,7 +6,7 @@
 
 #include "Gme_Loader.h"
 
-#include "../vgmplay/VGMPlay.h"
+#include "../vgmplay/VGMPlay/VGMPlay.h"
 
 class Vgm_Core : public Gme_Loader {
 public:

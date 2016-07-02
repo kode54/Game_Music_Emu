@@ -22,16 +22,17 @@
     </SccLocalPath>
     <SccProvider>
     </SccProvider>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -221,7 +222,6 @@
     <ClCompile Include="..\vgmplay\VGMPlay\chips\saa1099.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\scd_pcm.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\scsp.c" />
-    <ClCompile Include="..\vgmplay\VGMPlay\chips\scspdsp.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\segapcm.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\sn76489.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\sn76496.c" />
@@ -230,6 +230,7 @@
     <ClCompile Include="..\vgmplay\VGMPlay\chips\vsu.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\ws_audio.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\x1_010.c" />
+    <ClCompile Include="..\vgmplay\VGMPlay\chips\yam.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\ym2151.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\ym2413.c" />
     <ClCompile Include="..\vgmplay\VGMPlay\chips\ym2612.c" />
@@ -347,6 +348,7 @@
     <ClInclude Include="..\vgmplay\VGMPlay\chips\dac_control.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\emu2149.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\emu2413.h" />
+    <ClInclude Include="..\vgmplay\VGMPlay\chips\emuconfig.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\emutypes.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\es5503.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\es5506.h" />
@@ -377,7 +379,6 @@
     <ClInclude Include="..\vgmplay\VGMPlay\chips\saa1099.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\scd_pcm.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\scsp.h" />
-    <ClInclude Include="..\vgmplay\VGMPlay\chips\scspdsp.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\segapcm.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\sn76489.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\sn76496.h" />
@@ -388,6 +389,7 @@
     <ClInclude Include="..\vgmplay\VGMPlay\chips\ws_audio.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\ws_initialIo.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\x1_010.h" />
+    <ClInclude Include="..\vgmplay\VGMPlay\chips\yam.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\ym2151.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\ym2413.h" />
     <ClInclude Include="..\vgmplay\VGMPlay\chips\ym2612.h" />
